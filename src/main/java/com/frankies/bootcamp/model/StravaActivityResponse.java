@@ -1,12 +1,7 @@
 package com.frankies.bootcamp.model;
 
 import java.io.Serializable;
-import java.lang.Boolean;
 import java.lang.Double;
-import java.lang.Integer;
-import java.lang.Long;
-import java.lang.Object;
-import java.lang.String;
 import java.util.List;
 
 public class StravaActivityResponse implements Serializable {

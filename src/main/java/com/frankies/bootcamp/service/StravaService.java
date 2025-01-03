@@ -34,14 +34,15 @@ public class StravaService {
                 .url("https://www.strava.com/api/v3/oauth/token")
                 .method("POST", body)
                 .build();
-        Response response = client.newCall(request).execute();
-        if (response.isSuccessful()) {
-            StravaAuthResponse data = new Gson().fromJson(response.body().string(), StravaAuthResponse.class);
-            //Rather inject !!!!!
-            DBService db = new DBService();
-            db.saveAthlete(data.getBootcampAthlete());
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                StravaAuthResponse data = new Gson().fromJson(response.body().string(), StravaAuthResponse.class);
+                //Rather inject !!!!!
+                DBService db = new DBService();
+                db.saveAthlete(data.getBootcampAthlete());
+            }
+            return response.isSuccessful();
         }
-        return response.isSuccessful();
     }
 
     public BootcampAthlete refreshToken(BootcampAthlete athlete) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
@@ -58,21 +59,20 @@ public class StravaService {
                 .url("https://www.strava.com/api/v3/oauth/token")
                 .method("POST", body)
                 .build();
-        Response response = client.newCall(request).execute();
-        if (response.isSuccessful()) {
-            StravaRefreshResponse data = new Gson().fromJson(response.body().string(), StravaRefreshResponse.class);
-            //Rather inject !!!!!
-            DBService db = new DBService();
-            db.saveAthlete(data.getBootcampAthlete(athlete));
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                StravaRefreshResponse data = new Gson().fromJson(response.body().string(), StravaRefreshResponse.class);
+                //Rather inject !!!!!
+                DBService db = new DBService();
+                db.saveAthlete(data.getBootcampAthlete(athlete));
+            }
         }
         return athlete;
     }
 
-
     public List<StravaActivityResponse> getAthleteActivitiesForPeriod(long after, String bearer) throws IOException {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
-        MediaType mediaType = MediaType.parse("text/plain");
         List<StravaActivityResponse> stravaActivityResponses = new ArrayList<>();
         int page = 1;
         boolean hasMoreData = true;
@@ -82,11 +82,13 @@ public class StravaService {
                     .method("GET", null)
                     .addHeader("Authorization", "Bearer " + bearer)
                     .build();
-            Response response = client.newCall(request).execute();
-            Type listOfMyClassObject = new TypeToken<ArrayList<StravaActivityResponse>>() {
-            }.getType();
+            List<StravaActivityResponse> outputList;
+            try (Response response = client.newCall(request).execute()) {
+                Type listOfMyClassObject = new TypeToken<ArrayList<StravaActivityResponse>>() {
+                }.getType();
 
-            List<StravaActivityResponse> outputList = new Gson().fromJson(response.body().string(), listOfMyClassObject);
+                outputList = new Gson().fromJson(response.body().string(), listOfMyClassObject);
+            }
             if (!outputList.isEmpty()) {
                 stravaActivityResponses.addAll(outputList);
                 page++;

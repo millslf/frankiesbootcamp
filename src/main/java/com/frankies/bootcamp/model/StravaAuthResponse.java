@@ -1,13 +1,6 @@
 package com.frankies.bootcamp.model;
 
-import com.google.gson.annotations.JsonAdapter;
-
 import java.io.Serializable;
-import java.lang.Boolean;
-import java.lang.Double;
-import java.lang.Integer;
-import java.lang.Object;
-import java.lang.String;
 
 public class StravaAuthResponse implements Serializable {
   private String access_token;
