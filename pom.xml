@@ -68,7 +68,12 @@
             <artifactId>wildfly-elytron</artifactId>
             <version>2.6.0.Final</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+            <!-- Provided by WildFly -->
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

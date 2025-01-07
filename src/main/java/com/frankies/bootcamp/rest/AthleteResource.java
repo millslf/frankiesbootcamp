@@ -12,7 +12,11 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import org.jboss.logging.Logger;
+import org.wildfly.security.credential.store.CredentialStoreException;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,24 +24,22 @@ import java.util.List;
 
 @Path("/Athletes")
 public class AthleteResource {
+    private static final Logger log = Logger.getLogger(AthleteResource.class);
+
     @GET
     @Produces("text/plain")
+    @Path("/summary")
     public String allAthleteSummary(@QueryParam("startTimeStamp") Long startTimeStamp) {
-
-        DBService db = new DBService();
-        List<BootcampAthlete> athleteList;
-        List<PerformanceResponse> performanceList = new ArrayList<>();
         try {
+            DBService db = new DBService();
+            List<BootcampAthlete> athleteList;
+            List<PerformanceResponse> performanceList = new ArrayList<>();
             athleteList = db.findAll();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-            return "Nope, iets het nou sleg foutgegaan bel jou maatjie!";
-        }
-        List<StravaActivityResponse> stravaActivities;
-        for (BootcampAthlete athlete : athleteList) {
+            List<StravaActivityResponse> stravaActivities;
 
-            try {
-                if (athlete.getExpiresAt()*1000 < System.currentTimeMillis()) {
+            for (BootcampAthlete athlete : athleteList) {
+
+                if (athlete.getExpiresAt() * 1000 < System.currentTimeMillis()) {
                     StravaService strava = new StravaService();
                     athlete = strava.refreshToken(athlete);
                 }
@@ -48,10 +50,10 @@ public class AthleteResource {
                 stravaActivities = strava.getAthleteActivitiesForPeriod(startTimeStamp, athlete.getAccessToken());
                 double distance = 0;
                 int week = 1;
-                long weekEnding = startTimeStamp+604800;
+                long weekEnding = startTimeStamp + 604800;
                 WeeklyPerformance weeklyPerformance = new WeeklyPerformance("Week" + week);
                 for (StravaActivityResponse activity : stravaActivities) {
-                    while(Instant.parse(activity.getStart_date()).getEpochSecond() > weekEnding){
+                    while (Instant.parse(activity.getStart_date()).getEpochSecond() > weekEnding) {
                         performance.addWeeklyPerformance(weeklyPerformance);
                         week++;
                         weekEnding = weekEnding + 604800;
@@ -59,25 +61,25 @@ public class AthleteResource {
                     }
                     if (activity.getType().equalsIgnoreCase("run")) {
                         distance += activity.getDistance() / 1000;
-                        weeklyPerformance.addSports("Run", activity.getDistance()/1000);
+                        weeklyPerformance.addSports("Run", activity.getDistance() / 1000);
                     }
                     if (activity.getType().equalsIgnoreCase("swim")) {
-                        distance += activity.getDistance()*4 / 1000;
-                        weeklyPerformance.addSports("Swim", activity.getDistance()*4/1000);
+                        distance += activity.getDistance() * 4 / 1000;
+                        weeklyPerformance.addSports("Swim", activity.getDistance() * 4 / 1000);
                     }
                     if (activity.getType().equalsIgnoreCase("ride") && activity.getSport_type().equalsIgnoreCase("MountainBikeRide")) {
-                        distance += activity.getDistance()/2 / 1000;
-                        weeklyPerformance.addSports("MTB", activity.getDistance()/2/1000);
+                        distance += activity.getDistance() / 2 / 1000;
+                        weeklyPerformance.addSports("MTB", activity.getDistance() / 2 / 1000);
                     }
                 }
                 performance.addWeeklyPerformance(weeklyPerformance);
                 performance.setDistanceToDate(distance);
                 performanceList.add(performance);
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-                return "Nope, iets het nou sleg foutgegaan bel jou maatjie!";
             }
+            return new Gson().toJson(performanceList);
+        } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
+            log.error("AthletesResource, allAthleteSummary", e);
+            return "Something went wrong, phone a friend!";
         }
-        return  new Gson().toJson(performanceList);
     }
 }

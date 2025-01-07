@@ -65,6 +65,7 @@ public class StravaService {
                 //Rather inject !!!!!
                 DBService db = new DBService();
                 db.saveAthlete(data.getBootcampAthlete(athlete));
+                athlete.setAccessToken(data.getAccess_token());
             }
         }
         return athlete;

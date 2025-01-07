@@ -48,7 +48,7 @@ public class DBService {
         return user;
     }
 
-    public boolean saveAthlete(BootcampAthlete athlete) throws SQLException {
+    public void saveAthlete(BootcampAthlete athlete) throws SQLException {
 
         try (
                 Connection connection = ds.getConnection();
@@ -74,7 +74,7 @@ public class DBService {
             statement.setString(14, athlete.getLastname());
             statement.setString(15, athlete.getFirstname());
 
-            return statement.execute();
+            statement.execute();
         }
     }
 }
