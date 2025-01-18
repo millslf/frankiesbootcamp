@@ -1,6 +1,6 @@
 package com.frankies.bootcamp.sport;
 
-import com.frankies.bootcamp.model.StravaActivityResponse;
+import com.frankies.bootcamp.model.strava.StravaActivityResponse;
 
 public class Workout extends DurationSport {
     public final static Double DISTANCE_PER_HOUR = 5.0;

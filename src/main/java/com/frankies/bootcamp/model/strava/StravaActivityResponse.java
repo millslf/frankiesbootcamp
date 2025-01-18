@@ -1,4 +1,4 @@
-package com.frankies.bootcamp.model;
+package com.frankies.bootcamp.model.strava;
 
 import java.io.Serializable;
 import java.lang.Double;

@@ -1,4 +1,6 @@
-package com.frankies.bootcamp.model;
+package com.frankies.bootcamp.model.strava;
+
+import com.frankies.bootcamp.model.BootcampAthlete;
 
 import java.io.Serializable;
 

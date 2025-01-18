@@ -1,6 +1,6 @@
 package com.frankies.bootcamp.sport;
 
-import com.frankies.bootcamp.model.StravaActivityResponse;
+import com.frankies.bootcamp.model.strava.StravaActivityResponse;
 
 public abstract class DurationSport extends BaseSport {
     private Double originalDuration;
