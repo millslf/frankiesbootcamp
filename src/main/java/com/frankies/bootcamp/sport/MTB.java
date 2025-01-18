@@ -1,6 +1,6 @@
 package com.frankies.bootcamp.sport;
 
-import com.frankies.bootcamp.model.StravaActivityResponse;
+import com.frankies.bootcamp.model.strava.StravaActivityResponse;
 
 public class MTB extends DistanceSport {
     public final static Double CALCULATED_DISTANCE_MULTIPLIER = 0.5;
