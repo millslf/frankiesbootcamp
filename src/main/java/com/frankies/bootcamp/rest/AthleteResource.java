@@ -1,82 +1,82 @@
 package com.frankies.bootcamp.rest;
 
 
+import com.frankies.bootcamp.constant.BootcampConstants;
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.PerformanceResponse;
-import com.frankies.bootcamp.model.StravaActivityResponse;
-import com.frankies.bootcamp.model.WeeklyPerformance;
+import com.frankies.bootcamp.service.ActivityProcessService;
 import com.frankies.bootcamp.service.DBService;
-import com.frankies.bootcamp.service.StravaService;
 import com.google.gson.Gson;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import org.jboss.logging.Logger;
 import org.wildfly.security.credential.store.CredentialStoreException;
 
 import java.io.IOException;
+import java.net.http.HttpHeaders;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.frankies.bootcamp.constant.BootcampConstants.START_TIMESTAMP;
 
 @Path("/Athletes")
 public class AthleteResource {
     private static final Logger log = Logger.getLogger(AthleteResource.class);
+    @Context
+    HttpHeaders requestHeaders;
 
     @GET
-    @Produces("text/plain")
-    @Path("/summary")
-    public String allAthleteSummary(@QueryParam("startTimeStamp") Long startTimeStamp) {
+    @Produces("application/json")
+    @Path("/allAthleteSummary")
+    public String allAthleteSummary(@HeaderParam("Ngrok-Auth-User-Email") String userEmail,
+                                    @HeaderParam("Ngrok-Auth-User-Id") String UserId,
+                                    @HeaderParam("Ngrok-Auth-User-Name") String userName,
+                                    @HeaderParam("Referer") String referer,
+                                    @HeaderParam("User-Agent") String theUserAgent,
+                                    @QueryParam("startTimeStamp") Long startTimeStamp,
+                                    @QueryParam("sendReport") Boolean sendReport,
+                                    @QueryParam("reportToDevOnly") Boolean reportToDevOnly) {
         try {
             DBService db = new DBService();
-            List<BootcampAthlete> athleteList;
-            List<PerformanceResponse> performanceList = new ArrayList<>();
-            athleteList = db.findAll();
-            List<StravaActivityResponse> stravaActivities;
-
-            for (BootcampAthlete athlete : athleteList) {
-
-                if (athlete.getExpiresAt() * 1000 < System.currentTimeMillis()) {
-                    StravaService strava = new StravaService();
-                    athlete = strava.refreshToken(athlete);
-                }
-
-                StravaService strava = new StravaService();
-                PerformanceResponse performance = new PerformanceResponse();
-                performance.setFirstname(athlete.getFirstname());
-                stravaActivities = strava.getAthleteActivitiesForPeriod(startTimeStamp, athlete.getAccessToken());
-                double distance = 0;
-                int week = 1;
-                long weekEnding = startTimeStamp + 604800;
-                WeeklyPerformance weeklyPerformance = new WeeklyPerformance("Week" + week);
-                for (StravaActivityResponse activity : stravaActivities) {
-                    while (Instant.parse(activity.getStart_date()).getEpochSecond() > weekEnding) {
-                        performance.addWeeklyPerformance(weeklyPerformance);
-                        week++;
-                        weekEnding = weekEnding + 604800;
-                        weeklyPerformance = new WeeklyPerformance("Week" + week);
-                    }
-                    if (activity.getType().equalsIgnoreCase("run")) {
-                        distance += activity.getDistance() / 1000;
-                        weeklyPerformance.addSports("Run", activity.getDistance() / 1000);
-                    }
-                    if (activity.getType().equalsIgnoreCase("swim")) {
-                        distance += activity.getDistance() * 4 / 1000;
-                        weeklyPerformance.addSports("Swim", activity.getDistance() * 4 / 1000);
-                    }
-                    if (activity.getType().equalsIgnoreCase("ride") && activity.getSport_type().equalsIgnoreCase("MountainBikeRide")) {
-                        distance += activity.getDistance() / 2 / 1000;
-                        weeklyPerformance.addSports("MTB", activity.getDistance() / 2 / 1000);
-                    }
-                }
-                performance.addWeeklyPerformance(weeklyPerformance);
-                performance.setDistanceToDate(distance);
-                performanceList.add(performance);
+            BootcampAthlete loggedInAthlete = db.findAthleteByEmail(userEmail);
+            if (loggedInAthlete == null ||
+                    !loggedInAthlete.getEmail().equals("millslf@gmail.com")) {
+                return String.valueOf(HttpServletResponse.SC_UNAUTHORIZED);
             }
+            int numberOfWeeksSinceStart = (int) Math.round(Math.ceil((double) (System.currentTimeMillis() - (startTimeStamp * 1000)) / (BootcampConstants.WEEK_IN_SECONDS * 1000)));
+            List<PerformanceResponse> performanceList = new ArrayList<>();
+            ActivityProcessService activityProcessService = new ActivityProcessService();
+            performanceList = activityProcessService.prepareSummary(performanceList, startTimeStamp, numberOfWeeksSinceStart);
+            activityProcessService.sendReport(performanceList, numberOfWeeksSinceStart, sendReport, reportToDevOnly, loggedInAthlete.getEmail());
             return new Gson().toJson(performanceList);
+        } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
+            log.error("AthletesResource, allAthleteSummary", e);
+            return "Something went wrong, phone a friend!";
+        }
+    }
+
+    @GET
+    @Produces("application/json")
+    @Path("/personalSummary")
+    public String personalSummary(@HeaderParam("Ngrok-Auth-User-Email") String userEmail,
+                                  @HeaderParam("Ngrok-Auth-User-Id") String UserId,
+                                  @HeaderParam("Ngrok-Auth-User-Name") String userName,
+                                  @HeaderParam("Referer") String referer,
+                                  @HeaderParam("User-Agent") String theUserAgent) {
+        try {
+            DBService db = new DBService();
+            BootcampAthlete loggedInAthlete = db.findAthleteByEmail(userEmail);
+            if (loggedInAthlete == null) {
+                return HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised";
+            }
+            int numberOfWeeksSinceStart = (int) Math.round(Math.ceil((double) (System.currentTimeMillis() - (START_TIMESTAMP * 1000)) / (BootcampConstants.WEEK_IN_SECONDS * 1000)));
+            List<PerformanceResponse> performanceList = new ArrayList<>();
+            ActivityProcessService activityProcessService = new ActivityProcessService();
+            performanceList = activityProcessService.prepareSummary(performanceList, START_TIMESTAMP, numberOfWeeksSinceStart);
+            return activityProcessService.sendReport(performanceList, numberOfWeeksSinceStart, false, false, loggedInAthlete.getEmail());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
             return "Something went wrong, phone a friend!";
