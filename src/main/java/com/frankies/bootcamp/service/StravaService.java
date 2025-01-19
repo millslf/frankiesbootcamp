@@ -1,9 +1,9 @@
 package com.frankies.bootcamp.service;
 
 import com.frankies.bootcamp.model.BootcampAthlete;
-import com.frankies.bootcamp.model.StravaActivityResponse;
-import com.frankies.bootcamp.model.StravaAuthResponse;
-import com.frankies.bootcamp.model.StravaRefreshResponse;
+import com.frankies.bootcamp.model.strava.StravaActivityResponse;
+import com.frankies.bootcamp.model.strava.StravaAuthResponse;
+import com.frankies.bootcamp.model.strava.StravaRefreshResponse;
 import com.frankies.bootcamp.utils.WildflyUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;

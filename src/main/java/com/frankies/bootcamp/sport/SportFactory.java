@@ -8,6 +8,7 @@ public abstract class SportFactory {
         else if(activity.getType().equalsIgnoreCase("run") && activity.getSport_type().equalsIgnoreCase("TrailRun")) return new TrailRun(activity);
         else if(activity.getType().equalsIgnoreCase("swim")) return new Swim(activity);
         else if(activity.getType().equalsIgnoreCase("walk")) return new Walk(activity);
+        else if(activity.getType().equalsIgnoreCase("hike")) return new Hike(activity);
         else if(activity.getType().equalsIgnoreCase("Golf")) return new Golf(activity);
         else if(activity.getType().equalsIgnoreCase("Surfing")) return new Surf(activity);
         else if(activity.getType().equalsIgnoreCase("WeightTraining")) return new WeightTraining(activity);
