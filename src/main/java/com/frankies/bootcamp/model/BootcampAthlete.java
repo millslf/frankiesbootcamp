@@ -1,21 +1,25 @@
 package com.frankies.bootcamp.model;
 
 public class BootcampAthlete {
-    public String id;
+    private transient String id;
 
-    public String accessToken;
+    private transient String accessToken;
 
-    public String refreshToken;
+    private transient String refreshToken;
 
-    public Long expiresAt;
+    private transient Long expiresAt;
 
-    public String tokenType;
+    private transient String tokenType;
 
-    public Integer expiresIn;
+    private transient Integer expiresIn;
 
-    public String lastname;
+    private String lastname;
 
-    public String firstname;
+    private String firstname;
+
+    private transient String email;
+
+    private Integer goal;
 
     public String getId() {
         return id;
@@ -79,5 +83,21 @@ public class BootcampAthlete {
 
     public void setFirstname(String firstname) {
         this.firstname = firstname;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public Integer getGoal() {
+        return goal;
+    }
+
+    public void setGoal(Integer goal) {
+        this.goal = goal;
     }
 }
