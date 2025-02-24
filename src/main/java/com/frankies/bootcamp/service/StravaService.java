@@ -8,6 +8,8 @@ import com.frankies.bootcamp.utils.WildflyUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import okhttp3.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.wildfly.security.credential.store.CredentialStoreException;
 
 import java.io.IOException;
@@ -18,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StravaService {
+
+    private static final Logger log = LoggerFactory.getLogger(StravaService.class);
 
     public boolean tokenExchange(String code) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
         OkHttpClient client = new OkHttpClient().newBuilder()
@@ -49,6 +53,7 @@ public class StravaService {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
         WildflyUtils wf = new WildflyUtils();
+        log.info("StravaService, Refreshing token for athlete: " + athlete.getFirstname() + " " + athlete.getLastname());
         RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("client_id", wf.giveMeAPass("stravaClientId"))
                 .addFormDataPart("client_secret",wf.giveMeAPass("stravaClientSecret"))
@@ -83,12 +88,14 @@ public class StravaService {
                     .method("GET", null)
                     .addHeader("Authorization", "Bearer " + bearer)
                     .build();
-            List<StravaActivityResponse> outputList;
+            List<StravaActivityResponse> outputList = List.of();
             try (Response response = client.newCall(request).execute()) {
                 Type listOfMyClassObject = new TypeToken<ArrayList<StravaActivityResponse>>() {
                 }.getType();
 
                 outputList = new Gson().fromJson(response.body().string(), listOfMyClassObject);
+            }catch (Exception e) {
+                log.error("StravaService, Something went wrong getting strava data", e);
             }
             if (!outputList.isEmpty()) {
                 stravaActivityResponses.addAll(outputList);
