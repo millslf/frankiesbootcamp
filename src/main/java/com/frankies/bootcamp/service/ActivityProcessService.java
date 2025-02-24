@@ -3,12 +3,16 @@ package com.frankies.bootcamp.service;
 import com.frankies.bootcamp.constant.BootcampConstants;
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.PerformanceResponse;
-import com.frankies.bootcamp.model.strava.StravaActivityResponse;
 import com.frankies.bootcamp.model.WeeklyPerformance;
+import com.frankies.bootcamp.model.strava.StravaActivityResponse;
 import com.frankies.bootcamp.sport.BaseSport;
 import com.frankies.bootcamp.sport.SportFactory;
 import com.frankies.bootcamp.utils.CreateEmail;
 import com.frankies.bootcamp.utils.SendMessage;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.event.Observes;
 import jakarta.mail.MessagingException;
 import org.jboss.logging.Logger;
 import org.wildfly.security.credential.store.CredentialStoreException;
@@ -21,20 +25,34 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ActivityProcessService {
+import static com.frankies.bootcamp.constant.BootcampConstants.START_TIMESTAMP;
+
+@ApplicationScoped
+public class ActivityProcessService extends TimerTask {
     private static final Logger log = Logger.getLogger(ActivityProcessService.class);
     DecimalFormat df = new DecimalFormat("#.##");
+    private static List<PerformanceResponse> performanceList;
+    private static HashMap<Integer, HashMap<String, Double>> honourRollTotalDistance = new HashMap<>();
+    private static HashMap<Integer, HashMap<String, Double>> honourRollPercentageOfGoal = new HashMap<>();
+    private static Map<String, HashMap<String, Double>> sortedSummaries = new HashMap<>();
 
-    public List<PerformanceResponse> prepareSummary(List<PerformanceResponse> performanceList, Long startTimeStamp, int numberOfWeeksSinceStart) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+    @PostConstruct
+    public void init(@Observes @Initialized(ApplicationScoped.class) Object init) {
+        Timer timer = new Timer();
+        TimerTask task = new ActivityProcessService();
+        timer.schedule(task, 0, BootcampConstants.HOUR_IN_MILLIS);
+    }
+
+    public void prepareSummary() throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        log.info("Prepare New Summary");
+
+        List<PerformanceResponse> performanceList = new ArrayList<>();
         List<BootcampAthlete> athleteList;
         DBService db = new DBService();
         athleteList = db.findAllAthletes();
 
         List<String> sports = new ArrayList<>();
         List<StravaActivityResponse> stravaActivities;
-        //Start timestamp not too long ago
-        //Add athlete ID to get only a specific athlete data
-        //Send email based on param passed in.
         for (BootcampAthlete athlete : athleteList) {
             if (athlete.getExpiresAt() * 1000 < System.currentTimeMillis()) {
                 StravaService strava = new StravaService();
@@ -43,11 +61,11 @@ public class ActivityProcessService {
             StravaService strava = new StravaService();
             PerformanceResponse performance = new PerformanceResponse();
             performance.setAthlete(athlete);
-            stravaActivities = strava.getAthleteActivitiesForPeriod(startTimeStamp, athlete.getAccessToken());
+            stravaActivities = strava.getAthleteActivitiesForPeriod(getStartTimeStamp(), athlete.getAccessToken());
             double distance = 0;
             double score = 0;
             int week = 1;
-            long weekEnding = startTimeStamp + BootcampConstants.WEEK_IN_SECONDS;
+            long weekEnding = getStartTimeStamp() + BootcampConstants.WEEK_IN_SECONDS;
             WeeklyPerformance weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, athlete.getGoal(), -1.0);
             for (StravaActivityResponse activity : stravaActivities) {
                 if (!sports.contains(activity.getType() + " " + activity.getSport_type())) {
@@ -56,6 +74,7 @@ public class ActivityProcessService {
                 //Keep adding weeks in case an athlete did nothing for a week or more between activities.
                 int loopCount = 0;
                 while (Instant.parse(activity.getStart_date()).getEpochSecond() > weekEnding) {
+                    updateHonourRolls(week, weeklyPerformance, athlete);
                     score += weeklyPerformance.getWeekScore();
                     performance.addWeeklyPerformance(weeklyPerformance, week);
                     week++;
@@ -71,7 +90,8 @@ public class ActivityProcessService {
             }
             //Keep adding weeks in case an athlete did nothing for a week or more after last activity.
             int loopCount = 0;
-            while (performance.getWeeklyPerformances().size() < numberOfWeeksSinceStart) {
+            while (performance.getWeeklyPerformances().size() < getNumberOfWeeksSinceStart()) {
+                updateHonourRolls(week, weeklyPerformance, athlete);
                 score += weeklyPerformance.getWeekScore();
                 performance.addWeeklyPerformance(weeklyPerformance, week);
                 week++;
@@ -83,25 +103,43 @@ public class ActivityProcessService {
             performance.setScoreToDate(score + weeklyPerformance.getWeekScore());
             performanceList.add(performance);
         }
+        ActivityProcessService.performanceList = performanceList;
         log.info("All sports: " + sports);
+    }
+
+    public List<PerformanceResponse> getPerformanceList() {
         return performanceList;
     }
 
-    public String sendReport(List<PerformanceResponse> performanceList,
-                             int finalWeekCount,
-                             boolean reportToAllAthletes,
+    public Map<Integer, WeeklyPerformance> getAthleteHistory(String loggedInAthlete){
+        for (PerformanceResponse performance : performanceList) {
+            if (loggedInAthlete.equals(performance.getAthlete().getEmail())) {
+                return performance.getWeeklyPerformances();
+            }
+        }
+        return null;
+    }
+
+    public HashMap<Integer, HashMap<String, Double>> getHonourRollTotalDistance() {
+        return honourRollTotalDistance;
+    }
+
+    public HashMap<Integer, HashMap<String, Double>> getHonourRollPercentageOfGoal() {
+        return honourRollPercentageOfGoal;
+    }
+
+    public String sendReport(boolean reportToAllAthletes,
                              boolean reportToDevOnly,
                              String loggedInAthlete) throws IOException, CredentialStoreException, NoSuchAlgorithmException, SQLException {
-        String loggedInAthleteSummary="";
+        String loggedInAthleteSummary = "";
         log.info("Logged in athlete: " + loggedInAthlete);
         try {
-            Map<String, HashMap<String, Double>> summaries = GenerateAllSummaryMaps(performanceList, finalWeekCount);
             for (PerformanceResponse performance : performanceList) {
-                String mailBody = getMailBody(summaries.get(BootcampConstants.currentYearlyScoreSummary),
-                        summaries.get(BootcampConstants.currentWeekPercentageOfGoalSummary),
-                        summaries.get(BootcampConstants.currentWeekTotalDistanceSummary), performance);
+                String mailBody = getMailBody(sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary),
+                        sortedSummaries.get(BootcampConstants.currentWeekPercentageOfGoalSummary),
+                        sortedSummaries.get(BootcampConstants.currentWeekTotalDistanceSummary), performance);
                 if (null != performance.getAthlete().getEmail() && reportToAllAthletes && loggedInAthlete.equals("millslf@gmail.com")) {
-                    sendReport(performance, finalWeekCount, mailBody);
+                    emailReport(performance, mailBody);
                     log.info("Sent to: " + performance.getAthlete().getFirstname());
                 } else {
                     log.info("Skipping email for " + performance.getAthlete().getFirstname() + " because email is null or not reporting to all athletes.");
@@ -109,9 +147,9 @@ public class ActivityProcessService {
                 if (loggedInAthlete.equals(performance.getAthlete().getEmail())) {
                     loggedInAthleteSummary = mailBody;
                 }
-                if(reportToDevOnly && performance.getAthlete().getEmail().equals("millslf@gmail.com")) {
-//                    sendReport(performance, finalWeekCount, mailBody);
-                    log.info("Sent to developer (Not really send is commented out)" + performance.getAthlete().getFirstname());
+                if (null != performance.getAthlete().getEmail() && reportToDevOnly && performance.getAthlete().getEmail().equals("millslf@gmail.com") && loggedInAthlete.equals("millslf@gmail.com")) {
+                    emailReport(performance, mailBody);
+                    log.info("Sent to developer" + performance.getAthlete().getFirstname());
                 }
             }
         } catch (Exception e) {
@@ -121,47 +159,56 @@ public class ActivityProcessService {
         return loggedInAthleteSummary;
     }
 
-    private void sendReport(PerformanceResponse performance, int finalWeekCount, String mailBody) throws MessagingException, SQLException, IOException {
+    public int getNumberOfWeeksSinceStart() {
+        return (int) Math.round(Math.ceil((double) (System.currentTimeMillis() - (getStartTimeStamp() * 1000)) / (BootcampConstants.WEEK_IN_SECONDS * 1000)));
+    }
+
+    public Map<String, HashMap<String, Double>> getSortedSummaries() {
+        return sortedSummaries;
+    }
+
+    private long getStartTimeStamp() {
+        return START_TIMESTAMP;
+    }
+
+    private void emailReport(PerformanceResponse performance, String mailBody) throws MessagingException, SQLException, IOException {
         SendMessage sendMessage = new SendMessage();
         sendMessage.sendEmail(
                 CreateEmail.createEmail(
                         performance.getAthlete().getEmail(),
                         "Frankies Bootcamp '<frankiesbootcamp@gmail.com>'",
                         "Performance report for " +
-                                performance.getWeeklyPerformances().get(finalWeekCount).getWeek(), mailBody));
+                                performance.getWeeklyPerformances().get(getNumberOfWeeksSinceStart()).getWeek(), mailBody));
 
     }
 
-    private Map<String, HashMap<String, Double>> GenerateAllSummaryMaps(List<PerformanceResponse> performanceList,
-                                                                        int finalWeekCount) {
-        Map<String, HashMap<String, Double>> allSummaries = new HashMap<>();
+    public void generateAllSummaryMaps() {
         HashMap<String, Double> currentWeekTotalDistanceSummary = new HashMap<>();
         for (PerformanceResponse performance : performanceList) {
-            if (performance.getWeeklyPerformances().get(finalWeekCount) != null) {
-                currentWeekTotalDistanceSummary.put(performance.getAthlete().getFirstname(), performance.getWeeklyPerformances().get(finalWeekCount).getTotalDistance());
+            if (performance.getWeeklyPerformances().get(getNumberOfWeeksSinceStart()) != null) {
+                currentWeekTotalDistanceSummary.put(performance.getAthlete().getFirstname(), performance.getWeeklyPerformances().get(getNumberOfWeeksSinceStart()).getTotalDistance());
             }
         }
         HashMap<String, Double> currentWeekPercentageOfGoalSummary = new HashMap<>();
         for (PerformanceResponse performance : performanceList) {
-            if (performance.getWeeklyPerformances().get(finalWeekCount) != null) {
-                currentWeekPercentageOfGoalSummary.put(performance.getAthlete().getFirstname(), performance.getWeeklyPerformances().get(finalWeekCount).getTotalPercentOfGoal() * 100);
+            if (performance.getWeeklyPerformances().get(getNumberOfWeeksSinceStart()) != null) {
+                currentWeekPercentageOfGoalSummary.put(performance.getAthlete().getFirstname(), performance.getWeeklyPerformances().get(getNumberOfWeeksSinceStart()).getTotalPercentOfGoal() * 100);
             }
         }
         HashMap<String, Double> currentYearlyScoreSummary = new HashMap<>();
         for (PerformanceResponse performance : performanceList) {
             currentYearlyScoreSummary.put(performance.getAthlete().getFirstname(), performance.getScoreToDate());
         }
-        allSummaries.put(BootcampConstants.currentWeekTotalDistanceSummary, currentWeekTotalDistanceSummary);
-        allSummaries.put(BootcampConstants.currentWeekPercentageOfGoalSummary, currentWeekPercentageOfGoalSummary);
-        allSummaries.put(BootcampConstants.currentYearlyScoreSummary, currentYearlyScoreSummary);
-        return allSummaries;
+        sortedSummaries.put(BootcampConstants.currentWeekTotalDistanceSummary, sortByValue(currentWeekTotalDistanceSummary));
+        sortedSummaries.put(BootcampConstants.currentWeekPercentageOfGoalSummary, sortByValue(currentWeekPercentageOfGoalSummary));
+        sortedSummaries.put(BootcampConstants.currentYearlyScoreSummary, sortByValue(currentYearlyScoreSummary));
     }
 
     private String getMailBody(HashMap<String, Double> currentYearlyScoreSummary,
                                HashMap<String, Double> currentWeekPercentageOfGoalSummary,
                                HashMap<String, Double> currentWeekTotalDistanceSummary,
                                PerformanceResponse performance) {
-        return performance + "\n" +
+        return performance +
                 "OVERALL SCORE COMPETITION:\n"
                 + getScoreSummary(currentYearlyScoreSummary) + "\n" +
                 "'PERCENTAGE OF GOAL' WEEKLY COMPETITION:"
@@ -173,16 +220,14 @@ public class ActivityProcessService {
     }
 
     private String getSummary(HashMap<String, Double> currentWeekSummary, String suffix) {
-        Map<String, Double> sortedMap = sortByValue(currentWeekSummary);
-        return "\nOns gewaardeerde voorloper vir die week is honourable " + sortedMap.keySet().stream().findFirst().get()
-                + " met 'n totaal van " + df.format(sortedMap.values().stream().findFirst().get()) + suffix + "\n" +
-                "Dan, in BAIE spesifieke volgorde het ons: " + sortedMap.keySet().stream().skip(1).collect(Collectors.joining(", ")) + "\n\n";
+        return "\nOns gewaardeerde voorloper vir die week is honourable " + currentWeekSummary.keySet().stream().findFirst().get()
+                + " met 'n totaal van " + df.format(currentWeekSummary.values().stream().findFirst().get()) + suffix + "\n" +
+                "Dan, in BAIE spesifieke volgorde het ons: " + currentWeekSummary.keySet().stream().skip(1).collect(Collectors.joining(", ")) + "\n\n";
     }
 
     private String getScoreSummary(HashMap<String, Double> currentWeekSummary) {
-        Map<String, Double> sortedMap = sortByValue(currentWeekSummary);
         StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, Double> entry : sortedMap.entrySet()) {
+        for (Map.Entry<String, Double> entry : currentWeekSummary.entrySet()) {
             sb.append(entry.getKey()).append(": ").append(df.format(entry.getValue())).append("\n");
         }
         return sb.toString();
@@ -227,4 +272,37 @@ public class ActivityProcessService {
         return temp;
     }
 
+    private void updateHonourRolls(int week, WeeklyPerformance weeklyPerformance, BootcampAthlete athlete) {
+        if(honourRollTotalDistance.get(week) == null){
+            honourRollTotalDistance.put(week, new HashMap<>());
+            honourRollTotalDistance.get(week).put(athlete.getFirstname() + " " + athlete.getLastname(), weeklyPerformance.getTotalDistance());
+        }else {
+            double currentMaxDist = honourRollTotalDistance.get(week).values().iterator().next();
+            if (currentMaxDist < weeklyPerformance.getTotalDistance()) {
+                honourRollTotalDistance.get(week).clear();
+                honourRollTotalDistance.get(week).put(athlete.getFirstname() + " " + athlete.getLastname(), weeklyPerformance.getTotalDistance());
+            }
+        }
+
+        if(honourRollPercentageOfGoal.get(week) == null){
+            honourRollPercentageOfGoal.put(week, new HashMap<>());
+            honourRollPercentageOfGoal.get(week).put(athlete.getFirstname() + " " + athlete.getLastname(), weeklyPerformance.getTotalPercentOfGoal());
+        }else {
+            double currentMaxPerc = honourRollPercentageOfGoal.get(week).values().iterator().next();
+            if (currentMaxPerc < weeklyPerformance.getTotalPercentOfGoal()) {
+                honourRollPercentageOfGoal.get(week).clear();
+                honourRollPercentageOfGoal.get(week).put(athlete.getFirstname() + " " + athlete.getLastname(), weeklyPerformance.getTotalPercentOfGoal());
+            }
+        }
+    }
+
+    @Override
+    public void run() {
+        try {
+            prepareSummary();
+            generateAllSummaryMaps();
+        } catch (Exception e) {
+            log.error("ActivityProcessService, Something went wrong generating summary", e);
+        }
+    }
 }

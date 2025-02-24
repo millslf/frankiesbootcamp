@@ -1,12 +1,11 @@
 package com.frankies.bootcamp.rest;
 
 
-import com.frankies.bootcamp.constant.BootcampConstants;
 import com.frankies.bootcamp.model.BootcampAthlete;
-import com.frankies.bootcamp.model.PerformanceResponse;
 import com.frankies.bootcamp.service.ActivityProcessService;
 import com.frankies.bootcamp.service.DBService;
 import com.google.gson.Gson;
+import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
@@ -17,13 +16,12 @@ import java.io.IOException;
 import java.net.http.HttpHeaders;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.frankies.bootcamp.constant.BootcampConstants.START_TIMESTAMP;
 
 @Path("/Athletes")
 public class AthleteResource {
+    @Inject
+    private ActivityProcessService activityProcessService;
+
     private static final Logger log = Logger.getLogger(AthleteResource.class);
     @Context
     HttpHeaders requestHeaders;
@@ -36,8 +34,8 @@ public class AthleteResource {
                                     @HeaderParam("Ngrok-Auth-User-Name") String userName,
                                     @HeaderParam("Referer") String referer,
                                     @HeaderParam("User-Agent") String theUserAgent,
-                                    @QueryParam("startTimeStamp") Long startTimeStamp,
                                     @QueryParam("sendReport") Boolean sendReport,
+                                    @QueryParam("forceRecalc") Boolean forceRecalc,
                                     @QueryParam("reportToDevOnly") Boolean reportToDevOnly) {
         try {
             DBService db = new DBService();
@@ -46,12 +44,12 @@ public class AthleteResource {
                     !loggedInAthlete.getEmail().equals("millslf@gmail.com")) {
                 return String.valueOf(HttpServletResponse.SC_UNAUTHORIZED);
             }
-            int numberOfWeeksSinceStart = (int) Math.round(Math.ceil((double) (System.currentTimeMillis() - (startTimeStamp * 1000)) / (BootcampConstants.WEEK_IN_SECONDS * 1000)));
-            List<PerformanceResponse> performanceList = new ArrayList<>();
-            ActivityProcessService activityProcessService = new ActivityProcessService();
-            performanceList = activityProcessService.prepareSummary(performanceList, startTimeStamp, numberOfWeeksSinceStart);
-            activityProcessService.sendReport(performanceList, numberOfWeeksSinceStart, sendReport, reportToDevOnly, loggedInAthlete.getEmail());
-            return new Gson().toJson(performanceList);
+            if(forceRecalc != null && forceRecalc) {
+                activityProcessService.prepareSummary();
+                activityProcessService.generateAllSummaryMaps();
+            }
+            activityProcessService.sendReport(sendReport, reportToDevOnly, loggedInAthlete.getEmail());
+            return new Gson().toJson(activityProcessService.getPerformanceList());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
             return "Something went wrong, phone a friend!";
@@ -72,11 +70,7 @@ public class AthleteResource {
             if (loggedInAthlete == null) {
                 return HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised";
             }
-            int numberOfWeeksSinceStart = (int) Math.round(Math.ceil((double) (System.currentTimeMillis() - (START_TIMESTAMP * 1000)) / (BootcampConstants.WEEK_IN_SECONDS * 1000)));
-            List<PerformanceResponse> performanceList = new ArrayList<>();
-            ActivityProcessService activityProcessService = new ActivityProcessService();
-            performanceList = activityProcessService.prepareSummary(performanceList, START_TIMESTAMP, numberOfWeeksSinceStart);
-            return activityProcessService.sendReport(performanceList, numberOfWeeksSinceStart, false, false, loggedInAthlete.getEmail());
+            return activityProcessService.sendReport(false, false, loggedInAthlete.getEmail());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
             return "Something went wrong, phone a friend!";
