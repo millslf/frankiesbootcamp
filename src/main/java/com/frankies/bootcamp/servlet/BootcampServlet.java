@@ -2,6 +2,7 @@ package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.service.DBService;
+import jakarta.inject.Inject;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +14,8 @@ import java.io.PrintWriter;
 import java.sql.SQLException;
 
 public class BootcampServlet extends HttpServlet {
+    @Inject
+    private DBService db;
     String home ="<h1><a href=../>Frankies Bootcamp</a></h1><br/>";
     private static final Logger log = Logger.getLogger(BootcampServlet.class);
 
@@ -22,7 +25,6 @@ public class BootcampServlet extends HttpServlet {
         response.setContentType("text/html");
         String authenticatedUserMail = request.getHeader("Ngrok-Auth-User-Email");
         try {
-            DBService db = new DBService();
             BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
             if (loggedInAthlete == null) {
                 log.info( "Athlete not authorised: " + authenticatedUserMail);

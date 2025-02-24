@@ -29,6 +29,8 @@ import static com.frankies.bootcamp.constant.BootcampConstants.START_TIMESTAMP;
 
 @ApplicationScoped
 public class ActivityProcessService extends TimerTask {
+    private DBService db = new DBService();
+    private StravaService strava = new StravaService();
     private static final Logger log = Logger.getLogger(ActivityProcessService.class);
     DecimalFormat df = new DecimalFormat("#.##");
     private static List<PerformanceResponse> performanceList;
@@ -48,17 +50,14 @@ public class ActivityProcessService extends TimerTask {
 
         List<PerformanceResponse> performanceList = new ArrayList<>();
         List<BootcampAthlete> athleteList;
-        DBService db = new DBService();
         athleteList = db.findAllAthletes();
 
         List<String> sports = new ArrayList<>();
         List<StravaActivityResponse> stravaActivities;
         for (BootcampAthlete athlete : athleteList) {
             if (athlete.getExpiresAt() * 1000 < System.currentTimeMillis()) {
-                StravaService strava = new StravaService();
                 athlete = strava.refreshToken(athlete);
             }
-            StravaService strava = new StravaService();
             PerformanceResponse performance = new PerformanceResponse();
             performance.setAthlete(athlete);
             stravaActivities = strava.getAthleteActivitiesForPeriod(getStartTimeStamp(), athlete.getAccessToken());

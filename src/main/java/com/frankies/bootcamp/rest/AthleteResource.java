@@ -21,6 +21,8 @@ import java.sql.SQLException;
 public class AthleteResource {
     @Inject
     private ActivityProcessService activityProcessService;
+    @Inject
+    private DBService db;
 
     private static final Logger log = Logger.getLogger(AthleteResource.class);
     @Context
@@ -38,7 +40,6 @@ public class AthleteResource {
                                     @QueryParam("forceRecalc") Boolean forceRecalc,
                                     @QueryParam("reportToDevOnly") Boolean reportToDevOnly) {
         try {
-            DBService db = new DBService();
             BootcampAthlete loggedInAthlete = db.findAthleteByEmail(userEmail);
             if (loggedInAthlete == null ||
                     !loggedInAthlete.getEmail().equals("millslf@gmail.com")) {
@@ -65,7 +66,6 @@ public class AthleteResource {
                                   @HeaderParam("Referer") String referer,
                                   @HeaderParam("User-Agent") String theUserAgent) {
         try {
-            DBService db = new DBService();
             BootcampAthlete loggedInAthlete = db.findAthleteByEmail(userEmail);
             if (loggedInAthlete == null) {
                 return HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised";

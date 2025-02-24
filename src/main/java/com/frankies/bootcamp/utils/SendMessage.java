@@ -16,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import jakarta.inject.Inject;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.apache.commons.codec.binary.Base64;
@@ -23,6 +24,8 @@ import org.apache.commons.codec.binary.Base64;
 /* Class to demonstrate the use of Gmail Send Message API */
 public class SendMessage {
     static EmailAccess email;
+    @Inject
+    private DBService db;
     /**
      * Send an email from the user's mailbox to its recipient.
      *
@@ -96,13 +99,11 @@ public class SendMessage {
 
     private String getAccessToken() throws SQLException, IOException {
         if(email == null || email.getAccess_token() == null){
-            DBService db = new DBService();
             email = db.getEmailAccess();
         }
         if(email != null && email.getLast_refresh() < System.currentTimeMillis()-3600000){
             email.setAccess_token(refreshAccessToken(email.getRefresh_token(), email.getClient_ID(), email.getClient_secret()));
             email.setLast_refresh(System.currentTimeMillis());
-            DBService db = new DBService();
             db.updateEmail(email);
         }
         return email != null ? email.getAccess_token() : null;

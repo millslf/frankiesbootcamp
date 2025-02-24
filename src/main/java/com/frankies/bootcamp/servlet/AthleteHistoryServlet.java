@@ -21,12 +21,13 @@ import java.util.Map;
 public class AthleteHistoryServlet extends BootcampServlet {
     @Inject
     private ActivityProcessService activityProcessService;
+    @Inject
+    private DBService db;
+    private static final String home = "<a href=\"/Bootcamp\">Home</a>";
 
-    private String message;
     private static final Logger log = Logger.getLogger(AthleteHistoryServlet.class);
 
     public void init() {
-        message = "YOUR WEEKLY HISTORY";
     }
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -36,7 +37,6 @@ public class AthleteHistoryServlet extends BootcampServlet {
         PrintWriter out = response.getWriter();
         String authenticatedUserMail = request.getHeader("Ngrok-Auth-User-Email");
         try {
-            DBService db = new DBService();
             BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
             if (loggedInAthlete == null) {
                 log.info("Athlete not authorised: " + authenticatedUserMail);

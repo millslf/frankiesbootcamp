@@ -2,6 +2,7 @@ package com.frankies.bootcamp.service;
 
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.EmailAccess;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -13,6 +14,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+@ApplicationScoped
 public class DBService {
     DataSource ds;
     {

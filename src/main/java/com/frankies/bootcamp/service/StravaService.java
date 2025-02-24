@@ -7,6 +7,8 @@ import com.frankies.bootcamp.model.strava.StravaRefreshResponse;
 import com.frankies.bootcamp.utils.WildflyUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +21,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+@ApplicationScoped
 public class StravaService {
+    @Inject
+    private DBService db;
 
     private static final Logger log = LoggerFactory.getLogger(StravaService.class);
 
@@ -41,8 +46,6 @@ public class StravaService {
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 StravaAuthResponse data = new Gson().fromJson(response.body().string(), StravaAuthResponse.class);
-                //Rather inject !!!!!
-                DBService db = new DBService();
                 db.saveAthlete(data.getBootcampAthlete());
             }
             return response.isSuccessful();
@@ -67,8 +70,6 @@ public class StravaService {
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 StravaRefreshResponse data = new Gson().fromJson(response.body().string(), StravaRefreshResponse.class);
-                //Rather inject !!!!!
-                DBService db = new DBService();
                 db.saveAthlete(data.getBootcampAthlete(athlete));
                 athlete.setAccessToken(data.getAccess_token());
             }

@@ -20,12 +20,12 @@ import java.sql.SQLException;
 public class AthleteSummaryServlet extends BootcampServlet {
     @Inject
     private ActivityProcessService activityProcessService;
+    @Inject
+    private DBService db;
 
-    private String message;
     private static final Logger log = Logger.getLogger(AthleteSummaryServlet.class);
 
     public void init() {
-        message = "YOUR SUMMARY";
     }
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -34,7 +34,6 @@ public class AthleteSummaryServlet extends BootcampServlet {
         PrintWriter out = response.getWriter();
         String summaryContent="";
         try {
-            DBService db = new DBService();
             BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
             if (loggedInAthlete == null) {
                 log.info( "Athlete not authorised: " + authenticatedUserMail);

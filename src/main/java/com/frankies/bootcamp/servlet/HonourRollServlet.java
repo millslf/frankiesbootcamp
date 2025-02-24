@@ -25,6 +25,8 @@ import java.util.Map;
 public class HonourRollServlet extends BootcampServlet {
     @Inject
     private ActivityProcessService activityProcessService;
+    @Inject
+    private DBService db;
     private static final Logger log = Logger.getLogger(HonourRollServlet.class);
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -33,7 +35,6 @@ public class HonourRollServlet extends BootcampServlet {
         String authenticatedUserMail = request.getHeader("Ngrok-Auth-User-Email");
         PrintWriter out = response.getWriter();
         try {
-            DBService db = new DBService();
             BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
             if (loggedInAthlete == null) {
                 log.info( "Athlete not authorised: " + authenticatedUserMail);
