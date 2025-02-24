@@ -3,6 +3,7 @@ package com.frankies.bootcamp.constant;
 public class BootcampConstants {
     public static final long WEEK_IN_SECONDS = 604800;
     public static final long START_TIMESTAMP = 1735477200;
+    public static final long HOUR_IN_MILLIS = 60 * 60 * 1000;
 
     public static final String currentWeekTotalDistanceSummary = "currentWeekTotalDistanceSummary";
     public static final String currentWeekPercentageOfGoalSummary = "currentWeekPercentageOfGoalSummary";
@@ -36,6 +37,8 @@ public class BootcampConstants {
             "Workout: 5km per hour, \n" +
             "Surfing: 7.5km per hour, \n" +
             "Hockey/Soccer: 1.5km per km\n" +
+            "Virtual Row: 1.0km per km\n" +
+            "Kayaking: 2.5km per km\n" +
             "Swim: 5km per km";
 
 

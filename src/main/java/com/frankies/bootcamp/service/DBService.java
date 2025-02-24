@@ -64,7 +64,7 @@ public class DBService {
                 athlete.setLastname(resultSet.getString("lastname"));
                 athlete.setFirstname(resultSet.getString("firstname"));
                 athlete.setEmail(resultSet.getString("email"));
-                athlete.setGoal(resultSet.getInt("start_goal"));
+                athlete.setGoal(resultSet.getDouble("start_goal"));
                 user.add(athlete);
             }
         }

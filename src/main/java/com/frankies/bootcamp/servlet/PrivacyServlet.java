@@ -12,13 +12,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 @WebServlet(name = "disclaimer", value = "/Disclaimer")
-public class PrivacyServlet extends HttpServlet {
+public class PrivacyServlet extends BootcampServlet {
     private static final Logger log = Logger.getLogger(PrivacyServlet.class);
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         PrintWriter out = response.getWriter();
         // Hello
         out.println("<html><body>");
+        out.println(home);
         out.println(WildflyUtils.escape(BootcampConstants.DISCLAIMER));
         out.println("</body></html>");
     }

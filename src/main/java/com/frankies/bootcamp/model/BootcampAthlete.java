@@ -19,7 +19,7 @@ public class BootcampAthlete {
 
     private transient String email;
 
-    private Integer goal;
+    private Double goal;
 
     public String getId() {
         return id;
@@ -93,11 +93,11 @@ public class BootcampAthlete {
         this.email = email;
     }
 
-    public Integer getGoal() {
+    public Double getGoal() {
         return goal;
     }
 
-    public void setGoal(Integer goal) {
+    public void setGoal(Double goal) {
         this.goal = goal;
     }
 }
