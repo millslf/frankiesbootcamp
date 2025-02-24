@@ -95,7 +95,7 @@ public class SendMessage {
     }
 
     private String getAccessToken() throws SQLException, IOException {
-        if(email == null){
+        if(email == null || email.getAccess_token() == null){
             DBService db = new DBService();
             email = db.getEmailAccess();
         }
