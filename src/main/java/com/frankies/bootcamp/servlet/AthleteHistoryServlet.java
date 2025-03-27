@@ -23,7 +23,6 @@ public class AthleteHistoryServlet extends BootcampServlet {
     private ActivityProcessService activityProcessService;
     @Inject
     private DBService db;
-    private static final String home = "<a href=\"/Bootcamp\">Home</a>";
 
     private static final Logger log = Logger.getLogger(AthleteHistoryServlet.class);
 
@@ -82,11 +81,15 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("</tr>");
         for (int i = 1; i <= numberOfWeeksSinceStart; i++) {
             out.println("<tr>");
+            String weekText = history.get(i).getWeek();
+            if(history.get(i).isSick()){
+                weekText += "</br><i>(Sick Note)";
+            }
             if (i == numberOfWeeksSinceStart) {
-                out.println("<td>" + history.get(i).getWeek() +
+                out.println("<td>" + weekText +
                         "</br><i>(Week in progress)" + "</td>");
             } else {
-                out.println("<td>" + history.get(i).getWeek() + "</td>");
+                out.println("<td>" + weekText + "</td>");
             }
             out.println("<td>" + df.format(history.get(i).getTotalDistance()) + "km</td>");
             out.println("<td>" + df.format(history.get(i).getWeekGoal()) + "km</td>");

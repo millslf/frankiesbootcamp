@@ -23,8 +23,7 @@ import java.util.List;
 
 @ApplicationScoped
 public class StravaService {
-    @Inject
-    private DBService db;
+    private final DBService db = new DBService();
 
     private static final Logger log = LoggerFactory.getLogger(StravaService.class);
 

@@ -11,14 +11,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class WeeklyPerformance {
-    private String week;
-    private Double weekGoal;
-    private Map<String, Double> sports;
-    private Map<String, Double> sportsOriginalDistance;
-    private Map<String, Double> sportsOriginalDuration;
+    private final String week;
+    private final Double weekGoal;
+    private final Map<String, Double> sports;
+    private final Map<String, Double> sportsOriginalDistance;
+    private final Map<String, Double> sportsOriginalDuration;
     private Double totalDistance = 0.0;
     private Double totalPercentOfGoal = 0.0;
     private Double weekScore = 0.0;
+    private boolean isSick;
+    private Double averageWeeklyScore = 0.0;
 
     public WeeklyPerformance(String week, Long weekEnding, Double previousWeekGoal, Double previousWeekTotalDistance) {
         sportsOriginalDistance = new HashMap<>();
@@ -28,6 +30,7 @@ public class WeeklyPerformance {
         String endDate = (new Timestamp((weekEnding-1)*1000)).toLocalDateTime().toLocalDate().toString();
         this.week = week + " (" + startDate + " - " + endDate + ")";
         this.weekGoal = calculateWeekGoal(previousWeekGoal, previousWeekTotalDistance);
+        this.averageWeeklyScore = averageWeeklyScore;
     }
 
     public Double getTotalDistance() {
@@ -86,6 +89,26 @@ public class WeeklyPerformance {
         calculateTotalPercentOfGoal();
     }
 
+    public void setIsSick(boolean isSick){
+        this.isSick = isSick;
+        if(this.isSick){
+            calculateWeekScore();
+            calculateTotalPercentOfGoal();
+        }
+    }
+
+    public boolean isSick() {
+        return isSick;
+    }
+
+    public void setAverageWeeklyScore(Double currentScore, int numberOfWeeksSinceStart) {
+        if(numberOfWeeksSinceStart > 0) {
+            this.averageWeeklyScore = currentScore / numberOfWeeksSinceStart;
+        }else{
+            this.averageWeeklyScore = weekScore;
+        }
+    }
+
     @Override
     public String toString() {
         DecimalFormat df = new DecimalFormat("#.##");
@@ -128,6 +151,9 @@ public class WeeklyPerformance {
             this.weekScore = 0.5;
         } else {
             this.weekScore =  1.0;
+        }
+        if(isSick){
+            this.weekScore = averageWeeklyScore;
         }
     }
 

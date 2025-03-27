@@ -74,6 +74,8 @@ public class ActivityProcessService extends TimerTask {
                 int loopCount = 0;
                 while (Instant.parse(activity.getStart_date()).getEpochSecond() > weekEnding) {
                     updateHonourRolls(week, weeklyPerformance, athlete);
+                    weeklyPerformance.setAverageWeeklyScore(score, week-1);
+                    weeklyPerformance.setIsSick(athlete.isSick(week));
                     score += weeklyPerformance.getWeekScore();
                     performance.addWeeklyPerformance(weeklyPerformance, week);
                     week++;
@@ -91,6 +93,8 @@ public class ActivityProcessService extends TimerTask {
             int loopCount = 0;
             while (performance.getWeeklyPerformances().size() < getNumberOfWeeksSinceStart()) {
                 updateHonourRolls(week, weeklyPerformance, athlete);
+                weeklyPerformance.setAverageWeeklyScore(score, week-1);
+                weeklyPerformance.setIsSick(athlete.isSick(week));
                 score += weeklyPerformance.getWeekScore();
                 performance.addWeeklyPerformance(weeklyPerformance, week);
                 week++;
@@ -99,7 +103,7 @@ public class ActivityProcessService extends TimerTask {
                 loopCount++;
             }
             performance.setDistanceToDate(distance);
-            performance.setScoreToDate(score + weeklyPerformance.getWeekScore());
+            performance.setScoreToDate(score);
             performanceList.add(performance);
         }
         ActivityProcessService.performanceList = performanceList;
@@ -202,6 +206,19 @@ public class ActivityProcessService extends TimerTask {
         sortedSummaries.put(BootcampConstants.currentWeekPercentageOfGoalSummary, sortByValue(currentWeekPercentageOfGoalSummary));
         sortedSummaries.put(BootcampConstants.currentYearlyScoreSummary, sortByValue(currentYearlyScoreSummary));
     }
+
+//    private Double addWeek(int week, Double score, WeeklyPerformance weeklyPerformance, BootcampAthlete athlete, PerformanceResponse performance, long weekEnding, int loopCount) {
+//        updateHonourRolls(week, weeklyPerformance, athlete);
+//        score += weeklyPerformance.getWeekScore();
+//        weeklyPerformance.setAverageWeeklyScore(score/week);
+//        weeklyPerformance.setIsSick(athlete.isSick(week));
+//        performance.addWeeklyPerformance(weeklyPerformance, week);
+//        week++;
+//        weekEnding = weekEnding + BootcampConstants.WEEK_IN_SECONDS;
+//        weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, weeklyPerformance.getWeekGoal(), loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0);
+//        loopCount++;
+//
+//    }
 
     private String getMailBody(HashMap<String, Double> currentYearlyScoreSummary,
                                HashMap<String, Double> currentWeekPercentageOfGoalSummary,

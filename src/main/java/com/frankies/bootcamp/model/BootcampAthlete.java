@@ -1,5 +1,7 @@
 package com.frankies.bootcamp.model;
 
+import java.util.Arrays;
+
 public class BootcampAthlete {
     private transient String id;
 
@@ -20,6 +22,8 @@ public class BootcampAthlete {
     private transient String email;
 
     private Double goal;
+
+    private String[] sickWeeks;
 
     public String getId() {
         return id;
@@ -99,5 +103,21 @@ public class BootcampAthlete {
 
     public void setGoal(Double goal) {
         this.goal = goal;
+    }
+
+    public String[] getSickWeeks() {
+        return sickWeeks;
+    }
+
+    public void setSickWeeks(String sickWeeks) {
+        if (sickWeeks != null) {
+            this.sickWeeks = sickWeeks.split(",");
+        }
+    }
+    public boolean isSick(int week) {
+        if (sickWeeks != null){
+            return Arrays.asList(sickWeeks).contains(String.valueOf(week));
+        }
+        return false;
     }
 }

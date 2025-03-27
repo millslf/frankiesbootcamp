@@ -67,6 +67,7 @@ public class DBService {
                 athlete.setFirstname(resultSet.getString("firstname"));
                 athlete.setEmail(resultSet.getString("email"));
                 athlete.setGoal(resultSet.getDouble("start_goal"));
+                athlete.setSickWeeks(resultSet.getString("sick_week"));
                 user.add(athlete);
             }
         }
