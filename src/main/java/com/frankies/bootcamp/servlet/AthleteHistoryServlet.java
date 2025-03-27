@@ -97,7 +97,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
             out.println("<td>" + df.format(history.get(i).getWeekScore()) + "</td>");
             out.println("<td>");
             for (String key : history.get(i).getSports().keySet()) {
-                out.println(key + " " + df.format(history.get(i).getSports().get(key)) + "km");
+                out.println(key + "(x" + history.get(i).getSportsCount().get(key) + ") " + df.format(history.get(i).getSports().get(key)) + "km");
                 if (history.get(i).getSportsOriginalDistance().containsKey(key)) {
                     out.println(" (" + df.format(history.get(i).getSportsOriginalDistance().get(key)) + "km)</br>");
                 } else if (history.get(i).getSportsOriginalDuration().containsKey(key)) {

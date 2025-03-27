@@ -14,6 +14,7 @@ public class WeeklyPerformance {
     private final String week;
     private final Double weekGoal;
     private final Map<String, Double> sports;
+    private final Map<String, Integer> sportsCount;
     private final Map<String, Double> sportsOriginalDistance;
     private final Map<String, Double> sportsOriginalDuration;
     private Double totalDistance = 0.0;
@@ -26,11 +27,11 @@ public class WeeklyPerformance {
         sportsOriginalDistance = new HashMap<>();
         sportsOriginalDuration = new HashMap<>();
         sports = new HashMap<>();
+        sportsCount = new HashMap<>();
         String startDate = (new Timestamp((weekEnding)*1000 - (BootcampConstants.WEEK_IN_SECONDS*1000) + 1)).toLocalDateTime().toLocalDate().toString();
         String endDate = (new Timestamp((weekEnding-1)*1000)).toLocalDateTime().toLocalDate().toString();
         this.week = week + " (" + startDate + " - " + endDate + ")";
         this.weekGoal = calculateWeekGoal(previousWeekGoal, previousWeekTotalDistance);
-        this.averageWeeklyScore = averageWeeklyScore;
     }
 
     public Double getTotalDistance() {
@@ -53,6 +54,10 @@ public class WeeklyPerformance {
         return sports;
     }
 
+    public Map<String, Integer> getSportsCount() {
+        return sportsCount;
+    }
+
     public Map<String, Double> getSportsOriginalDistance() {
         return sportsOriginalDistance;
     }
@@ -70,6 +75,7 @@ public class WeeklyPerformance {
 
         if(sports.containsKey(sport.getSportType())) {
             sports.put(sport.getSportType(), sports.get(sport.getSportType()) + sport.getCalculatedDistance());
+            sportsCount.put(sport.getSportType(), sportsCount.get(sport.getSportType()) + 1);
             if(sport instanceof DurationSport){
                 sportsOriginalDuration.put(sport.getSportType(),
                         sportsOriginalDuration.get(sport.getSportType()) + ((DurationSport) sport).getOriginalDuration());
@@ -79,6 +85,7 @@ public class WeeklyPerformance {
             }
         }else{
             sports.put(sport.getSportType(), sport.getCalculatedDistance());
+            sportsCount.put(sport.getSportType(), 1);
             if(sport instanceof DurationSport) {
                 sportsOriginalDuration.put(sport.getSportType(),((DurationSport) sport).getOriginalDuration());
             }else if(sport instanceof DistanceSport){
@@ -120,7 +127,7 @@ public class WeeklyPerformance {
         sb.append("Points scored this week: ").append(getWeekScore()).append("\n");
         if(!sports.isEmpty()) {
             for (String key : sports.keySet()) {
-                sb.append("\t").append(key).append(" : ").append(df.format(sports.get(key))).append("km\n");
+                sb.append("\t").append(key).append("(x").append(sportsCount.get(key)).append(") ").append(" : ").append(df.format(sports.get(key))).append("km\n");
             }
         }
         return sb.append("\n").toString();
