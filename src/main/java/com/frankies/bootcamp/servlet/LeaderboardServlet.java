@@ -35,7 +35,6 @@ public class LeaderboardServlet extends BootcampServlet {
             if (loggedInAthlete == null) {
                 log.info( "Athlete not authorised: " + authenticatedUserMail);
                 out.println("<html><body>");
-                out.println(home);
                 out.println("<h1>" + HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised" + "</h1>");
                 out.println("</body></html>");
                 return;
@@ -61,8 +60,6 @@ public class LeaderboardServlet extends BootcampServlet {
                 "  background-color: #dddddd;" +
                 "}" +
                 "</style>");
-        out.println(home);
-        out.println("<h2>Leaderboard</h2>");
         out.println("<h2>Total Challenge Score</h2>");
         out.println("<table>");
         out.println("<tr>");

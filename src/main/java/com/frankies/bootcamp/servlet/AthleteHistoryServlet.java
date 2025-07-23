@@ -40,7 +40,6 @@ public class AthleteHistoryServlet extends BootcampServlet {
             if (loggedInAthlete == null) {
                 log.info("Athlete not authorised: " + authenticatedUserMail);
                 out.println("<html><body>");
-                out.println(home);
                 out.println("<h1>" + HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised" + "</h1>");
                 out.println("</body></html>");
                 return;
@@ -68,8 +67,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
                 "  background-color: #dddddd;" +
                 "}" +
                 "</style>");
-        out.println(home);
-        out.println("<h2>Weekly History</h2>");
+        out.println("<br/>");
         out.println("<table>");
         out.println("<tr>");
         out.println("<th>Week</th>");
@@ -79,7 +77,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("<th>Points scored</th>");
         out.println("<th>Activities</th>");
         out.println("</tr>");
-        for (int i = 1; i <= numberOfWeeksSinceStart; i++) {
+        for (int i = numberOfWeeksSinceStart; i >= 1; i--) {
             out.println("<tr>");
             String weekText = history.get(i).getWeek();
             if(history.get(i).isSick()){

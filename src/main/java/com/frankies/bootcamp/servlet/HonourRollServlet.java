@@ -39,7 +39,6 @@ public class HonourRollServlet extends BootcampServlet {
             if (loggedInAthlete == null) {
                 log.info( "Athlete not authorised: " + authenticatedUserMail);
                 out.println("<html><body>");
-                out.println(home);
                 out.println("<h1>" + HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised" + "</h1>");
                 out.println("</body></html>");
                 return;
@@ -67,8 +66,7 @@ public class HonourRollServlet extends BootcampServlet {
                 "  background-color: #dddddd;" +
                 "}" +
                 "</style>");
-        out.println(home);
-        out.println("<h2>Honour Roll</h2>");
+        out.println("<br/>");
         out.println("<table>");
         out.println("<tr>");
         out.println("<th>Week</th>");

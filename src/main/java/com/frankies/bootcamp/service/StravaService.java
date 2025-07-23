@@ -92,10 +92,13 @@ public class StravaService {
             try (Response response = client.newCall(request).execute()) {
                 Type listOfMyClassObject = new TypeToken<ArrayList<StravaActivityResponse>>() {
                 }.getType();
-
-                outputList = new Gson().fromJson(response.body().string(), listOfMyClassObject);
+                if(response.isSuccessful()){
+                    outputList = new Gson().fromJson(response.body().string(), listOfMyClassObject);
+                }else{
+                    log.error("StravaService, Something went wrong retrieving strava data. \nBody:" + response.body().string() + "\nResponse: " + response);
+                }
             }catch (Exception e) {
-                log.error("StravaService, Something went wrong getting strava data", e);
+                log.error("StravaService, Something went badly wrong processing strava data", e);
             }
             if (!outputList.isEmpty()) {
                 stravaActivityResponses.addAll(outputList);

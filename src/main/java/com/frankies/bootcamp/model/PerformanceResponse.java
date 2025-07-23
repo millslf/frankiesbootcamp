@@ -48,7 +48,7 @@ public class PerformanceResponse {
     @Override
     public String toString() {
         DecimalFormat df = new DecimalFormat("#.##");
-        return "Liewe " + athlete.getFirstname() + ",\n\n" +
+        return "\n\nLiewe " + athlete.getFirstname() + ",\n\n" +
                 "Distance this challenge: " + df.format(this.distanceToDate) + "km\n" +
                 "Total points: " + df.format(this.scoreToDate) + "\n" +
                 "Original weekly commitment: " + df.format(athlete.getGoal()) + "km\n\n" +

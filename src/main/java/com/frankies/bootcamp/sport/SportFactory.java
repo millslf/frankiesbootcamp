@@ -11,6 +11,8 @@ public abstract class SportFactory {
         else if(activity.getType().equalsIgnoreCase("hike")) return new Hike(activity);
         else if(activity.getType().equalsIgnoreCase("Golf")) return new Golf(activity);
         else if(activity.getType().equalsIgnoreCase("Surfing")) return new Surf(activity);
+        else if(activity.getType().equalsIgnoreCase("WaterSport") && activity.getSport_type().equalsIgnoreCase("Surfing")) return new Surf(activity);
+        else if(activity.getType().equalsIgnoreCase("StandUpPaddling")) return new StandUpPaddling(activity);
         else if(activity.getType().equalsIgnoreCase("WeightTraining")) return new WeightTraining(activity);
         else if(activity.getType().equalsIgnoreCase("Workout")) return new Workout(activity);
         else if(activity.getType().equalsIgnoreCase("Rowing") && activity.getSport_type().equalsIgnoreCase("VirtualRow")) return new VirtualRow(activity);
@@ -19,6 +21,7 @@ public abstract class SportFactory {
         else if(activity.getType().equalsIgnoreCase("ride") && activity.getSport_type().equalsIgnoreCase("MountainBikeRide")) return new MTB(activity);
         else if(activity.getType().equalsIgnoreCase("ride") && activity.getSport_type().equalsIgnoreCase("GravelRide")) return new GravelRide(activity);
         else if(activity.getType().equalsIgnoreCase("ride") && activity.getSport_type().equalsIgnoreCase("Ride")) return new RoadBike(activity);
+        else if(activity.getType().equalsIgnoreCase("VirtualRide")) return new VirtualRide(activity);
         else if(activity.getType().equalsIgnoreCase("EBikeRide") && activity.getSport_type().equalsIgnoreCase("EMountainBikeRide")) return new EMountainBikeRide(activity);
         else if(activity.getType().equalsIgnoreCase("EBikeRide") && activity.getSport_type().equalsIgnoreCase("EBikeRide")) return new EBikeRideRoad(activity);
         return null;

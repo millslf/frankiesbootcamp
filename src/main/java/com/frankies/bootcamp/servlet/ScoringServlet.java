@@ -18,7 +18,6 @@ public class ScoringServlet extends BootcampServlet {
         PrintWriter out = response.getWriter();
         // Hello
         out.println("<html><body>");
-        out.println(home);
         out.println(WildflyUtils.escape(BootcampConstants.SCORING));
         out.println("</body></html>");
     }

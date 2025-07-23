@@ -22,6 +22,8 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,7 +44,7 @@ public class ActivityProcessService extends TimerTask {
     public void init(@Observes @Initialized(ApplicationScoped.class) Object init) {
         Timer timer = new Timer();
         TimerTask task = new ActivityProcessService();
-        timer.schedule(task, 0, BootcampConstants.HOUR_IN_MILLIS);
+        timer.schedule(task, 0, BootcampConstants.LITTLE_MORE_THAN_AN_HOUR_IN_MILLIS);
     }
 
     public void prepareSummary() throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
@@ -60,6 +62,7 @@ public class ActivityProcessService extends TimerTask {
             }
             PerformanceResponse performance = new PerformanceResponse();
             performance.setAthlete(athlete);
+            log.info("Busy with athlete:" + athlete.getFirstname() + " Token Expiry at:" + LocalDateTime.ofInstant(Instant.ofEpochMilli(athlete.getExpiresAt()*1000), ZoneId.systemDefault()));
             stravaActivities = strava.getAthleteActivitiesForPeriod(getStartTimeStamp(), athlete.getAccessToken());
             double distance = 0;
             double score = 0;
@@ -91,6 +94,9 @@ public class ActivityProcessService extends TimerTask {
             }
             //Keep adding weeks in case an athlete did nothing for a week or more after last activity.
             int loopCount = 0;
+            if(performance.getWeeklyPerformances() == null){
+                performance.addWeeklyPerformance(weeklyPerformance, week);
+            }
             while (performance.getWeeklyPerformances().size() < getNumberOfWeeksSinceStart()) {
                 updateHonourRolls(week, weeklyPerformance, athlete);
                 weeklyPerformance.setAverageWeeklyScore(score, week-1);
@@ -145,7 +151,7 @@ public class ActivityProcessService extends TimerTask {
                     emailReport(performance, mailBody);
                     log.info("Sent to: " + performance.getAthlete().getFirstname());
                 } else {
-                    log.info("Skipping email for " + performance.getAthlete().getFirstname() + " because email is null or not reporting to all athletes.");
+//                    log.info("Skipping email for " + performance.getAthlete().getFirstname() + " because email is null or not reporting to all athletes.");
                 }
                 if (loggedInAthlete.equals(performance.getAthlete().getEmail())) {
                     loggedInAthleteSummary = mailBody;

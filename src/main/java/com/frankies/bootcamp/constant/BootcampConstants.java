@@ -3,14 +3,14 @@ package com.frankies.bootcamp.constant;
 public class BootcampConstants {
     public static final long WEEK_IN_SECONDS = 604800;
     public static final long START_TIMESTAMP = 1735477200;
-    public static final long HOUR_IN_MILLIS = 60 * 60 * 1000;
+    public static final long LITTLE_MORE_THAN_AN_HOUR_IN_MILLIS = 61 * 60 * 1000;
 
     public static final String currentWeekTotalDistanceSummary = "currentWeekTotalDistanceSummary";
     public static final String currentWeekPercentageOfGoalSummary = "currentWeekPercentageOfGoalSummary";
     public static final String currentYearlyScoreSummary = "currentYearlyScoreSummary";
 
 
-    public static final String SCORING = "Aim:\n" +
+    public static final String SCORING = "\n\nAim:\n" +
             "The aim of the game is to motivate, not everyone likes to do the same sports, but everyone likes some friendly competition, so lets level the field so that everyone can enjoy the activities they prefer. \n" +
             "The most important goal needs to be to meet your personal goal, everyone sets their own weekly distance goal, using the scaled distances below, this distance needs to be achievable in order to stay motivated, and will start moving:\n" +
             "If you miss your goal by more than half, your commited goal will decrease by 10% to make it easier the following week, if however you smash it, and exceed your goal by 50%, it was obviously too easy, and will get increased by 10% the following week. Double your goal for an extra 1/4 point, but the goal will increase by 20%\n" +

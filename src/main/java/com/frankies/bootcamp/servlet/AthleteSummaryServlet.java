@@ -38,7 +38,6 @@ public class AthleteSummaryServlet extends BootcampServlet {
             if (loggedInAthlete == null) {
                 log.info( "Athlete not authorised: " + authenticatedUserMail);
                 out.println("<html><body>");
-                out.println(home);
                 out.println("<h1>" + HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised" + "</h1>");
                 out.println("</body></html>");
                 return;
@@ -49,7 +48,6 @@ public class AthleteSummaryServlet extends BootcampServlet {
             log.error("AthletesResource, allAthleteSummary", e);
         }
         out.println("<html><body>");
-        out.println(home);
         out.println(WildflyUtils.escape(summaryContent));
         out.println("</body></html>");
     }

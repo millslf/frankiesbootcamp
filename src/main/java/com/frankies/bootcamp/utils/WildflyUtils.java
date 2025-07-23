@@ -43,10 +43,9 @@ public class WildflyUtils {
 
         credentialStore.initialize(configuration, protectionParameter);
 
-        for (String alias : credentialStore.getAliases()) {
-            System.out.print(" - ");
-            System.out.println(alias);
-        }
+//        for (String alias : credentialStore.getAliases()) {
+//            System.out.println(" - "  + alias);
+//        }
         return credentialStore;
     }
 

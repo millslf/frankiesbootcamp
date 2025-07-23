@@ -19,7 +19,6 @@ public class PrivacyServlet extends BootcampServlet {
         PrintWriter out = response.getWriter();
         // Hello
         out.println("<html><body>");
-        out.println(home);
         out.println(WildflyUtils.escape(BootcampConstants.DISCLAIMER));
         out.println("</body></html>");
     }
