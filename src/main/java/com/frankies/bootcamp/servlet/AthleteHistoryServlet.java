@@ -4,6 +4,7 @@ import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.WeeklyPerformance;
 import com.frankies.bootcamp.service.ActivityProcessService;
 import com.frankies.bootcamp.service.DBService;
+import com.frankies.bootcamp.utils.DateTimeUtils;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -74,6 +75,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("<th>Distance</th>");
         out.println("<th>Commitment</th>");
         out.println("<th>Percentage of commitment</th>");
+        out.println("<th>Distance left</th>");
         out.println("<th>Points scored</th>");
         out.println("<th>Activities</th>");
         out.println("</tr>");
@@ -92,6 +94,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
             out.println("<td>" + df.format(history.get(i).getTotalDistance()) + "km</td>");
             out.println("<td>" + df.format(history.get(i).getWeekGoal()) + "km</td>");
             out.println("<td>" + df.format(history.get(i).getTotalPercentOfGoal() * 100) + "%</td>");
+            out.println("<td>" + df.format(history.get(i).getWeekGoal()-history.get(i).getTotalDistance()>0?history.get(i).getWeekGoal()-history.get(i).getTotalDistance():0) + "km</td>");
             out.println("<td>" + df.format(history.get(i).getWeekScore()) + "</td>");
             out.println("<td>");
             for (String key : history.get(i).getSports().keySet()) {
@@ -99,7 +102,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
                 if (history.get(i).getSportsOriginalDistance().containsKey(key)) {
                     out.println(" (" + df.format(history.get(i).getSportsOriginalDistance().get(key)) + "km)</br>");
                 } else if (history.get(i).getSportsOriginalDuration().containsKey(key)) {
-                    out.println(" (" + df.format(history.get(i).getSportsOriginalDuration().get(key)) + "hrs)</br>");
+                    out.println(" (" + DateTimeUtils.convertMinutesToTimeFormat(history.get(i).getSportsOriginalDuration().get(key)*60) + ")</br>");
                 }
             }
             out.println("</td>");

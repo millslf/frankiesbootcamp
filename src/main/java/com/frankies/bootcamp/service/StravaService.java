@@ -18,6 +18,9 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,8 +97,9 @@ public class StravaService {
                 }.getType();
                 if(response.isSuccessful()){
                     outputList = new Gson().fromJson(response.body().string(), listOfMyClassObject);
+                    log.info("Page number: {}", page);
                 }else{
-                    log.error("StravaService, Something went wrong retrieving strava data. \nBody:" + response.body().string() + "\nResponse: " + response);
+                    log.error("StravaService, Something went wrong retrieving strava data. \nBody:{}\nResponse: {}", response.body().string(), response);
                 }
             }catch (Exception e) {
                 log.error("StravaService, Something went badly wrong processing strava data", e);

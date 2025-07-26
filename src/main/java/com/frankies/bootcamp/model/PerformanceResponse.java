@@ -6,6 +6,7 @@ import java.util.Map;
 
 public class PerformanceResponse {
     private BootcampAthlete athlete;
+    private Map<String, Double> sports = new HashMap<>();
     private Map<Integer, WeeklyPerformance> weeklyPerformances;
     private Double distanceToDate = 0.0;
     private Double scoreToDate = 0.0;
@@ -18,6 +19,14 @@ public class PerformanceResponse {
         this.athlete = athlete;
     }
 
+    public void addSport(String sport, Double distance) {
+        if(sports.containsKey(sport)) {
+            sports.put(sport, sports.get(sport) + distance);
+        }else{
+            this.sports.put(sport, distance);
+        }
+    }
+    
     public Map<Integer, WeeklyPerformance> getWeeklyPerformances() {
         return weeklyPerformances;
     }
@@ -48,9 +57,14 @@ public class PerformanceResponse {
     @Override
     public String toString() {
         DecimalFormat df = new DecimalFormat("#.##");
+        StringBuilder sportsString = new StringBuilder();
+        for (String key : sports.keySet()) {
+            sportsString.append("\t").append(key).append(" ").append(df.format(sports.get(key))).append("km\n");
+        }
         return "\n\nLiewe " + athlete.getFirstname() + ",\n\n" +
                 "Distance this challenge: " + df.format(this.distanceToDate) + "km\n" +
                 "Total points: " + df.format(this.scoreToDate) + "\n" +
+                "Sports: \n" + sportsString +
                 "Original weekly commitment: " + df.format(athlete.getGoal()) + "km\n\n" +
                 this.getWeeklyPerformances().get(weeklyPerformances.size()).toString();
     }

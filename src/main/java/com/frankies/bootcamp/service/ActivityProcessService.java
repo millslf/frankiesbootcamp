@@ -88,6 +88,7 @@ public class ActivityProcessService extends TimerTask {
                 }
                 BaseSport sport = SportFactory.getSport(activity);
                 if (sport != null) {
+                    performance.addSport(sport.getSportType(), sport.getCalculatedDistance());
                     weeklyPerformance.addSports(sport);
                     distance += sport.getCalculatedDistance();
                 }
