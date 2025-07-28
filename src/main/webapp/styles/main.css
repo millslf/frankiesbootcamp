@@ -1,0 +1,109 @@
+/* styles/main.css */
+
+
+body {
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	background-color: #f9f9f9;
+	margin: 0;
+}
+
+.main-header {
+	position: sticky;
+	top: 0;
+	background-color: #ffffff;
+	z-index: 1000;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+	padding: 15px 30px;
+}
+
+.main-header h1 {
+	display: inline-block;
+	margin: 0;
+	font-size: 24px;
+	color: #0d6efd;
+}
+
+.btn-group {
+	float: right;
+}
+
+.tab-button {
+	border: none;
+	background: none;
+	font-size: 18px;
+	margin-right: 15px;
+	padding: 8px 16px;
+	cursor: pointer;
+	color: #495057;
+	border-bottom: 3px solid transparent;
+}
+
+.tab-button.active {
+	color: #0d6efd;
+	border-bottom: 3px solid #0d6efd;
+	font-weight: bold;
+}
+
+.tab-content {
+	display: none;
+	padding: 30px;
+}
+
+.active-tab {
+	display: block;
+}
+
+.container {
+	max-width: 900px;
+	background-color: #ffffff;
+	padding: 30px;
+	border-radius: 15px;
+	box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+	font-size: 1.8rem;
+	margin-bottom: 25px;
+	color: #343a40;
+}
+
+p,
+li {
+	line-height: 1.7;
+}
+
+.section-title {
+	font-weight: bold;
+	margin-top: 25px;
+	color: #0d6efd;
+}
+
+
+h2 {
+	font-size: 1.4rem;
+	margin-top: 30px;
+	color: #0d6efd;
+}
+
+p,
+li {
+	line-height: 1.7;
+}
+
+@media (max-width: 576px) {
+	.header {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.tab-button {
+		margin-bottom: 10px;
+	}
+
+	.btn-group {
+		width: 100%;
+		display: flex;
+		gap: 10px;
+		flex-direction: column;
+	}
+}

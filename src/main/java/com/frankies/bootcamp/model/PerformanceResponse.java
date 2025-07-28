@@ -61,7 +61,7 @@ public class PerformanceResponse {
         for (String key : sports.keySet()) {
             sportsString.append("\t").append(key).append(" ").append(df.format(sports.get(key))).append("km\n");
         }
-        return "\n\nLiewe " + athlete.getFirstname() + ",\n\n" +
+        return "Liewe " + athlete.getFirstname() + ",\n\n" +
                 "Distance this challenge: " + df.format(this.distanceToDate) + "km\n" +
                 "Total points: " + df.format(this.scoreToDate) + "\n" +
                 "Sports: \n" + sportsString +

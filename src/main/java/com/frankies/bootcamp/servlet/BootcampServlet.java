@@ -21,12 +21,12 @@ public class BootcampServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        PrintWriter out = response.getWriter();
         response.setContentType("text/html");
         String authenticatedUserMail = request.getHeader("Ngrok-Auth-User-Email");
         try {
             BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
             if (loggedInAthlete == null) {
+                PrintWriter out = response.getWriter();
                 log.info( "Athlete not authorised: " + authenticatedUserMail);
                 out.println("<html><body>");
                 out.println(home);

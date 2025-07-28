@@ -30,12 +30,13 @@ public class LeaderboardServlet extends BootcampServlet {
         response.setContentType("text/html");
         String authenticatedUserMail = request.getHeader("Ngrok-Auth-User-Email");
         PrintWriter out = response.getWriter();
+
         try {
             BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
             if (loggedInAthlete == null) {
-                log.info( "Athlete not authorised: " + authenticatedUserMail);
+                log.info("Athlete not authorised: " + authenticatedUserMail);
                 out.println("<html><body>");
-                out.println("<h1>" + HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised" + "</h1>");
+                out.println("<h1>" + HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised</h1>");
                 out.println("</body></html>");
                 return;
             }
@@ -43,9 +44,11 @@ public class LeaderboardServlet extends BootcampServlet {
         } catch (SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
         }
+
         Map<String, HashMap<String, Double>> sortedSummaries = activityProcessService.getSortedSummaries();
 
-        out.println("<html><body>");
+        out.println("<html><head>");
+        out.println("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
         out.println("<style>" +
                 "table {" +
                 "  font-family: arial, sans-serif;" +
@@ -56,38 +59,59 @@ public class LeaderboardServlet extends BootcampServlet {
                 "  border: 1px solid #696969;" +
                 "  text-align: left;" +
                 "  padding: 8px;" +
-                "}tr:nth-child(even) {" +
+                "}" +
+                "tr:nth-child(even) {" +
                 "  background-color: #dddddd;" +
                 "}" +
+                ".trophy { font-size: 1.2em; margin-left: 5px; }" +
+                ".gold { color: gold; }" +
+                ".silver { color: silver; }" +
+                ".bronze { color: #cd7f32; }" +
                 "</style>");
+        out.println("</head><body>");
+
+        // Total Challenge Score Table
         out.println("<h2>Total Challenge Score</h2>");
         out.println("<table>");
-        out.println("<tr>");
-        out.println("<th>Athlete</th>");
-        out.println("<th>Score</th>");
-        out.println("</tr>");
+        out.println("<tr><th>Athlete</th><th>Score</th></tr>");
+
+        int rank = 1;
         for (Map.Entry<String, Double> entry : sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary).entrySet()) {
-            out.println("<tr>");
-            out.println("<td>" + entry.getKey() + "</td>");
-            out.println("<td>" + df.format(entry.getValue()) + "</td>");
+            out.println("<tr><td>" + entry.getKey());
+            if (rank == 1) {
+                out.println(" <i class=\"bi bi-trophy trophy gold\" title=\"Gold Trophy\"></i>");
+            } else if (rank == 2) {
+                out.println(" <i class=\"bi bi-trophy trophy silver\" title=\"Silver Trophy\"></i>");
+            } else if (rank == 3) {
+                out.println(" <i class=\"bi bi-trophy trophy bronze\" title=\"Bronze Trophy\"></i>");
+            }
+            out.println("</td>");
+            out.println("<td>" + df.format(entry.getValue()) + "</td></tr>");
+            rank++;
         }
         out.println("</table>");
+
+        // This Week Percentage Of Goal Table
         out.println("<h2>This Week Percentage Of Goal</h2>");
         out.println("<table>");
-        out.println("<tr>");
-        out.println("<th>Athlete</th>");
-        out.println("<th>Progress</th>");
-        out.println("</tr>");
+        out.println("<tr><th>Athlete</th><th>Progress</th></tr>");
+
+        rank = 1;
         for (Map.Entry<String, Double> entry : sortedSummaries.get(BootcampConstants.currentWeekPercentageOfGoalSummary).entrySet()) {
-            out.println("<tr>");
-            out.println("<td>" + entry.getKey() + "</td>");
-            out.println("<td>" + df.format(entry.getValue()) + "%</td>");
+            out.println("<tr><td>" + entry.getKey());
+            if (rank == 1) {
+                out.println(" <i class=\"bi bi-trophy trophy gold\" title=\"Gold Trophy\"></i>");
+            } else if (rank == 2) {
+                out.println(" <i class=\"bi bi-trophy trophy silver\" title=\"Silver Trophy\"></i>");
+            } else if (rank == 3) {
+                out.println(" <i class=\"bi bi-trophy trophy bronze\" title=\"Bronze Trophy\"></i>");
+            }
+            out.println("</td>");
+            out.println("<td>" + df.format(entry.getValue()) + "%</td></tr>");
+            rank++;
         }
         out.println("</table>");
 
         out.println("</body></html>");
-    }
-
-    public void destroy() {
     }
 }

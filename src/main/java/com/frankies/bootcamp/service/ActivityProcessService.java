@@ -237,9 +237,7 @@ public class ActivityProcessService extends TimerTask {
                 "'PERCENTAGE OF GOAL' WEEKLY COMPETITION:"
                 + getSummary(currentWeekPercentageOfGoalSummary, "%") +
                 "'TOTAL DISTANCE' WEEKLY COMPETITION:"
-                + getSummary(currentWeekTotalDistanceSummary, "km") +
-                BootcampConstants.SCORING +
-                BootcampConstants.DISCLAIMER;
+                + getSummary(currentWeekTotalDistanceSummary, "km");
     }
 
     private String getSummary(HashMap<String, Double> currentWeekSummary, String suffix) {
