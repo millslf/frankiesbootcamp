@@ -49,31 +49,17 @@ public class LeaderboardServlet extends BootcampServlet {
 
         out.println("<html><head>");
         out.println("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("<style>" +
-                "table {" +
-                "  font-family: arial, sans-serif;" +
-                "  border-collapse: collapse;" +
-                "  width: 100%;" +
-                "}" +
-                "td, th {" +
-                "  border: 1px solid #696969;" +
-                "  text-align: left;" +
-                "  padding: 8px;" +
-                "}" +
-                "tr:nth-child(even) {" +
-                "  background-color: #dddddd;" +
-                "}" +
-                ".trophy { font-size: 1.2em; margin-left: 5px; }" +
-                ".gold { color: gold; }" +
-                ".silver { color: silver; }" +
-                ".bronze { color: #cd7f32; }" +
-                "</style>");
+        out.println("<link rel=\"stylesheet\" href=\"/css/main.css\">\n");
         out.println("</head><body>");
+        out.println("<div class='container'>");
 
-        // Total Challenge Score Table
-        out.println("<h2>Total Challenge Score</h2>");
+        out.println("<h2><i class='bi bi-trophy header-icon'></i>Total Challenge Score</h2>");
         out.println("<table>");
-        out.println("<tr><th>Athlete</th><th>Score</th></tr>");
+        out.println("<thead><tr>");
+        out.println("<th><i class='bi bi-person-fill header-icon' title='Athlete'></i>Athlete</th>");
+        out.println("<th><i class='bi bi-star-fill header-icon' title='Score'></i>Score</th>");
+        out.println("</tr></thead>");
+        out.println("<tbody>");
 
         int rank = 1;
         for (Map.Entry<String, Double> entry : sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary).entrySet()) {
@@ -89,12 +75,16 @@ public class LeaderboardServlet extends BootcampServlet {
             out.println("<td>" + df.format(entry.getValue()) + "</td></tr>");
             rank++;
         }
-        out.println("</table>");
+        out.println("</tbody></table>");
 
         // This Week Percentage Of Goal Table
-        out.println("<h2>This Week Percentage Of Goal</h2>");
+        out.println("<h2><i class='bi bi-speedometer2 header-icon'></i>This Week Percentage Of Goal</h2>");
         out.println("<table>");
-        out.println("<tr><th>Athlete</th><th>Progress</th></tr>");
+        out.println("<thead><tr>");
+        out.println("<th><i class='bi bi-person-fill header-icon' title='Athlete'></i>Athlete</th>");
+        out.println("<th><i class='bi bi-percent header-icon' title='Progress'></i>Progress</th>");
+        out.println("</tr></thead>");
+        out.println("<tbody>");
 
         rank = 1;
         for (Map.Entry<String, Double> entry : sortedSummaries.get(BootcampConstants.currentWeekPercentageOfGoalSummary).entrySet()) {
@@ -110,8 +100,8 @@ public class LeaderboardServlet extends BootcampServlet {
             out.println("<td>" + df.format(entry.getValue()) + "%</td></tr>");
             rank++;
         }
-        out.println("</table>");
-
+        out.println("</tbody></table>");
+        out.println("</div>");
         out.println("</body></html>");
     }
 }

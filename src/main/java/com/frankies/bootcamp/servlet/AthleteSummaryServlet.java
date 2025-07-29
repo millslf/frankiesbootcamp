@@ -54,15 +54,10 @@ public class AthleteSummaryServlet extends BootcampServlet {
         out.println("  <title>Athlete Summary</title>");
         out.println("  <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css\" rel=\"stylesheet\">");
         out.println("  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("  <style>");
-        out.println("    body { padding: 20px; font-family: Arial, sans-serif; background-color: #f5f8fa; }");
-        out.println("    .content-box { background: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }");
-        out.println("    .header-icon { margin-right: 10px; }");
-        out.println("    .trophy-icon { margin-right: 8px; color: #f0ad4e; }");
-        out.println("  </style>");
+        out.println("  <link rel=\"stylesheet\" href=\"/css/main.css\">\n");
         out.println("</head>");
         out.println("<body>");
-        out.println("  <h2><i class=\"bi bi-person-lines-fill text-primary header-icon\"></i> Athlete Summary</h2>");
+        out.println("  <div class='container'>");
         out.println("  <div class=\"content-box\">");
 
         // Optional: Add trophy icon before the summary content block
@@ -77,6 +72,7 @@ public class AthleteSummaryServlet extends BootcampServlet {
         out.println("    <hr/>");
         out.println("    <p class=\"text-muted\"><i class=\"bi bi-award-fill text-warning\"></i> Keep training hard and breaking limits!</p>");
 
+        out.println("  </div>");
         out.println("  </div>");
         out.println("</body>");
         out.println("</html>");

@@ -30,7 +30,8 @@ public class WeeklyPerformance {
         sportsCount = new HashMap<>();
         String startDate = (new Timestamp((weekEnding)*1000 - (BootcampConstants.WEEK_IN_SECONDS*1000) + 1)).toLocalDateTime().toLocalDate().toString();
         String endDate = (new Timestamp((weekEnding-1)*1000)).toLocalDateTime().toLocalDate().toString();
-        this.week = week + " (" + startDate + " - " + endDate + ")";
+//        this.week = week + " (" + startDate + " - " + endDate + ")";
+        this.week = week;
         this.weekGoal = calculateWeekGoal(previousWeekGoal, previousWeekTotalDistance);
     }
 

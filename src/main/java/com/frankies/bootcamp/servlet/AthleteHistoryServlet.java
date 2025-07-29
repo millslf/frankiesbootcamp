@@ -49,8 +49,17 @@ public class AthleteHistoryServlet extends BootcampServlet {
         }
         int numberOfWeeksSinceStart = activityProcessService.getNumberOfWeeksSinceStart();
 
-        out.println("<html><body>");
+        out.println("<html><head>");
         out.println("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
+        out.println("<link rel=\"stylesheet\" href=\"/css/main.css\">\n");
+        out.println("</head><body>");
+
+        out.println("<div class='container'>");
+
+        out.println("<h2 class='history-heading'>");
+        out.println("<i class='bi bi-clock-history'></i> My Weekly Competition History");
+        out.println("</h2>");
+        out.println("<p class='history-subheading'><i class='bi bi-graph-up-arrow'></i> Track how you performed each week across all activities, see your progress, week by week!</p>");
         out.println("<div class='table-responsive mt-4'>");
         out.println("<table class='table table-bordered table-striped align-middle'>");
         out.println("<thead class='table-dark'>");
@@ -59,9 +68,9 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("<th><i class='bi bi-rulers'></i> Distance</th>");
         out.println("<th><i class='bi bi-bullseye'></i> Commitment</th>");
         out.println("<th><i class='bi bi-graph-up'></i> Percentage of commitment</th>");
-        out.println("<th><i class='bi bi-bi-rulers'></i> Distance left</th>");
+        out.println("<th><i class='bi bi-signpost'></i> Distance left</th>");
         out.println("<th><i class='bi bi-star-fill'></i> Points scored</th>");
-        out.println("<th><i class='bi bi-activity'></i> Activities</th>");
+        out.println("<th class='col-activities'><i class='bi bi-activity'></i> Activities</th>");
         out.println("</tr>");
         out.println("</thead>");
         out.println("<tbody>");
@@ -95,6 +104,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
         }
         out.println("</tbody>");
         out.println("</table>");
+        out.println("</div>");
         out.println("</div>");
         out.println("</body></html>");
     }

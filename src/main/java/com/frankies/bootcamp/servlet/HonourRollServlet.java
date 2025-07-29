@@ -55,15 +55,17 @@ public class HonourRollServlet extends BootcampServlet {
         out.println("  <title>Frankies Bootcamp - Honour Roll</title>");
         out.println("  <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css\" rel=\"stylesheet\">");
         out.println("  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("  <style>");
-        out.println("    table { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }");
-        out.println("    td, th { border: 1px solid #696969; text-align: left; padding: 8px; }");
-        out.println("    tr:nth-child(even) { background-color: #dddddd; }");
-        out.println("  </style>");
+        out.println("  <link rel=\"stylesheet\" href=\"/css/main.css\">\n");
         out.println("</head>");
         out.println("<body class=\"p-3\">");
 
-        out.println("<h2><i class=\"bi bi-trophy-fill text-warning\"></i> Honour Roll</h2>");
+        out.println("<div class='container'>");
+        out.println("<h2 class='history-heading'>");
+        out.println("<i class='bi bi-award-fill'></i> Bootcamp Honour Roll: Finishers & Front-Runners");
+        out.println("</h2>");
+        out.println("<p class='history-subheading'>");
+        out.println("🎯 Recognising weekly legends who pushed furthest and hit their goals.");
+        out.println("</p>");
         out.println("<table class=\"table table-bordered table-striped\">");
         out.println("  <thead class=\"table-dark\">");
         out.println("    <tr>");
@@ -84,7 +86,7 @@ public class HonourRollServlet extends BootcampServlet {
         }
         out.println("  </tbody>");
         out.println("</table>");
-
+        out.println("  </div>");
         out.println("</body>");
         out.println("</html>");
     }

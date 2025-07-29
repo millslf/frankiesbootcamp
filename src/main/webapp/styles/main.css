@@ -1,70 +1,20 @@
-/* styles/main.css */
-
-
+/* === Base === */
 body {
 	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	background-color: #f9f9f9;
 	margin: 0;
 }
 
-.main-header {
-	position: sticky;
-	top: 0;
-	background-color: #ffffff;
-	z-index: 1000;
-	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-	padding: 15px 30px;
-}
-
-.main-header h1 {
-	display: inline-block;
-	margin: 0;
-	font-size: 24px;
-	color: #0d6efd;
-}
-
-.btn-group {
-	float: right;
-}
-
-.tab-button {
-	border: none;
-	background: none;
-	font-size: 18px;
-	margin-right: 15px;
-	padding: 8px 16px;
-	cursor: pointer;
-	color: #495057;
-	border-bottom: 3px solid transparent;
-}
-
-.tab-button.active {
-	color: #0d6efd;
-	border-bottom: 3px solid #0d6efd;
-	font-weight: bold;
-}
-
-.tab-content {
-	display: none;
-	padding: 30px;
-}
-
-.active-tab {
-	display: block;
-}
-
-.container {
-	max-width: 900px;
-	background-color: #ffffff;
-	padding: 30px;
-	border-radius: 15px;
-	box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
-}
-
 h1 {
 	font-size: 1.8rem;
 	margin-bottom: 25px;
 	color: #343a40;
+}
+
+h2 {
+	font-size: 1.4rem;
+	margin-top: 30px;
+	color: #0d6efd;
 }
 
 p,
@@ -78,19 +28,158 @@ li {
 	color: #0d6efd;
 }
 
+/* === Container === */
+.container {
+	max-width: 900px;
+	background-color: #ffffff;
+	padding: 30px;
+	border-radius: 15px;
+	box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+}
 
-h2 {
-	font-size: 1.4rem;
-	margin-top: 30px;
+.content-box {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* === Header and Navbar === */
+.main-header {
+	position: sticky;
+	top: 0;
+	background-color: #ffffff;
+	z-index: 1000;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+	padding: 15px 30px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: nowrap;
+}
+
+.main-header h1 {
+	margin: 0;
+	font-size: 24px;
 	color: #0d6efd;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
-p,
-li {
-	line-height: 1.7;
+header.navbar .navbar-toggler {
+	border: 2px solid white;
+	border-radius: 0.25rem;
 }
 
+header {
+	position: sticky;
+	top: 0;
+	z-index: 1030;
+	background-color: #0d6efd;
+}
+
+/* === Button Groups & Tabs === */
+.btn-group {
+	float: right;
+}
+
+.tab-button {
+	border: none;
+	background: none;
+	padding: 0.75rem 1rem;
+	font-weight: 600;
+	font-size: 1rem;
+	cursor: pointer;
+	white-space: nowrap;
+	color: #333;
+	transition: color 0.2s ease;
+}
+
+.tab-button.active,
+.tab-button:hover {
+	color: #0d6efd;
+	border-bottom: 3px solid #0d6efd;
+}
+
+.tab-content {
+	display: none;
+	padding: 0px;
+}
+
+.active-tab {
+	display: block;
+}
+
+/* === Table Styles === */
+table {
+	border-collapse: collapse;
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	font-size: 14px;
+	width: 100%;
+	border-radius: 0.3rem;
+	overflow: hidden;
+	box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+}
+
+thead tr {
+	background-color: #343a40;
+	color: #fff;
+	text-align: left;
+	font-weight: bold;
+}
+
+td,
+th {
+	padding: 8px;
+}
+
+tbody tr {
+	border-bottom: 1px solid #ddd;
+}
+
+tbody tr:nth-of-type(even) {
+	background-color: #f3f3f3;
+}
+
+tbody tr:last-of-type {
+	border-bottom: 2px solid #343a40;
+}
+
+.trophy {
+	font-size: 1.2em;
+	margin-left: 5px;
+}
+
+.trophy-icon {
+  margin-right: 8px;
+  color: #f0ad4e; /* Bootstrap warning/gold tone */
+}
+
+.gold {
+	color: gold;
+}
+
+.silver {
+	color: silver;
+}
+
+.bronze {
+	color: #cd7f32;
+}
+
+.header-icon {
+	margin-right: 6px;
+	vertical-align: middle;
+}
+
+/* === Mobile Responsive === */
 @media (max-width: 576px) {
+	.container {
+		max-width: 100%;
+		padding: 10px;
+}
+
 	.header {
 		flex-direction: column;
 		align-items: flex-start;
@@ -106,4 +195,68 @@ li {
 		gap: 10px;
 		flex-direction: column;
 	}
+}
+
+/* Remove default body margin */
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden; /* prevent horizontal scroll if any */
+}
+
+/* Make sure the main container is full width with no padding or margin */
+.container-fluid.p-0 {
+  width: 100% !important;  /* force full width */
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Optional: Remove margin/padding on any direct parents if needed */
+.main-content, .page-wrapper {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.table-responsive {  padding-left: 0;
+  padding-right: 0;
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+}
+
+table th i {
+  margin-right: 6px;
+  color: #0d6efd;
+}
+
+
+.history-heading {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #0d6efd;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.history-heading i {
+  font-size: 1.2rem;
+}
+
+.history-subheading {
+  font-size: .8rem;
+  color: #666;
+  margin-bottom: 25px;
+}
+
+.col-activities {
+  min-width: 350px;
+  width: 45%;
 }
