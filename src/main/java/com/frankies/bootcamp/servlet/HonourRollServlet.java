@@ -55,9 +55,9 @@ public class HonourRollServlet extends BootcampServlet {
         out.println("  <title>Frankies Bootcamp - Honour Roll</title>");
         out.println("  <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css\" rel=\"stylesheet\">");
         out.println("  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("  <link rel=\"stylesheet\" href=\"/css/main.css\">\n");
+        out.println("  <link href=\"styles/main.css\" rel=\"stylesheet\">");
         out.println("</head>");
-        out.println("<body class=\"p-3\">");
+        out.println("<body>");
 
         out.println("<div class='container'>");
         out.println("<h2 class='history-heading'>");
@@ -66,8 +66,9 @@ public class HonourRollServlet extends BootcampServlet {
         out.println("<p class='history-subheading'>");
         out.println("🎯 Recognising weekly legends who pushed furthest and hit their goals.");
         out.println("</p>");
-        out.println("<table class=\"table table-bordered table-striped\">");
-        out.println("  <thead class=\"table-dark\">");
+        out.println("<div class='table-responsive mt-4'>");
+        out.println("<table class='table table-bordered table-striped align-middle'>");
+        out.println("<thead class='table-dark'>");
         out.println("    <tr>");
         out.println("      <th><i class='bi bi-calendar'></i> Week</th>");
         out.println("      <th><i class='bi bi-rulers'></i> Total Distance</th>");
@@ -86,6 +87,7 @@ public class HonourRollServlet extends BootcampServlet {
         }
         out.println("  </tbody>");
         out.println("</table>");
+        out.println("</div>");
         out.println("  </div>");
         out.println("</body>");
         out.println("</html>");

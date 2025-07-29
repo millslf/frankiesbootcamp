@@ -37,7 +37,7 @@
             </button>
             <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu" aria-labelledby="offcanvasMenuLabel">
                <div class="offcanvas-header">
-                  <h5 class="offcanvas-title" id="offcanvasMenuLabel">Navigation</h5>
+                  <h5 class="offcanvas-title" id="offcanvasMenuLabel">Navigation & Tools</h5>
                   <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                </div>
                <div class="offcanvas-body">
@@ -80,6 +80,7 @@
             <button class="tab-button" onclick="openTab(event, 'Tab4Content')"><i class="bi bi-list-ol header-icon"></i>Summary</button>
          </div>
       </div>
+	  <div class="main-content-wrapper">
       <div class="container-fluid">
          <div id="Tab1Content" class="tab-content active-tab">
             <jsp:include page="/AthleteHistory" />
@@ -103,6 +104,8 @@
             <jsp:include page="/privacy.jsp" />
          </div>
       </div>
+      </div>
+
       <script>
          document.getElementsByClassName("tab-button")[0].click(); // Default to first tab
       </script>

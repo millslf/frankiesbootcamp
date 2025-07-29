@@ -65,7 +65,7 @@ public class PerformanceResponse {
                 "Distance this challenge: " + df.format(this.distanceToDate) + "km\n" +
                 "Total points: " + df.format(this.scoreToDate) + "\n" +
                 "Sports: \n" + sportsString +
-                "Original weekly commitment: " + df.format(athlete.getGoal()) + "km\n\n" +
+                "Original weekly goal: " + df.format(athlete.getGoal()) + "km\n\n" +
                 this.getWeeklyPerformances().get(weeklyPerformances.size()).toString();
     }
 }

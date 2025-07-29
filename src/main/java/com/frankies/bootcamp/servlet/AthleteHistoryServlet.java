@@ -51,7 +51,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
 
         out.println("<html><head>");
         out.println("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("<link rel=\"stylesheet\" href=\"/css/main.css\">\n");
+        out.println("  <link href=\"styles/main.css\" rel=\"stylesheet\">");
         out.println("</head><body>");
 
         out.println("<div class='container'>");
@@ -65,9 +65,9 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("<thead class='table-dark'>");
         out.println("<tr>");
         out.println("<th><i class='bi bi-calendar'></i> Week</th>");
-        out.println("<th><i class='bi bi-rulers'></i> Distance</th>");
-        out.println("<th><i class='bi bi-bullseye'></i> Commitment</th>");
-        out.println("<th><i class='bi bi-graph-up'></i> Percentage of commitment</th>");
+        out.println("<th><i class='bi bi-rulers'></i> Distance completed</th>");
+        out.println("<th class='col-goal'><i class='bi bi-bullseye'></i> Goal</th>");
+        out.println("<th><i class='bi bi-graph-up'></i> Percentage of goal</th>");
         out.println("<th><i class='bi bi-signpost'></i> Distance left</th>");
         out.println("<th><i class='bi bi-star-fill'></i> Points scored</th>");
         out.println("<th class='col-activities'><i class='bi bi-activity'></i> Activities</th>");

@@ -123,8 +123,8 @@ public class WeeklyPerformance {
         StringBuilder sb = new StringBuilder();
         sb.append(week).append(":\n");
         sb.append("Distance this week: ").append(df.format(totalDistance)).append("km\n");
-        sb.append("Commitment this week: ").append(df.format(getWeekGoal())).append("km\n");
-        sb.append("Percentage of commitment: ").append(df.format(totalPercentOfGoal * 100)).append("%\n");
+        sb.append("Goal this week: ").append(df.format(getWeekGoal())).append("km\n");
+        sb.append("Percentage of goal completed this week: ").append(df.format(totalPercentOfGoal * 100)).append("%\n");
         sb.append("Points scored this week: ").append(getWeekScore()).append("\n");
         if(!sports.isEmpty()) {
             for (String key : sports.keySet()) {

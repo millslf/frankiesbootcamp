@@ -54,10 +54,9 @@ public class AthleteSummaryServlet extends BootcampServlet {
         out.println("  <title>Athlete Summary</title>");
         out.println("  <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css\" rel=\"stylesheet\">");
         out.println("  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("  <link rel=\"stylesheet\" href=\"/css/main.css\">\n");
+        out.println("  <link href=\"styles/main.css\" rel=\"stylesheet\">");
         out.println("</head>");
         out.println("<body>");
-        out.println("  <div class='container'>");
         out.println("  <div class=\"content-box\">");
 
         // Optional: Add trophy icon before the summary content block
@@ -72,7 +71,6 @@ public class AthleteSummaryServlet extends BootcampServlet {
         out.println("    <hr/>");
         out.println("    <p class=\"text-muted\"><i class=\"bi bi-award-fill text-warning\"></i> Keep training hard and breaking limits!</p>");
 
-        out.println("  </div>");
         out.println("  </div>");
         out.println("</body>");
         out.println("</html>");
