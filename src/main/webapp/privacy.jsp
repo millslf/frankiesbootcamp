@@ -53,7 +53,7 @@
         <p>We do our best to keep your information safe, but since this is a friendly, informal program, please avoid sharing anything very personal or sensitive.</p>
 
         <p class="section-title">6. Questions or Concerns?</p>
-        <p>Reach out anytime to <em>[insert your name or contact method, e.g., email or group admin handle]</em> if you have questions about privacy or how your information is used.</p>
+        <p>Reach out anytime to frankiesbootcamp@gmail.com if you have questions about privacy or how your information is used.</p>
     </div>
 </body>
 </html>
