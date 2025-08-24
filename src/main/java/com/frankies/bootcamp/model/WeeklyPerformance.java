@@ -30,7 +30,8 @@ public class WeeklyPerformance {
         sportsCount = new HashMap<>();
         String startDate = (new Timestamp((weekEnding)*1000 - (BootcampConstants.WEEK_IN_SECONDS*1000) + 1)).toLocalDateTime().toLocalDate().toString();
         String endDate = (new Timestamp((weekEnding-1)*1000)).toLocalDateTime().toLocalDate().toString();
-        this.week = week + " (" + startDate + " - " + endDate + ")";
+//        this.week = week + " (" + startDate + " - " + endDate + ")";
+        this.week = week;
         this.weekGoal = calculateWeekGoal(previousWeekGoal, previousWeekTotalDistance);
     }
 
@@ -122,8 +123,8 @@ public class WeeklyPerformance {
         StringBuilder sb = new StringBuilder();
         sb.append(week).append(":\n");
         sb.append("Distance this week: ").append(df.format(totalDistance)).append("km\n");
-        sb.append("Commitment this week: ").append(df.format(getWeekGoal())).append("km\n");
-        sb.append("Percentage of commitment: ").append(df.format(totalPercentOfGoal * 100)).append("%\n");
+        sb.append("Goal this week: ").append(df.format(getWeekGoal())).append("km\n");
+        sb.append("Percentage of goal completed this week: ").append(df.format(totalPercentOfGoal * 100)).append("%\n");
         sb.append("Points scored this week: ").append(getWeekScore()).append("\n");
         if(!sports.isEmpty()) {
             for (String key : sports.keySet()) {

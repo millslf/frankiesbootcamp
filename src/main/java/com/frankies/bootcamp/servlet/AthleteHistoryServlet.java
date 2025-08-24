@@ -27,9 +27,6 @@ public class AthleteHistoryServlet extends BootcampServlet {
 
     private static final Logger log = Logger.getLogger(AthleteHistoryServlet.class);
 
-    public void init() {
-    }
-
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         DecimalFormat df = new DecimalFormat("#.##");
         Map<Integer, WeeklyPerformance> history = new HashMap<>();
@@ -52,38 +49,36 @@ public class AthleteHistoryServlet extends BootcampServlet {
         }
         int numberOfWeeksSinceStart = activityProcessService.getNumberOfWeeksSinceStart();
 
-        // Hello
-        out.println("<html><body>");
-        out.println("<style>" +
-                "table {" +
-                "  font-family: arial, sans-serif;" +
-                "  border-collapse: collapse;" +
-                "  width: 100%;" +
-                "}" +
-                "td, th {" +
-                "  border: 1px solid #696969;" +
-                "  text-align: left;" +
-                "  padding: 8px;" +
-                "}tr:nth-child(even) {" +
-                "  background-color: #dddddd;" +
-                "}" +
-                "</style>");
-        out.println("<br/>");
-        out.println("<table>");
+        out.println("<html><head>");
+        out.println("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
+        out.println("  <link href=\"styles/main.css\" rel=\"stylesheet\">");
+        out.println("</head><body>");
+
+        out.println("<div class='container'>");
+
+        out.println("<h2 class='history-heading'>");
+        out.println("<i class='bi bi-clock-history'></i> My Weekly Competition History");
+        out.println("</h2>");
+        out.println("<p class='history-subheading'><i class='bi bi-graph-up-arrow'></i> Track how you performed each week across all activities, see your progress, week by week!</p>");
+        out.println("<div class='table-responsive mt-4'>");
+        out.println("<table class='table table-bordered table-striped align-middle'>");
+        out.println("<thead class='table-dark'>");
         out.println("<tr>");
-        out.println("<th>Week</th>");
-        out.println("<th>Distance</th>");
-        out.println("<th>Commitment</th>");
-        out.println("<th>Percentage of commitment</th>");
-        out.println("<th>Distance left</th>");
-        out.println("<th>Points scored</th>");
-        out.println("<th>Activities</th>");
+        out.println("<th><i class='bi bi-calendar'></i> Week</th>");
+        out.println("<th><i class='bi bi-rulers'></i> Distance completed</th>");
+        out.println("<th class='col-goal'><i class='bi bi-bullseye'></i> Goal</th>");
+        out.println("<th><i class='bi bi-graph-up'></i> % of goal</th>");
+        out.println("<th><i class='bi bi-signpost'></i> Distance left</th>");
+        out.println("<th><i class='bi bi-star-fill'></i> Points scored</th>");
+        out.println("<th class='col-activities'><i class='bi bi-activity'></i> Activities</th>");
         out.println("</tr>");
+        out.println("</thead>");
+        out.println("<tbody>");
         for (int i = numberOfWeeksSinceStart; i >= 1; i--) {
             out.println("<tr>");
             String weekText = history.get(i).getWeek();
             if(history.get(i).isSick()){
-                weekText += "</br><i>(Sick Note)";
+                weekText += " <i class='bi bi-heart-pulse-fill' title='Sick Note'></i>";
             }
             if (i == numberOfWeeksSinceStart) {
                 out.println("<td>" + weekText +
@@ -91,7 +86,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
             } else {
                 out.println("<td>" + weekText + "</td>");
             }
-            out.println("<td>" + df.format(history.get(i).getTotalDistance()) + "km</td>");
+            out.println("<td>" + df.format(history.get(i).getTotalDistance()) + " km </td>");
             out.println("<td>" + df.format(history.get(i).getWeekGoal()) + "km</td>");
             out.println("<td>" + df.format(history.get(i).getTotalPercentOfGoal() * 100) + "%</td>");
             out.println("<td>" + df.format(history.get(i).getWeekGoal()-history.get(i).getTotalDistance()>0?history.get(i).getWeekGoal()-history.get(i).getTotalDistance():0) + "km</td>");
@@ -107,10 +102,10 @@ public class AthleteHistoryServlet extends BootcampServlet {
             }
             out.println("</td>");
         }
+        out.println("</tbody>");
         out.println("</table>");
+        out.println("</div>");
+        out.println("</div>");
         out.println("</body></html>");
-    }
-
-    public void destroy() {
     }
 }
