@@ -117,4 +117,46 @@ public class StravaService {
         return stravaActivityResponses;
     }
 
+    public StravaActivityResponse getActivityById(long activityId, String bearer, boolean includeAllEfforts) throws IOException {
+        OkHttpClient client = new OkHttpClient.Builder().build();
+
+        HttpUrl url = HttpUrl.parse("https://www.strava.com/api/v3/activities/" + activityId)
+                .newBuilder()
+                .addQueryParameter("include_all_efforts", String.valueOf(includeAllEfforts))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .addHeader("Authorization", "Bearer " + bearer)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            int code = response.code();
+            String body = response.body() != null ? response.body().string() : "";
+
+            if (response.isSuccessful()) {
+                // parse single activity
+                return new Gson().fromJson(body, StravaActivityResponse.class);
+            }
+
+            if (code == 404) {
+                // Activity might be deleted/hidden or wrong ID
+                log.warn("StravaService: activity " + activityId + " not found. Response: " + response);
+                return null;
+            }
+
+            // Helpful log for other failures (401 scopes, 403 visibility, 429 rate limit, etc.)
+            log.error("StravaService: failed to fetch activity " + activityId + ". Code: " + code + " Body: " + body);
+            throw new IOException("Strava activity fetch failed, HTTP " + code);
+        } catch (IOException ioe) {
+            log.error("StravaService: IO error fetching activity " + activityId, ioe);
+            throw ioe;
+        } catch (Exception e) {
+            log.error("StravaService: unexpected error fetching activity " + activityId, e);
+            throw new IOException(e);
+        }
+    }
+
+
 }

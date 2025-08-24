@@ -53,6 +53,22 @@ public class DBService {
         return user.getFirst();
     }
 
+    public BootcampAthlete findAthleteByStravaID(String stravaId) throws SQLException {
+        List<BootcampAthlete> user = new ArrayList<>();
+
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement("SELECT * FROM athletes where id = ?")
+        ) {
+            statement.setString(1, stravaId);
+            setAthlete(user, statement);
+        }
+        if(user.isEmpty()){
+            return null;
+        }
+        return user.getFirst();
+    }
+
     private void setAthlete(List<BootcampAthlete> user, PreparedStatement statement) throws SQLException {
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {

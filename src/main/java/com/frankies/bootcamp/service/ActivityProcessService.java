@@ -88,7 +88,7 @@ public class ActivityProcessService extends TimerTask {
                 }
                 BaseSport sport = SportFactory.getSport(activity);
                 if (sport != null) {
-                    performance.addSport(sport.getSportType(), sport.getCalculatedDistance());
+                    performance.addSport(activity.getId(), week, sport);
                     weeklyPerformance.addSports(sport);
                     distance += sport.getCalculatedDistance();
                 }
@@ -214,19 +214,6 @@ public class ActivityProcessService extends TimerTask {
         sortedSummaries.put(BootcampConstants.currentYearlyScoreSummary, sortByValue(currentYearlyScoreSummary));
     }
 
-//    private Double addWeek(int week, Double score, WeeklyPerformance weeklyPerformance, BootcampAthlete athlete, PerformanceResponse performance, long weekEnding, int loopCount) {
-//        updateHonourRolls(week, weeklyPerformance, athlete);
-//        score += weeklyPerformance.getWeekScore();
-//        weeklyPerformance.setAverageWeeklyScore(score/week);
-//        weeklyPerformance.setIsSick(athlete.isSick(week));
-//        performance.addWeeklyPerformance(weeklyPerformance, week);
-//        week++;
-//        weekEnding = weekEnding + BootcampConstants.WEEK_IN_SECONDS;
-//        weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, weeklyPerformance.getWeekGoal(), loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0);
-//        loopCount++;
-//
-//    }
-
     private String getMailBody(HashMap<String, Double> currentYearlyScoreSummary,
                                HashMap<String, Double> currentWeekPercentageOfGoalSummary,
                                HashMap<String, Double> currentWeekTotalDistanceSummary,
@@ -316,6 +303,93 @@ public class ActivityProcessService extends TimerTask {
             }
         }
     }
+
+    public boolean addActivityEvent(String athleteId, StravaActivityResponse activity) {
+        PerformanceResponse perf = findPerfByAthleteId(athleteId);
+        if (perf == null || activity == null || activity.getStart_date() == null) return false;
+
+        final long startTsSec = getStartTimeStamp();
+        final long weekSecs   = BootcampConstants.WEEK_IN_SECONDS;
+        final long actStart   = java.time.Instant.parse(activity.getStart_date()).getEpochSecond();
+        final int targetWeek  = (int) Math.max(1, ((actStart - startTsSec) / weekSecs) + 1);
+
+        ensureWeeksUpTo(perf, perf.getAthlete(), targetWeek, startTsSec, weekSecs);
+
+        BaseSport sport = SportFactory.getSport(activity);
+        if (sport == null) return false;
+
+        WeeklyPerformance weekPerf = perf.getWeeklyPerformances().get(targetWeek);
+
+        double beforeWeekScore = weekPerf.getWeekScore();
+        weekPerf.addSports(sport); // weekly totals & score updated
+
+        // overall per-sport totals + distance
+        perf.addSport(activity.getId(), targetWeek, sport);
+        perf.setDistanceToDate(perf.getDistanceToDate() + sport.getCalculatedDistance());
+
+        double afterWeekScore = weekPerf.getWeekScore();
+        perf.setScoreToDate(perf.getScoreToDate() + (afterWeekScore - beforeWeekScore));
+        generateAllSummaryMaps();
+        return true;
+    }
+
+    public boolean removeActivityEvent(String athleteId, Long activityId) {
+        PerformanceResponse perf = findPerfByAthleteId(athleteId);
+        PerformanceResponse.StravaActivityDetails stravaActivityDetails= perf.getStravaActivityDetailsByStravaID(activityId);
+        final int targetWeek  = stravaActivityDetails.getWeek();
+
+        WeeklyPerformance weekPerf = perf.getWeeklyPerformances().get(targetWeek);
+        if (weekPerf == null) return false;
+
+        BaseSport sport = stravaActivityDetails.getSport();
+        if (sport == null) return false;
+
+        double beforeWeekScore = weekPerf.getWeekScore();
+        weekPerf.removeSports(sport); // << needs method on WeeklyPerformance (shown below)
+
+        // overall per-sport totals + distance
+        perf.removeSport(stravaActivityDetails);
+        double newDistToDate = perf.getDistanceToDate() - sport.getCalculatedDistance();
+        perf.setDistanceToDate(newDistToDate < 0 ? 0.0 : newDistToDate);
+
+        double afterWeekScore = weekPerf.getWeekScore();
+        double newScore = perf.getScoreToDate() + (afterWeekScore - beforeWeekScore);
+        perf.setScoreToDate(newScore < 0 ? 0.0 : newScore);
+        generateAllSummaryMaps();
+        return true;
+    }
+
+    private PerformanceResponse findPerfByAthleteId(String athleteId) {
+        if (ActivityProcessService.performanceList == null) return null;
+        for (PerformanceResponse p : ActivityProcessService.performanceList) {
+            if (p.getAthlete() != null && p.getAthlete().getId() .equals(athleteId)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    private void ensureWeeksUpTo(PerformanceResponse perf,
+                                 BootcampAthlete athlete,
+                                 int upToWeek,
+                                 long startTsSec,
+                                 long weekSecs) {
+        if (perf.getWeeklyPerformances() == null || perf.getWeeklyPerformances().isEmpty()) {
+            long weekEnding = startTsSec + weekSecs;
+            WeeklyPerformance wp = new WeeklyPerformance("Week1", weekEnding, athlete.getGoal(), -1.0);
+            perf.addWeeklyPerformance(wp, 1);
+        }
+        int have = perf.getWeeklyPerformances().size();
+        for (int w = have + 1; w <= upToWeek; w++) {
+            long weekEnding = startTsSec + (w * weekSecs);
+            com.frankies.bootcamp.model.WeeklyPerformance prev = perf.getWeeklyPerformances().get(w - 2);
+            double goalForWeek  = prev.getWeekGoal();
+            double carryForward = (w == have + 1) ? prev.getTotalDistance() : 0.0;
+            WeeklyPerformance wp = new WeeklyPerformance("Week" + w, weekEnding, goalForWeek, carryForward);
+            perf.addWeeklyPerformance(wp, w);
+        }
+    }
+
 
     @Override
     public void run() {
