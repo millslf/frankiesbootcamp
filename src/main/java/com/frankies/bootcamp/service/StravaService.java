@@ -55,25 +55,28 @@ public class StravaService {
     }
 
     public BootcampAthlete refreshToken(BootcampAthlete athlete) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
-        OkHttpClient client = new OkHttpClient().newBuilder()
-                .build();
-        WildflyUtils wf = new WildflyUtils();
-        log.info("StravaService, Refreshing token for athlete: " + athlete.getFirstname() + " " + athlete.getLastname());
-        RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
-                .addFormDataPart("client_id", wf.giveMeAPass("stravaClientId"))
-                .addFormDataPart("client_secret",wf.giveMeAPass("stravaClientSecret"))
-                .addFormDataPart("refresh_token", athlete.getRefreshToken())
-                .addFormDataPart("grant_type", "refresh_token")
-                .build();
-        Request request = new Request.Builder()
-                .url("https://www.strava.com/api/v3/oauth/token")
-                .method("POST", body)
-                .build();
-        try (Response response = client.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                StravaRefreshResponse data = new Gson().fromJson(response.body().string(), StravaRefreshResponse.class);
-                db.saveAthlete(data.getBootcampAthlete(athlete));
-                athlete.setAccessToken(data.getAccess_token());
+        Instant expiry = Instant.ofEpochSecond(athlete.getExpiresAt());
+        if (Instant.now().isAfter(expiry.minusSeconds(60))) {
+            OkHttpClient client = new OkHttpClient().newBuilder()
+                    .build();
+            WildflyUtils wf = new WildflyUtils();
+            log.info("StravaService, Refreshing token for athlete: " + athlete.getFirstname() + " " + athlete.getLastname());
+            RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
+                    .addFormDataPart("client_id", wf.giveMeAPass("stravaClientId"))
+                    .addFormDataPart("client_secret", wf.giveMeAPass("stravaClientSecret"))
+                    .addFormDataPart("refresh_token", athlete.getRefreshToken())
+                    .addFormDataPart("grant_type", "refresh_token")
+                    .build();
+            Request request = new Request.Builder()
+                    .url("https://www.strava.com/api/v3/oauth/token")
+                    .method("POST", body)
+                    .build();
+            try (Response response = client.newCall(request).execute()) {
+                if (response.isSuccessful()) {
+                    StravaRefreshResponse data = new Gson().fromJson(response.body().string(), StravaRefreshResponse.class);
+                    db.saveAthlete(data.getBootcampAthlete(athlete));
+                    athlete.setAccessToken(data.getAccess_token());
+                }
             }
         }
         return athlete;

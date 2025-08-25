@@ -9,10 +9,7 @@ import com.frankies.bootcamp.sport.BaseSport;
 import com.frankies.bootcamp.sport.SportFactory;
 import com.frankies.bootcamp.utils.CreateEmail;
 import com.frankies.bootcamp.utils.SendMessage;
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.Initialized;
-import jakarta.enterprise.event.Observes;
 import jakarta.mail.MessagingException;
 import org.jboss.logging.Logger;
 import org.wildfly.security.credential.store.CredentialStoreException;
@@ -30,7 +27,7 @@ import java.util.stream.Collectors;
 import static com.frankies.bootcamp.constant.BootcampConstants.START_TIMESTAMP;
 
 @ApplicationScoped
-public class ActivityProcessService extends TimerTask {
+public class ActivityProcessService {
     private DBService db = new DBService();
     private StravaService strava = new StravaService();
     private static final Logger log = Logger.getLogger(ActivityProcessService.class);
@@ -40,26 +37,16 @@ public class ActivityProcessService extends TimerTask {
     private static HashMap<Integer, HashMap<String, Double>> honourRollPercentageOfGoal = new HashMap<>();
     private static Map<String, HashMap<String, Double>> sortedSummaries = new HashMap<>();
 
-    @PostConstruct
-    public void init(@Observes @Initialized(ApplicationScoped.class) Object init) {
-        Timer timer = new Timer();
-        TimerTask task = new ActivityProcessService();
-        timer.schedule(task, 0, BootcampConstants.LITTLE_MORE_THAN_AN_HOUR_IN_MILLIS);
-    }
-
     public void prepareSummary() throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         log.info("Prepare New Summary");
 
         List<PerformanceResponse> performanceList = new ArrayList<>();
         List<BootcampAthlete> athleteList;
         athleteList = db.findAllAthletes();
-
         List<String> sports = new ArrayList<>();
         List<StravaActivityResponse> stravaActivities;
         for (BootcampAthlete athlete : athleteList) {
-            if (athlete.getExpiresAt() * 1000 < System.currentTimeMillis()) {
-                athlete = strava.refreshToken(athlete);
-            }
+            athlete = strava.refreshToken(athlete);
             PerformanceResponse performance = new PerformanceResponse();
             performance.setAthlete(athlete);
             log.info("Busy with athlete:" + athlete.getFirstname() + " Token Expiry at:" + LocalDateTime.ofInstant(Instant.ofEpochMilli(athlete.getExpiresAt()*1000), ZoneId.systemDefault()));
@@ -390,8 +377,6 @@ public class ActivityProcessService extends TimerTask {
         }
     }
 
-
-    @Override
     public void run() {
         try {
             prepareSummary();

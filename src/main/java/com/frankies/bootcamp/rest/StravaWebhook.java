@@ -117,20 +117,19 @@ public class StravaWebhook {
 
     private void onActivityCreated(Long athleteId, Long activityId) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         BootcampAthlete athlete = db.findAthleteByStravaID(athleteId.toString());
-        if (athlete.getExpiresAt() * 1000 < System.currentTimeMillis()) {
-            athlete = stravaService.refreshToken(athlete);
-        }
-
+        athlete = stravaService.refreshToken(athlete);
         StravaActivityResponse stravaActivityResponse = stravaService.getActivityById(activityId, athlete.getAccessToken(), false);
         activityProcessService.addActivityEvent(athleteId.toString(), stravaActivityResponse);
         log.info("StravaWebhook, onActivityCreated" + athleteId + " " + activityId);
     }
 
     private void onActivityUpdated(Long athleteId, Long activityId, Map<String, String> updates) {
+        //Too much trouble to implement for now, at the moment everything is recalculated daily, so no need for this...
         log.info("StravaWebhook, onActivityUpdated " +  athleteId + " " + activityId + " " + updates);
     }
 
     private void onActivityHidden(Long athleteId, Long activityId, Map<String, String> updates) {
+        activityProcessService.removeActivityEvent(athleteId.toString(), activityId);
         log.info("StravaWebhook, onActivityHidden " +  athleteId + " " + activityId + " " + updates);
     }
 
