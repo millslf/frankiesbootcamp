@@ -1,11 +1,9 @@
 package com.frankies.bootcamp.model;
 
-import com.frankies.bootcamp.constant.BootcampConstants;
 import com.frankies.bootcamp.sport.BaseSport;
 import com.frankies.bootcamp.sport.DistanceSport;
 import com.frankies.bootcamp.sport.DurationSport;
 
-import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,9 +26,6 @@ public class WeeklyPerformance {
         sportsOriginalDuration = new HashMap<>();
         sports = new HashMap<>();
         sportsCount = new HashMap<>();
-        String startDate = (new Timestamp((weekEnding)*1000 - (BootcampConstants.WEEK_IN_SECONDS*1000) + 1)).toLocalDateTime().toLocalDate().toString();
-        String endDate = (new Timestamp((weekEnding-1)*1000)).toLocalDateTime().toLocalDate().toString();
-//        this.week = week + " (" + startDate + " - " + endDate + ")";
         this.week = week;
         this.weekGoal = calculateWeekGoal(previousWeekGoal, previousWeekTotalDistance);
     }
@@ -73,7 +68,6 @@ public class WeeklyPerformance {
 
     public void addSports(BaseSport sport) {
         totalDistance += sport.getCalculatedDistance();
-
         if(sports.containsKey(sport.getSportType())) {
             sports.put(sport.getSportType(), sports.get(sport.getSportType()) + sport.getCalculatedDistance());
             sportsCount.put(sport.getSportType(), sportsCount.get(sport.getSportType()) + 1);
@@ -172,4 +166,46 @@ public class WeeklyPerformance {
             totalPercentOfGoal = totalDistance / weekGoal;
         }
     }
+
+    public void removeSports(BaseSport sport) {
+        if (sport == null) return;
+        final String key = sport.getSportType();
+        if (!sports.containsKey(key)) return;
+
+        double calc = sport.getCalculatedDistance();
+        totalDistance = Math.max(0.0, totalDistance - calc);
+
+        double newDist = sports.get(key) - calc;
+        int newCount   = sportsCount.getOrDefault(key, 0) - 1;
+
+        if (newDist <= 0.0 || newCount <= 0) {
+            sports.remove(key);
+            sportsCount.remove(key);
+            if (sport instanceof DurationSport) {
+                double d = sportsOriginalDuration.getOrDefault(key, 0.0)
+                        - ((DurationSport) sport).getOriginalDuration();
+                if (d <= 0.0) sportsOriginalDuration.remove(key); else sportsOriginalDuration.put(key, d);
+            } else if (sport instanceof DistanceSport) {
+                double d = sportsOriginalDistance.getOrDefault(key, 0.0)
+                        - ((DistanceSport) sport).getOriginalDistance();
+                if (d <= 0.0) sportsOriginalDistance.remove(key); else sportsOriginalDistance.put(key, d);
+            }
+        } else {
+            sports.put(key, newDist);
+            sportsCount.put(key, newCount);
+            if (sport instanceof DurationSport) {
+                sportsOriginalDuration.put(key,
+                        Math.max(0.0, sportsOriginalDuration.getOrDefault(key, 0.0)
+                                - ((DurationSport) sport).getOriginalDuration()));
+            } else if (sport instanceof DistanceSport) {
+                sportsOriginalDistance.put(key,
+                        Math.max(0.0, sportsOriginalDistance.getOrDefault(key, 0.0)
+                                - ((DistanceSport) sport).getOriginalDistance()));
+            }
+        }
+
+        calculateWeekScore();
+        calculateTotalPercentOfGoal();
+    }
+
 }
