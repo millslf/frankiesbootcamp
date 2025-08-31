@@ -1,0 +1,59 @@
+<div class="page-wrap">
+    <div class="page-card">
+        <div class="page-body page-typography">
+            <h1 class="h4 mb-3">&#x1F3AF; Scoring System</h1>
+            <p>The aim of the game is to motivate. Not everyone enjoys the same sports, but most people enjoy a little
+                friendly
+                competition. We&rsquo;ve designed this to level the playing field so everyone can enjoy the activities
+                they
+                prefer.</p>
+
+            <p>Your most important goal is your <strong>weekly personal distance goal</strong>. It&rsquo;s based on
+                scaled
+                distances (see below) and adjusts weekly:</p>
+
+            <ul class="mb-4">
+                <li>&#x274C; Missed by more than half &rarr; Goal decreases by 10%</li>
+                <li>&#x2705; Exceeded by more than 50% &rarr; Goal increases by 10%</li>
+                <li>&#x1F3C6; Doubled your goal? &rarr; Earn a bonus and goal increases by 20%</li>
+            </ul>
+
+            <p>This system supports multiple forms of competition: total distances, personal targets, and
+                overachievement.</p>
+
+            <h2 class="h5 mt-4">Scoring</h2>
+            <ul>
+                <li>&#x1F3AF; Goal met: <strong>1 point</strong></li>
+                <li>&#x26A0;&#xFE0F; Missed by less than half: <strong>0.5 points</strong></li>
+                <li>&#x1F4AA; Exceeded by more than half: <strong>1.5 points</strong></li>
+                <li>&#x1F525; Goal doubled: <strong>1.75 points</strong></li>
+            </ul>
+
+            <h2 class="h5 mt-4">Relative Distance Conversion</h2>
+            <p>Different activities are scaled to normalize effort. Here&rsquo;s how each activity counts toward your
+                goal:</p>
+
+            <ul>
+                <li>&#x1F3C3; Run: 1 km per km</li>
+                <li>&#x1F3DE;&#xFE0F; Trail run: 1.2 km per km</li>
+                <li>&#x1F6B4; Gravel ride: 0.4 km per km</li>
+                <li>&#x1F6B5; Mountain bike ride: 0.5 km per km</li>
+                <li>&#x1F6B4; Road ride: 0.33 km per km</li>
+                <li>&#x1F6B5;&#x200D;&#x2640;&#xFE0F; E-MTB ride: 0.4 km per km</li>
+                <li>&#x1F6B2; E-Bike ride: 0.33 km per km</li>
+                <li>&#x1F3CC;&#xFE0F; Golf: 0.75 km per km</li>
+                <li>&#x1F6B6; Walk: 0.75 km per km</li>
+                <li>&#x1F97E; Hike: 0.85 km per km</li>
+                <li>&#x1F3CB;&#xFE0F; Weight training: 5 km per hour</li>
+                <li>&#x1F4AA; Workout: 5 km per hour</li>
+                <li>&#x1F3C4; Surfing: 7.5 km per hour</li>
+                <li>&#x26BD; Hockey/Soccer: 1.5 km per km</li>
+                <li>&#x1F6A3; Virtual Row: 1.0 km per km</li>
+                <li>&#x1F6F6; Kayaking: 2.5 km per km</li>
+                <li>&#x1F3CA; Swim: 5 km per km</li>
+                <li>&#x1F3C4; Stand up paddling: 7.5 km per hour</li>
+                <li>&#x1F5A5;&#xFE0F; Virtual Ride: 0.33 km per km</li>
+            </ul>
+        </div>
+    </div>
+</div>

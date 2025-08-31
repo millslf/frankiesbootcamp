@@ -1,0 +1,197 @@
+<%
+    String ctx = request.getContextPath();
+    boolean inApp = request.getRequestURI().startsWith(ctx + "/app");
+%>
+
+<header class="d-flex align-items-center justify-content-between text-white px-3 py-2 shadow-sm"
+        style="min-height:56px; position: sticky; top: 0; z-index: 1030; background-color: #0d6efd;">
+    <nav class="navbar navbar-light p-0 flex-shrink-0">
+        <div class="container-fluid p-0">
+
+            <button class="navbar-toggler border-white" type="button"
+                    data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu"
+                    aria-controls="offcanvasMenu" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu"
+                 aria-labelledby="offcanvasMenuLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="offcanvasMenuLabel">Navigation &amp; Tools</h5>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"
+                            aria-label="Close"></button>
+                </div>
+
+                <div class="offcanvas-body">
+                    <div id="signedInAs" class="text-muted small d-none mb-3">
+                        Signed in as <strong id="signedInName"></strong>
+                    </div>
+                    <div class="btn-group-vertical w-100">
+
+                        <a id="homeBtn" class="btn btn-outline-secondary mb-2 oc-dismiss-nav"
+                           href="<%=ctx%>/">
+                            <i class="bi bi-house-door me-1"></i> Home
+                        </a>
+
+                        <a id="loginBtn" class="btn btn-outline-secondary mb-2"
+                           href="/app/">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                        </a>
+
+                        <a id="logoutBtn" class="btn btn-outline-secondary mb-2 d-none"
+                           href="javascript:void(0)" onclick="forceLogout()">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </a>
+
+                        <a class="btn btn-outline-dark mb-2" href="<%=ctx%>/scoring.jsp"><i class="bi bi-star me-1"></i>
+                            Scoring</a>
+
+                        <a class="btn btn-outline-dark mb-2" href="<%=ctx%>/disclaimer.jsp"><i
+                                class="bi bi-exclamation-triangle me-1"></i> Disclaimer</a>
+
+                        <a class="btn btn-outline-dark mb-2" href="<%=ctx%>/privacy.jsp">
+                            <i class="bi bi-shield-lock me-1"></i> Privacy
+                        </a>
+
+                        <button class="btn btn-outline-primary" onclick="linkStravaPopup()">
+                            <i class="bi bi-link-45deg me-1"></i> Link Strava
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 🔧 make brand link visible on blue -->
+    <h1 class="brand mb-0">
+        <a href="<%=ctx%>/" class="brand-link text-white text-decoration-none d-flex align-items-center">
+            <span class="brand-emoji me-2" aria-hidden="true">&#x1F3CB;&#xFE0F;</span>
+            <span class="brand-text">Frankies Bootcamp!</span>
+        </a>
+    </h1>
+    <!-- Signed-in user chip -->
+    <span id="userChip" class="user-chip d-none ms-2">
+        <i class="bi bi-person-circle me-1" aria-hidden="true"></i>
+        <span id="userName"></span>
+    </span>
+</header>
+
+<!-- 🔧 tiny safety net if any theme overrides the color -->
+<style>
+    header .brand-link {
+        color: #fff !important;
+    }
+
+    header .brand-link:hover {
+        color: #fff !important;
+        text-decoration: none;
+    }
+</style>
+
+<script>
+    (function () {
+        const ctx = '<%=ctx%>';
+        const state = { authed: false, name: '', email: '' };
+
+        async function fetchAuth() {
+            try {
+                // cache buster + no-store to avoid any stale result
+                const r = await fetch(ctx + '/app/whoami.jsp?ts=' + Date.now(), {
+                    credentials: 'include',
+                    cache: 'no-store'
+                });
+
+                // if ngrok bounced us to its login, treat as logged-out
+                if (r.redirected && (r.url.includes('/_ngrok/login') || r.url.includes('/ngrok/login'))) {
+                    setLoggedOut();
+                } else if (r.ok && (r.headers.get('content-type') || '').includes('application/json')) {
+                    const d = await r.json();
+                    if (d && (d.auth === true || d.auth === "true")) {
+                        state.authed = true;
+                        state.name = d.name || '';
+                        state.email = d.email || '';
+                    } else {
+                        setLoggedOut();
+                    }
+                } else {
+                    setLoggedOut();
+                }
+            } catch (_) {
+                setLoggedOut();
+            }
+            render();
+        }
+
+        function setLoggedOut() { state.authed = false; state.name = ''; state.email = ''; }
+
+        function render() {
+            const group = document.querySelector('#offcanvasMenu .btn-group-vertical');
+            const homeBtn       = document.getElementById('homeBtn');
+            const loginBtn      = document.getElementById('loginBtn');
+            const logoutBtn     = document.getElementById('logoutBtn');
+            const signedInAs    = document.getElementById('signedInAs');
+            const signedInName  = document.getElementById('signedInName');
+
+            if (state.authed) {
+                if (signedInAs) {
+                    signedInAs.classList.remove('d-none');
+                    signedInName && (signedInName.textContent = state.name || state.email || 'You');
+                }
+                if (loginBtn) {
+                    loginBtn.innerHTML = '<i class="bi bi-speedometer2 me-1"></i> Go to dashboard';
+                    loginBtn.href = ctx + '/app/';
+                    if (group && group.firstElementChild !== loginBtn) {
+                        group.insertBefore(loginBtn, group.firstElementChild);
+                    }
+                }
+                logoutBtn && logoutBtn.classList.remove('d-none');
+            } else {
+                if (signedInAs) signedInAs.classList.add('d-none');
+                if (loginBtn) {
+                    loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
+                    loginBtn.href = '/app/'; // /app triggers OAuth
+                    if (group && homeBtn && homeBtn.nextElementSibling !== loginBtn) {
+                        group.insertBefore(loginBtn, homeBtn.nextElementSibling);
+                    }
+                }
+                logoutBtn && logoutBtn.classList.add('d-none');
+            }
+        }
+
+        // Run on page load…
+        document.addEventListener('DOMContentLoaded', fetchAuth);
+        // …and every time the drawer opens (fixes the “open-before-fetch” case)
+        const oc = document.getElementById('offcanvasMenu');
+        if (oc) oc.addEventListener('show.bs.offcanvas', fetchAuth);
+
+        // logout helper
+        window.forceLogout = function () {
+            const i = document.createElement('iframe');
+            i.style.display = 'none';
+            i.src = '/ngrok/logout?auth_id=bootcamp';
+            document.body.appendChild(i);
+            setTimeout(() => { setLoggedOut(); render(); location.replace('/'); }, 500);
+        };
+    })();
+
+    function linkStravaPopup() {
+        const callback = 'https://www.frankiesbootcamp.com/api/Auth';
+        const authUrl = 'https://www.strava.com/oauth/authorize'
+            + '?client_id=143025'
+            + '&redirect_uri=' + encodeURIComponent(callback)
+            + '&response_type=code'
+            + '&scope=activity:read'
+            + '&state=popup';
+
+        const w = window.open(authUrl, 'stravaAuth', 'width=520,height=720');
+        function onMsg(e) {
+            if (e.origin === 'https://www.frankiesbootcamp.com' && e.data === 'strava-linked') {
+                window.removeEventListener('message', onMsg);
+                location.reload(); // or location.href = '/app/';
+            }
+        }
+        window.addEventListener('message', onMsg);
+    }
+</script>
+
+

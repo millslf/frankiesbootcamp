@@ -1,0 +1,22 @@
+version: "3"
+
+agent:
+  authtoken: { TOKEN }
+
+tunnels:
+  # Your website (OAuth ON, custom domain)
+  web:
+    proto: http
+    addr: 8080
+    domain: www.frankiesbootcamp.com
+    oauth:
+      provider: google
+
+
+  # Strava webhook (NO OAuth)
+  webhook:
+    proto: http
+    addr: 8080
+    # Option A: random ngrok hostname (leave domain unset)
+    # Option B: use a separate custom subdomain if you’ve set it up in ngrok + DNS:
+    # domain: webhook.frankiesbootcamp.com

@@ -18,7 +18,7 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-@WebServlet(name = "athleteHistory", value = "/AthleteHistory")
+@WebServlet(name = "athleteHistory", value = "/app/AthleteHistory")
 public class AthleteHistoryServlet extends BootcampServlet {
     @Inject
     private ActivityProcessService activityProcessService;
@@ -51,7 +51,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
 
         out.println("<html><head>");
         out.println("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("  <link href=\"styles/main.css\" rel=\"stylesheet\">");
+        out.println("  <link href=\"/styles/main.css\" rel=\"stylesheet\">");
         out.println("</head><body>");
 
         out.println("<div class='container'>");

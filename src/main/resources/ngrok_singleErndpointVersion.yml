@@ -1,0 +1,34 @@
+version: "3"
+
+agent:
+  authtoken: { TOKEN }
+
+endpoints:
+  - name: web
+    # Public URL (custom domain)
+    url: https://www.frankiesbootcamp.com
+    upstream:
+      url: http://localhost:8080
+    traffic_policy:
+      on_http_request:
+        - name: oauth-app-and-ngrok
+          expressions:
+            - "req.url.path.matches('^/app(/.*)?$') || req.url.path.startsWith('/_ngrok/') || req.url.path.startsWith('/ngrok/')"
+          actions:
+            # 1) Prevent spoofing
+            - type: remove-headers
+              config:
+                headers: ["ngrok-auth-user-email","ngrok-auth-user-name"]
+
+            # 2) OAuth challenge (provides identity variables)
+            - type: oauth
+              config:
+                provider: google
+                auth_id: bootcamp
+
+            # 3) Inject trusted identity for your app
+            - type: add-headers
+              config:
+                headers:
+                  ngrok-auth-user-email: "${actions.ngrok.oauth.identity.email}"
+                  ngrok-auth-user-name:  "${actions.ngrok.oauth.identity.name}"

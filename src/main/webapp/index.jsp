@@ -1,131 +1,140 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %><%
-   response.setHeader("Expires", "Sun, 7 May 1995 12:00:00 GMT");
-   response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-   response.addHeader("Cache-Control", "post-check=0, pre-check=0");
-   response.setHeader("Pragma", "no-cache");
-   %>
-<!DOCTYPE html>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%
+    response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    response.addHeader("Cache-Control", "post-check=0, pre-check=0");
+    response.setHeader("Pragma", "no-cache");
+%>
+<!doctype html>
 <html>
-   <head>
-      <meta charset="UTF-8">
-      <title>Frankies Bootcamp</title>
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-      <link href="styles/main.css" rel="stylesheet">
-      <script>
-         function openTab(evt, tabName) {
-             var i, tabcontent, tablinks;
-             tabcontent = document.getElementsByClassName("tab-content");
-             for (i = 0; i < tabcontent.length; i++) {
-                 tabcontent[i].style.display = "none";
-             }
-             tablinks = document.getElementsByClassName("tab-button");
-             for (i = 0; i < tablinks.length; i++) {
-                 tablinks[i].classList.remove("active");
-             }
-             document.getElementById(tabName).style.display = "block";
-             evt.currentTarget.classList.add("active");
-         }
-      </script>
-   </head>
-   <body>
-      <header class="d-flex align-items-center justify-content-between text-white px-3 py-2 shadow-sm"
-         style="min-height:56px; position: sticky; top: 0; z-index: 1030; background-color: #0d6efd;">
-         <nav class="navbar navbar-light p-0 flex-shrink-0">
-            <div class="container-fluid p-0">
-            <button class="navbar-toggler border-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasMenu" aria-controls="offcanvasMenu" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu" aria-labelledby="offcanvasMenuLabel">
-               <div class="offcanvas-header">
-                  <h5 class="offcanvas-title" id="offcanvasMenuLabel">Navigation & Tools</h5>
-                  <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-               </div>
-               <div class="offcanvas-body">
-                  <div class="btn-group-vertical w-100">
-                     <!-- Auth Buttons -->
-                     <button class="btn btn-outline-secondary mb-2" onclick="location.href='/auth/login'">
-                     <i class="bi bi-box-arrow-in-right me-1"></i> Login
-                     </button>
-                     <button class="btn btn-outline-secondary mb-2" onclick="location.href='/auth/logout'">
-                     <i class="bi bi-box-arrow-right me-1"></i> Logout
-                     </button>
-                     <button class="btn btn-outline-primary mb-4" onclick="location.href='https://www.strava.com/oauth/authorize?client_id=143025&redirect_uri=https://www.frankiesbootcamp.com/api/Auth&response_type=code&approval_prompt=auto&scope=activity:read'">
-                     <i class="bi bi-link-45deg me-1"></i> Link Strava
-                     </button>
-                     <!-- Extra Tabs -->
-                     <button class="btn btn-outline-dark mb-2" onclick="openTab(event, 'Tab5Content');" data-bs-dismiss="offcanvas">
-                     <i class="bi bi-star me-1"></i> Scoring
-                     </button>
-                     <button class="btn btn-outline-dark mb-2" onclick="openTab(event, 'Tab6Content');" data-bs-dismiss="offcanvas">
-                     <i class="bi bi-exclamation-triangle me-1"></i> Disclaimer
-                     </button>
-                     <button class="btn btn-outline-dark" onclick="openTab(event, 'Tab7Content');" data-bs-dismiss="offcanvas">
-                     <i class="bi bi-shield-lock me-1"></i> Privacy
-                     </button>
-                  </div>
-               </div>
-            </div>
-         </nav>
-         <h1 class="mb-0 ms-3 text-truncate" style="max-width: calc(100vw - 80px); font-size: clamp(1rem, 3vw, 1.5rem);">
-            🏋️ Frankies Bootcamp!
-         </h1>
-      </header>
-      <!-- Tabs Container -->
-      <div id="tabsContainer" class="overflow-auto"
-         style="position: sticky; top: 56px; z-index: 1020; background-color: white; border-bottom: 1px solid #ddd;">
-         <div class="d-flex flex-row flex-nowrap">
-            <button class="tab-button active" onclick="openTab(event, 'Tab1Content')"><i class="bi bi-hourglass-bottom header-icon"></i>Weekly History</button>
-            <button class="tab-button" onclick="openTab(event, 'Tab3Content')"><i class='bi bi-bar-chart-line-fill header-icon'></i>Leaderboard</button>
-            <button class="tab-button" onclick="openTab(event, 'Tab2Content')"><i class="bi bi-trophy-fill header-icon"></i>Honour Roll</button>
-            <button class="tab-button" onclick="openTab(event, 'Tab4Content')"><i class="bi bi-list-ol header-icon"></i>Summary</button>
-         </div>
-      </div>
-	  <div class="main-content-wrapper">
-      <div class="container-fluid">
-         <div id="Tab1Content" class="tab-content active-tab">
-            <jsp:include page="/AthleteHistory" />
-         </div>
-         <div id="Tab2Content" class="tab-content">
-            <jsp:include page="/HonourRoll" />
-         </div>
-         <div id="Tab3Content" class="tab-content">
-            <jsp:include page="/LeaderBoard" />
-         </div>
-         <div id="Tab4Content" class="tab-content">
-            <jsp:include page="/AthleteSummary" />
-         </div>
-         <div id="Tab5Content" class="tab-content">
-            <jsp:include page="/scoring.jsp" />
-         </div>
-         <div id="Tab6Content" class="tab-content">
-            <jsp:include page="/disclaimer.jsp" />
-         </div>
-         <div id="Tab7Content" class="tab-content">
-            <jsp:include page="/privacy.jsp" />
-         </div>
-      </div>
-      </div>
+<head>
+    <meta charset="utf-8"/>
+    <title>Frankies Bootcamp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/styles/main.css" rel="stylesheet">
+    <style>
+        /* Neutralize app tab rules on the public page */
+        .landing .tab-content { display: block !important; }
+        .landing .tab-content > .tab-pane { display: block !important; opacity: 1 !important; }
+        /* If your app CSS added any left padding/margins */
+        .landing .main-content-wrapper { margin-left: 0 !important; padding-left: 0 !important; }
+    </style>
+</head>
+<body class="landing">
+<%@ include file="/WEB-INF/jspf/header.jspf" %>
 
-      <script>
-         document.getElementsByClassName("tab-button")[0].click(); // Default to first tab
-      </script>
-      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-      <script>
-         function openTab(evt, tabName) {
-             var i, tabcontent, tablinks;
-             tabcontent = document.getElementsByClassName("tab-content");
-             for (i = 0; i < tabcontent.length; i++) {
-                 tabcontent[i].style.display = "none";
-             }
-             tablinks = document.getElementsByClassName("tab-button");
-             for (i = 0; i < tablinks.length; i++) {
-                 tablinks[i].classList.remove("active");
-             }
-             document.getElementById(tabName).style.display = "block";
-             if (evt.currentTarget.classList.contains("tab-button")) {
-                 evt.currentTarget.classList.add("active");
-             }
-         }
-      </script>
-   </body>
+<main class="container my-4">
+    <!-- Tabs (only one “Info” tab for now) -->
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#infoTab" type="button">Info</button>
+        </li>
+    </ul>
+
+    <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white">
+        <div class="tab-pane fade show active" id="infoTab">
+            <p class="lead mb-3">
+                Friendly competition, weekly goals, and a dash of Strava-powered fun. Join in and see how you stack up!
+            </p>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Scoring</h5>
+                            <p class="card-text">How points work across running, cycling, hiking, and more.</p>
+                            <a href="/scoring.jsp" class="btn btn-outline-primary">View Scoring</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Disclaimer</h5>
+                            <p class="card-text">Safety, fair play, and general participation rules.</p>
+                            <a href="/disclaimer.jsp" class="btn btn-outline-primary">Read Disclaimer</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Privacy</h5>
+                            <p class="card-text">What we collect and how we use it.</p>
+                            <a href="/privacy.jsp" class="btn btn-outline-primary">Privacy Policy</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- info box: change /auth/login -> /app/ -->
+            <div class="alert alert-info">
+                Already linked with Strava?
+                <a class="alert-link" href="/app/">Login</a> to see your dashboard.
+            </div>
+        </div>
+    </div>
+</main>
+
+<%@ include file="/WEB-INF/jspf/footer.jspf" %>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    (async function () {
+        try {
+            const res = await fetch('<%=ctx%>/app/whoami.jsp', { credentials: 'include' });
+
+            let authed = false, data = null;
+            if (res.redirected && (res.url.includes('/_ngrok/login') || res.url.includes('/ngrok/login'))) {
+                authed = false;
+            } else if (res.ok) {
+                data = await res.json().catch(() => null);
+                authed = !!(data && (data.auth === true || data.auth === "true"));
+            }
+
+            const group      = document.querySelector('#offcanvasMenu .btn-group-vertical');
+            const homeBtn    = document.getElementById('homeBtn');
+            const loginBtn   = document.getElementById('loginBtn');
+            const logoutBtn  = document.getElementById('logoutBtn');
+
+            const chip       = document.getElementById('userChip');
+            const chipName   = document.getElementById('userChipName');
+            const signedBox  = document.getElementById('signedInAs');
+            const signedName = document.getElementById('signedInName');
+
+            const name = data?.name || data?.displayName || (data?.email ? data.email.split('@')[0] : null);
+
+            if (authed) {
+                // header/offcanvas name
+                if (chip && chipName) { chipName.textContent = name || 'You'; chip.classList.remove('d-none'); }
+                if (signedBox && signedName) { signedName.textContent = name || data?.email || ''; signedBox.classList.remove('d-none'); }
+
+                // nav buttons
+                if (loginBtn) {
+                    loginBtn.innerHTML = '<i class="bi bi-speedometer2 me-1"></i> Go to dashboard';
+                    loginBtn.href = '<%=ctx%>/app/';
+                    if (group && group.firstElementChild !== loginBtn) group.insertBefore(loginBtn, group.firstElementChild);
+                }
+                if (logoutBtn) logoutBtn.classList.remove('d-none');
+
+            } else {
+                // hide name
+                if (chip) chip.classList.add('d-none');
+                if (signedBox) signedBox.classList.add('d-none');
+
+                // reset nav buttons
+                if (loginBtn) {
+                    loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
+                    loginBtn.href = '/app/';
+                    if (group && homeBtn && homeBtn.nextElementSibling !== loginBtn) group.insertBefore(loginBtn, homeBtn.nextElementSibling);
+                }
+                if (logoutBtn) logoutBtn.classList.add('d-none');
+            }
+        } catch (_) { /* ignore */ }
+    })();
+</script>
+
+
+</body>
 </html>
