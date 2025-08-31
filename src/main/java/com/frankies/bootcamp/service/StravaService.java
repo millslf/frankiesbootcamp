@@ -19,18 +19,25 @@ import java.lang.reflect.Type;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
 @ApplicationScoped
 public class StravaService {
-    private final DBService db = new DBService();
+    private DBService db;
 
     private static final Logger log = LoggerFactory.getLogger(StravaService.class);
 
-    public boolean tokenExchange(String code) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
+    @Inject
+    public StravaService(DBService db) {
+        this.db = db;
+    }
+
+    protected StravaService() {
+        // for CDI proxying
+    }
+
+    public void tokenExchange(String code) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
         WildflyUtils wf = new WildflyUtils();
@@ -50,7 +57,6 @@ public class StravaService {
                 StravaAuthResponse data = new Gson().fromJson(response.body().string(), StravaAuthResponse.class);
                 db.saveAthlete(data.getBootcampAthlete());
             }
-            return response.isSuccessful();
         }
     }
 

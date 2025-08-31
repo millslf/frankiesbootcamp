@@ -36,10 +36,9 @@ public class AuthResource {
                     .build();
         }
 
-        boolean tokenExchanged = false;
         if (code != null && !code.isBlank()) {
             try {
-                tokenExchanged = stravaService.tokenExchange(code);
+                stravaService.tokenExchange(code);
             } catch (Exception e) {
                 log.error("Auth, authenticate", new Exception("Something went wrong while authenticating"));
                 return Response.serverError()
