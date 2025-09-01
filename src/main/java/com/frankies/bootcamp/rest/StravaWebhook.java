@@ -93,8 +93,12 @@ public class StravaWebhook {
                     }
                 }
                 case "update" -> {
-                    if (event.isHidden()) onActivityHidden(athleteId, activityId, event.updates);
-                    else onActivityUpdated(athleteId, activityId, event.updates);
+                    try {
+                        if (event.isHidden()) onActivityHidden(athleteId, activityId, event.updates);
+                        else onActivityUpdated(athleteId, activityId, event.updates);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 case "delete" -> {
                     try {
@@ -120,22 +124,25 @@ public class StravaWebhook {
         athlete = stravaService.refreshToken(athlete);
         StravaActivityResponse stravaActivityResponse = stravaService.getActivityById(activityId, athlete.getAccessToken(), false);
         activityProcessService.addActivityEvent(athleteId.toString(), stravaActivityResponse);
-        log.info("StravaWebhook, onActivityCreated" + athleteId + " " + activityId);
+        log.info("StravaWebhook, onActivityCreated" + athlete.getFirstname() + " " + activityId);
     }
 
-    private void onActivityUpdated(Long athleteId, Long activityId, Map<String, String> updates) {
+    private void onActivityUpdated(Long athleteId, Long activityId, Map<String, String> updates) throws SQLException {
         //Too much trouble to implement for now, at the moment everything is recalculated daily, so no need for this...
-        log.info("StravaWebhook, onActivityUpdated " +  athleteId + " " + activityId + " " + updates);
+        BootcampAthlete athlete = db.findAthleteByStravaID(athleteId.toString());
+        log.info("StravaWebhook, onActivityUpdated " +  athlete.getFirstname() + " " + activityId + " " + updates);
     }
 
-    private void onActivityHidden(Long athleteId, Long activityId, Map<String, String> updates) {
+    private void onActivityHidden(Long athleteId, Long activityId, Map<String, String> updates) throws SQLException {
+        BootcampAthlete athlete = db.findAthleteByStravaID(athleteId.toString());
         activityProcessService.removeActivityEvent(athleteId.toString(), activityId);
-        log.info("StravaWebhook, onActivityHidden " +  athleteId + " " + activityId + " " + updates);
+        log.info("StravaWebhook, onActivityHidden " +  athlete.getFirstname() + " " + activityId + " " + updates);
     }
 
     private void onActivityDeleted(Long athleteId, Long activityId) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        BootcampAthlete athlete = db.findAthleteByStravaID(athleteId.toString());
         activityProcessService.removeActivityEvent(athleteId.toString(), activityId);
-        log.info("StravaWebhook, onActivityDeleted " +  athleteId + " " + activityId);
+        log.info("StravaWebhook, onActivityDeleted " +  athlete.getFirstname() + " " + activityId);
     }
 
 }

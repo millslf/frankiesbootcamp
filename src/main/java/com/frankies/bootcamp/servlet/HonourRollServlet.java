@@ -17,7 +17,7 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-@WebServlet(name = "honourRoll", value = "/HonourRoll")
+@WebServlet(name = "honourRoll", value = "/app/HonourRoll")
 public class HonourRollServlet extends BootcampServlet {
     @Inject
     private ActivityProcessService activityProcessService;
@@ -55,7 +55,7 @@ public class HonourRollServlet extends BootcampServlet {
         out.println("  <title>Frankies Bootcamp - Honour Roll</title>");
         out.println("  <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css\" rel=\"stylesheet\">");
         out.println("  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("  <link href=\"styles/main.css\" rel=\"stylesheet\">");
+        out.println("  <link href=\"/styles/main.css\" rel=\"stylesheet\">");
         out.println("</head>");
         out.println("<body>");
 

@@ -16,7 +16,7 @@ import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 
-@WebServlet(name = "athleteSummary", value = "/AthleteSummary")
+@WebServlet(name = "athleteSummary", value = "/app/AthleteSummary")
 public class AthleteSummaryServlet extends BootcampServlet {
     @Inject
     private ActivityProcessService activityProcessService;
@@ -41,7 +41,7 @@ public class AthleteSummaryServlet extends BootcampServlet {
                 return;
             }
             log.info("Athlete authorised: " + authenticatedUserMail);
-            summaryContent = activityProcessService.sendReport(false, false, loggedInAthlete.getEmail());
+            summaryContent = activityProcessService.getLoggedInAthleteSummary(loggedInAthlete.getEmail());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
         }
@@ -54,7 +54,7 @@ public class AthleteSummaryServlet extends BootcampServlet {
         out.println("  <title>Athlete Summary</title>");
         out.println("  <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css\" rel=\"stylesheet\">");
         out.println("  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("  <link href=\"styles/main.css\" rel=\"stylesheet\">");
+        out.println("  <link href=\"/styles/main.css\" rel=\"stylesheet\">");
         out.println("</head>");
         out.println("<body>");
         out.println("  <div class=\"content-box\">");

@@ -1,0 +1,5 @@
+<footer class="container my-4 text-muted small">
+    <a href="/privacy.jsp" class="me-3">Privacy</a>
+    <a href="/disclaimer.jsp" class="me-3">Disclaimer</a>
+    <a href="/scoring.jsp">Scoring</a>
+</footer>
