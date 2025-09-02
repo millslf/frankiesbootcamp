@@ -103,6 +103,31 @@
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
             <version>4.1.0</version>
         </dependency>
+
+<!--        Unit testing dependencies:-->
+        <dependency>
+           <groupId>org.junit.jupiter</groupId>
+           <artifactId>junit-jupiter</artifactId>
+           <version>5.10.2</version>
+           <scope>test</scope>
+         </dependency>
+         <dependency>
+           <groupId>org.mockito</groupId>
+           <artifactId>mockito-core</artifactId>
+           <version>5.11.0</version>
+           <scope>test</scope>
+         </dependency>
+         <dependency>
+           <groupId>org.mockito</groupId>
+           <artifactId>mockito-inline</artifactId>
+           <version>5.2.0</version>
+           <scope>test</scope>
+         </dependency>
+        <dependency>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
+            <version>2.4.4</version>
+        </dependency>
     </dependencies>
 
     <build>
