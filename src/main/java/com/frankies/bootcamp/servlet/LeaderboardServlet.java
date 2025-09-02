@@ -40,7 +40,6 @@ public class LeaderboardServlet extends BootcampServlet {
                 out.println("</body></html>");
                 return;
             }
-            log.info("Athlete authorised: " + authenticatedUserMail);
         } catch (SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
         }
@@ -48,8 +47,6 @@ public class LeaderboardServlet extends BootcampServlet {
         Map<String, HashMap<String, Double>> sortedSummaries = activityProcessService.getSortedSummaries();
 
         out.println("<html><head>");
-        out.println("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("<link href=\"/styles/main.css\" rel=\"stylesheet\">");
         out.println("</head><body>");
         out.println("<div class='container'>");
         out.println("<h2 class='history-heading'>");

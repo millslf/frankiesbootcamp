@@ -1,0 +1,49 @@
+<div class="page-wrap">
+    <div class="page-card">
+        <div class="page-body page-typography">
+            <h1>&#x2696;&#xFE0F; Terms of Service</h1>
+            <p><em>Last updated: July 2025</em></p>
+
+            <p class="section-title">1. Acceptance</p>
+            <p>By participating in Frankies Bootcamp (the &ldquo;Challenge&rdquo;), you agree to these Terms.</p>
+
+            <p class="section-title">2. What the Challenge Is</p>
+            <p>A friendly, non-commercial fitness challenge among friends to compare distance and progress across walking, running, cycling, and other human-powered activities.</p>
+
+            <p class="section-title">3. Eligibility</p>
+            <p>You must be able to safely participate in physical activity. The Challenge is not medical advice.</p>
+
+            <p class="section-title">4. Accounts &amp; Sign-in</p>
+            <p>We use Google OAuth for sign-in. Keep your credentials secure. We may limit or disable access for abuse or security risks.</p>
+
+            <p class="section-title">5. Activity Data (Strava)</p>
+            <p>Connecting Strava is optional. If connected, you authorize us to read activity details you approve to calculate friendly scores and summaries. You can disconnect at any time in Strava.</p>
+
+            <p class="section-title">6. Reporting &amp; Measurement</p>
+            <p>Only distances from legitimate human-powered activities count. Automated or motorized assistance doesn&rsquo;t qualify.</p>
+
+            <p class="section-title">7. Safety</p>
+            <p>You&rsquo;re responsible for your own safety and compliance with local laws. Use appropriate gear and judgment.</p>
+
+            <p class="section-title">8. Acceptable Use</p>
+            <ul>
+                <li>No cheating, scraping, reverse engineering, or attempts to disrupt the service.</li>
+                <li>No unlawful, harmful, or harassing content or behavior.</li>
+            </ul>
+
+            <p class="section-title">9. Community &amp; Content</p>
+            <p>You retain rights to your content. By posting in shared spaces, you grant us a limited license to display it to participants for the purpose of the Challenge.</p>
+
+            <p class="section-title">10. Changes &amp; Availability</p>
+            <p>We may modify features or discontinue the Challenge at any time. We&rsquo;ll try to provide reasonable notice for material changes.</p>
+
+            <p class="section-title">11. Disclaimers &amp; Limitation of Liability</p>
+            <p>The Challenge is provided &ldquo;as is&rdquo; without warranties of any kind. To the fullest extent permitted by law, we are not liable for indirect or incidental damages. You&rsquo;re responsible for your participation decisions.</p>
+
+            <p class="section-title">12. Contact</p>
+            <p>Questions? <a href="mailto:frankiesbootcamp@gmail.com">frankiesbootcamp@gmail.com</a></p>
+
+            <p class="mt-4">See also our <a href="https://www.frankiesbootcamp.com/privacy">Privacy Policy</a>.</p>
+        </div>
+    </div>
+</div>

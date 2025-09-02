@@ -8,11 +8,9 @@
 <html>
 <head>
     <meta charset="utf-8"/>
+    <%@ include file="/WEB-INF/jspf/head-common.jspf" %>
     <title>Frankies Bootcamp</title>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/styles/main.css" rel="stylesheet">
     <style>
         /* Neutralize app tab rules on the public page */
         .landing .tab-content { display: block !important; }
@@ -44,25 +42,25 @@
                         <div class="card-body">
                             <h5 class="card-title">Scoring</h5>
                             <p class="card-text">How points work across running, cycling, hiking, and more.</p>
-                            <a href="/scoring.jsp" class="btn btn-outline-primary">View Scoring</a>
+                            <a href="/scoring" class="btn btn-outline-primary">View Scoring</a>
                         </div>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-4">
                     <div class="card h-100">
                         <div class="card-body">
-                            <h5 class="card-title">Disclaimer</h5>
+                            <h5 class="card-title">Terms of Service</h5>
                             <p class="card-text">Safety, fair play, and general participation rules.</p>
-                            <a href="/disclaimer.jsp" class="btn btn-outline-primary">Read Disclaimer</a>
+                            <a href="https://www.frankiesbootcamp.com/terms" class="btn btn-outline-primary">Read Terms of Service</a>
                         </div>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-4">
                     <div class="card h-100">
                         <div class="card-body">
-                            <h5 class="card-title">Privacy</h5>
+                            <h5 class="card-title">Privacy Policy</h5>
                             <p class="card-text">What we collect and how we use it.</p>
-                            <a href="/privacy.jsp" class="btn btn-outline-primary">Privacy Policy</a>
+                            <a href="https://www.frankiesbootcamp.com/privacy" class="btn btn-outline-primary">Privacy Policy</a>
                         </div>
                     </div>
                 </div>

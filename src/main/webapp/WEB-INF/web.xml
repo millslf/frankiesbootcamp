@@ -27,4 +27,28 @@
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 
+    <servlet>
+        <servlet-name>PrivacyPage</servlet-name>
+        <jsp-file>/privacy.jsp</jsp-file>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PrivacyPage</servlet-name>
+        <url-pattern>/privacy</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>TermsPage</servlet-name>
+        <jsp-file>/terms.jsp</jsp-file>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TermsPage</servlet-name>
+        <url-pattern>/terms</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>ScorePage</servlet-name>
+        <jsp-file>/scoring.jsp</jsp-file>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ScorePage</servlet-name>
+        <url-pattern>/scoring</url-pattern>
+    </servlet-mapping>
 </web-app>

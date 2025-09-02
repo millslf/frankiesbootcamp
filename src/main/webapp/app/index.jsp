@@ -9,10 +9,8 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/head-common.jspf" %>
     <title>Frankies Bootcamp</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/styles/main.css" rel="stylesheet">
     <script>
         function openTab(evt, tabName) {
             var i, tabcontent, tablinks;
@@ -68,7 +66,7 @@
             <%@ include file="/WEB-INF/jspf/scoring-content.jspf" %>
         </div>
         <div id="Tab6Content" class="tab-content">
-            <%@ include file="/WEB-INF/jspf/disclaimer-content.jspf" %>
+            <%@ include file="/WEB-INF/jspf/terms-content.jspf" %>
         </div>
         <div id="Tab7Content" class="tab-content">
             <%@ include file="/WEB-INF/jspf/privacy-content.jspf" %>
