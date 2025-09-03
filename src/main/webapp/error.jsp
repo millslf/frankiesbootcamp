@@ -3,10 +3,8 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <%@ include file="/WEB-INF/jspf/head-common.jspf" %>
     <title>Oops! Something went wrong</title>
-    <link rel="stylesheet" href="/styles/main.css">
-    <!-- Add Bootstrap Icons CDN -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
         /* Flex container for h1 to wrap icon and text nicely */
         .container h1 {

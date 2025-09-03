@@ -11,48 +11,63 @@
 
             <p class="section-title">1. What Information We Collect</p>
             <ul>
-                <li>Your name or nickname &ndash; Just so we know who&rsquo;s who.</li>
-                <li>Email address or contact info &ndash; If you choose to share it, for updates or reminders.</li>
-                <li>Basic fitness activity details &ndash; Like workouts completed, goals, or progress (if shared, e.g.
-                    from Strava).
-                </li>
-                <li>Comments, messages, or posts &ndash; If there&rsquo;s a group chat or shared space.</li>
+                <li><strong>Identity & sign-in</strong> &ndash; Your name or nickname and email address (e.g., via Google OAuth) so we can recognize you.</li>
+                <li><strong>Activity data (optional)</strong> &ndash; If you connect Strava, we may receive basic activity details you approve (e.g., distance, type, time). You can revoke this at any time in Strava.</li>
+                <li><strong>Community content</strong> &ndash; Comments/messages if we have a shared space.</li>
+                <li><strong>Technical info</strong> &ndash; Basic logs/cookies for security and sessions (see below).</li>
             </ul>
-            <p>We do not collect sensitive personal data like health conditions, payment info, or anything
-                unnecessary.</p>
+            <p>We do <em>not</em> collect sensitive categories (e.g., payment info, medical diagnoses) and we don&rsquo;t need them for this program.</p>
 
             <p class="section-title">2. How We Use Your Information</p>
             <ul>
-                <li>Help you track your progress (if applicable)</li>
-                <li>Share updates or reminders (like new workout posts)</li>
-                <li>Foster a fun and supportive group environment</li>
-                <li>Improve the program experience based on feedback</li>
+                <li>Help you sign in and see your dashboard.</li>
+                <li>Track progress and show friendly comparisons.</li>
+                <li>Send optional updates or reminders you request.</li>
+                <li>Maintain security and improve the site.</li>
             </ul>
-            <p>We will never sell your information or use it for advertising.</p>
+            <p><strong>We never sell your data and do not use it for advertising.</strong></p>
 
             <p class="section-title">3. Who Can See Your Info</p>
-            <p>Only members of the group can see shared content like:</p>
+            <p>Only group participants can see shared items such as:</p>
             <ul>
-                <li>The percentage of your weekly goal</li>
-                <li>Previous distances completed if you&rsquo;ve covered the biggest distance for the week</li>
-                <li>Your name or username</li>
+                <li>Your displayed name or username</li>
+                <li>Weekly goal % and progress summaries</li>
+                <li>Top distances or achievements</li>
             </ul>
 
-            <p class="section-title">4. Your Choices</p>
-            <p>You&rsquo;re in control. You can:</p>
+            <p class="section-title">4. Cookies & Sessions</p>
+            <p>We use minimal cookies for things like session management and security (e.g., after you sign in). Third-party OAuth providers (e.g., Google) may also set cookies as part of their sign-in flow.</p>
+
+            <p class="section-title">5. Third Parties</p>
             <ul>
-                <li>Ask to have your information removed anytime</li>
-                <li>Choose what you share or keep private</li>
-                <li>Leave the group if you ever wish &mdash; no hard feelings!</li>
+                <li><strong>Google (OAuth)</strong> &ndash; Sign-in only.</li>
+                <li><strong>Strava (optional)</strong> &ndash; Imports activity data you authorize; you can disconnect anytime in Strava.</li>
+                <li><strong>Hosting/logging</strong> &ndash; Standard server hosting and logs for security and reliability.</li>
             </ul>
 
-            <p class="section-title">5. Keeping Things Secure</p>
-            <p>We do our best to keep your information safe, but since this is a friendly, informal program, please
-                avoid sharing anything very personal or sensitive.</p>
+            <p class="section-title">6. Data Retention & Deletion</p>
+            <p>We keep your account data while you participate. You can request deletion at any time, and we&rsquo;ll remove account-level data within 30 days (and earlier where possible). You can also revoke Strava access from your Strava account settings.</p>
 
-            <p class="section-title">6. Questions or Concerns?</p>
-            <p>Reach out anytime to frankiesbootcamp@gmail.com if you have questions about privacy or how your
-                information is used.</p>
+            <p class="section-title">7. Your Choices</p>
+            <ul>
+                <li>Ask us to remove your information.</li>
+                <li>Choose what you share or keep private.</li>
+                <li>Leave the group at any time.</li>
+            </ul>
+
+            <p class="section-title">8. Security</p>
+            <p>We take reasonable steps to secure the site, but the program is informal and not a substitute for professional services. Please avoid sharing highly sensitive information.</p>
+
+            <p class="section-title">9. Children</p>
+            <p>This program is not directed to children under 13 (or under 16 where applicable). Please don&rsquo;t sign up children.</p>
+
+            <p class="section-title">10. Changes</p>
+            <p>We may update this policy as the program evolves. We&rsquo;ll post the new date above and, when material, provide a heads-up.</p>
+
+            <p class="section-title">11. Contact</p>
+            <p>Questions or deletion requests? Email <a href="mailto:frankiesbootcamp@gmail.com">frankiesbootcamp@gmail.com</a>.</p>
+
+            <p class="mt-4">See also our <a href="https://www.frankiesbootcamp.com/terms">Terms of Service</a>.</p>
         </div>
     </div>
 </div>

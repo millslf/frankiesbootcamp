@@ -21,7 +21,6 @@ public class BootcampServlet extends HttpServlet {
     protected void service(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        // Already cached for this session? (avoid DB on every request)
         HttpSession session = req.getSession(true);
         BootcampAthlete athlete = (BootcampAthlete) session.getAttribute("athlete");
 
@@ -42,10 +41,8 @@ public class BootcampServlet extends HttpServlet {
                 // Cache in session for future requests
                 session.setAttribute("athlete", athlete);
                 session.setAttribute("athleteEmail", email);
-                // Build a display name once (tweak to your model)
-                String displayName = buildDisplayName(athlete, email);
-                session.setAttribute("athleteName", displayName);
-
+                session.setAttribute("athleteName", buildDisplayName(athlete, email));
+                log.info("Athlete authorised: " + buildDisplayName(athlete, email));
             } catch (SQLException e) {
                 log.error("Error looking up athlete by email", e);
                 resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -53,24 +50,22 @@ public class BootcampServlet extends HttpServlet {
             }
         }
 
-        // Also put on the request for convenient per-request access
+        // Expose on the request for convenience
         req.setAttribute("athlete", athlete);
         req.setAttribute("athleteName", session.getAttribute("athleteName"));
         req.setAttribute("athleteEmail", session.getAttribute("athleteEmail"));
 
-        // Continue to child servlet doGet/doPost/…
         super.service(req, resp);
     }
 
     private static String buildDisplayName(BootcampAthlete a, String fallbackEmail) {
-        // adjust according to your model
         String first = safe(a.getFirstname());
         String last  = safe(a.getLastname());
         String name  = (first + " " + last).trim();
         if (name.isEmpty()) {
-            // fallback to email local part
             int at = (fallbackEmail == null) ? -1 : fallbackEmail.indexOf('@');
-            name = (at > 0) ? fallbackEmail.substring(0, at) : (fallbackEmail != null ? fallbackEmail : "Athlete");
+            name = (at > 0) ? fallbackEmail.substring(0, at)
+                    : (fallbackEmail != null ? fallbackEmail : "Athlete");
         }
         return name;
     }

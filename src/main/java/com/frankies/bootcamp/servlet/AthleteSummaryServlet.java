@@ -40,7 +40,6 @@ public class AthleteSummaryServlet extends BootcampServlet {
                 out.println("</body></html>");
                 return;
             }
-            log.info("Athlete authorised: " + authenticatedUserMail);
             summaryContent = activityProcessService.getLoggedInAthleteSummary(loggedInAthlete.getEmail());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
@@ -52,12 +51,9 @@ public class AthleteSummaryServlet extends BootcampServlet {
         out.println("  <meta charset=\"UTF-8\">");
         out.println("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
         out.println("  <title>Athlete Summary</title>");
-        out.println("  <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css\" rel=\"stylesheet\">");
-        out.println("  <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("  <link href=\"/styles/main.css\" rel=\"stylesheet\">");
         out.println("</head>");
         out.println("<body>");
-        out.println("  <div class=\"content-box\">");
+        out.println("  <div class=\"container\">");
 
         // Optional: Add trophy icon before the summary content block
         out.println("    <p><i class=\"bi bi-trophy-fill trophy-icon\"></i><strong>Performance Summary:</strong></p>");

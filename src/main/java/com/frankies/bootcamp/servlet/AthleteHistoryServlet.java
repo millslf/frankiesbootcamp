@@ -42,7 +42,6 @@ public class AthleteHistoryServlet extends BootcampServlet {
                 out.println("</body></html>");
                 return;
             }
-            log.info("Athlete authorised: " + authenticatedUserMail);
             history = activityProcessService.getAthleteHistory(loggedInAthlete.getEmail());
         } catch (SQLException e) {
             log.error("AthleteHistoryServlet, doGet", e);
@@ -50,8 +49,6 @@ public class AthleteHistoryServlet extends BootcampServlet {
         int numberOfWeeksSinceStart = activityProcessService.getNumberOfWeeksSinceStart();
 
         out.println("<html><head>");
-        out.println("<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css\">");
-        out.println("  <link href=\"/styles/main.css\" rel=\"stylesheet\">");
         out.println("</head><body>");
 
         out.println("<div class='container'>");

@@ -36,7 +36,7 @@ p, li {
 
 /* === Layout & Containers === */
 .container {
-    max-width: 900px;
+    max-width: 1200px;
     background-color: #ffffff;
     padding: 30px;
     border-radius: 15px;
@@ -49,13 +49,6 @@ p, li {
     padding-right: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-}
-
-.content-box {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .main-content, .page-wrapper {
@@ -98,6 +91,19 @@ header.navbar .navbar-toggler {
     border-bottom: 1px solid #ddd;
 }
 
+/* under sticky tabs */
+#tabsContainer + .main-content-wrapper { padding-top: 10px; }
+
+/* avoid OS bottom bar overlap on phones */
+.main-content-wrapper{
+    padding-bottom: calc(2.25rem + env(safe-area-inset-bottom, 0px));
+}
+@media (max-width:576px){
+    .main-content-wrapper{
+        padding-bottom: calc(2.75rem + env(safe-area-inset-bottom, 0px));
+    }
+}
+
 .tab-button {
     border: none;
     background: none;
@@ -131,6 +137,7 @@ header.navbar .navbar-toggler {
     position: relative;
     max-height: 70vh; /* Adjust this value as needed */
     overflow-y: auto;
+    padding-bottom: 10px;
 }
 
 table {
@@ -177,8 +184,8 @@ tbody tr:nth-of-type(even) {
     background-color: #f3f3f3;
 }
 
-tbody tr:last-of-type {
-    border-bottom: 2px solid #343a40;
+tbody tr:last-child td {
+    border-bottom: 1px solid #ddd !important;
 }
 
 table th i {
@@ -355,42 +362,6 @@ table th i {
         .brand-text{ font-size: clamp(1rem, 5.5vw, 1.4rem); }
     }
 
-    /* === Shared standalone-page layout (Scoring / Privacy / Disclaimer) === */
-    :root {
-        /* match your dashboard card max width */
-        --dash-max: 1100px;
-    }
-
-    /* outer shell: same padding feel as dashboard */
-    .page-wrap {
-        padding: 0.75rem 0.75rem 2rem;
-    }
-    @media (min-width: 576px){
-        .page-wrap { padding: 1rem 1rem 2.5rem; }
-    }
-    @media (min-width: 992px){
-        .page-wrap { padding: 1.25rem 2rem 3rem; }
-    }
-
-    /* inner card that mirrors dashboard cards */
-    .page-card {
-        max-width: var(--dash-max);
-        margin: 0 auto;
-        background: #fff;
-        border-radius: 1rem;
-        box-shadow: 0 .25rem 1.25rem rgba(0,0,0,.08);
-        overflow: hidden;
-    }
-    .page-card .page-body {
-        padding: 1rem;
-    }
-    @media (min-width: 576px){
-        .page-card .page-body { padding: 1.25rem 1.25rem 1.5rem; }
-    }
-    @media (min-width: 992px){
-        .page-card .page-body { padding: 1.5rem 1.75rem 2rem; }
-    }
-
     /* Typography scale that matches the dashboard feel */
     .page-typography h1 {
         font-size: clamp(1.25rem, 4.8vw, 1.75rem);   /* ~20–28px */
@@ -421,4 +392,39 @@ table th i {
         padding:.25rem .5rem;
         line-height:1.1;
     }
+}
+/* === Shared standalone-page layout (Scoring / Privacy / Disclaimer) === */
+:root {
+    /* match your dashboard card max width */
+    --dash-max: 1100px;
+}
+
+/* outer shell: same padding feel as dashboard */
+.page-wrap {
+    padding: 0.75rem 0.75rem 2rem;
+}
+@media (min-width: 576px){
+    .page-wrap { padding: 1rem 1rem 2.5rem; }
+}
+@media (min-width: 992px){
+    .page-wrap { padding: 1.25rem 2rem 3rem; }
+}
+
+/* inner card that mirrors dashboard cards */
+.page-card {
+    max-width: var(--dash-max);
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 .25rem 1.25rem rgba(0,0,0,.08);
+    overflow: hidden;
+}
+.page-card .page-body {
+    padding: 1rem;
+}
+@media (min-width: 576px){
+    .page-card .page-body { padding: 1.25rem 1.25rem 1.5rem; }
+}
+@media (min-width: 992px){
+    .page-card .page-body { padding: 1.5rem 1.75rem 2rem; }
 }
