@@ -21,6 +21,7 @@ public abstract class SportFactory {
         else if(type.equalsIgnoreCase(StravaStrings.Type.WATER_SPORT) && sport.equalsIgnoreCase(StravaStrings.SportType.SURFING)) return new Surf(activity);
         else if(type.equalsIgnoreCase(StravaStrings.Type.STAND_UP_PADDLING)) return new StandUpPaddling(activity);
         else if(type.equalsIgnoreCase(StravaStrings.Type.WEIGHT_TRAINING)) return new WeightTraining(activity);
+        else if(type.equalsIgnoreCase(StravaStrings.Type.ELLIPTICAL)) return new Elliptical(activity);
         else if(type.equalsIgnoreCase(StravaStrings.Type.WORKOUT)) return new Workout(activity);
         else if(type.equalsIgnoreCase(StravaStrings.Type.ROWING) && sport.equalsIgnoreCase(StravaStrings.SportType.VIRTUAL_ROW)) return new VirtualRow(activity);
         else if(type.equalsIgnoreCase(StravaStrings.Type.KAYAKING)) return new Kayak(activity);

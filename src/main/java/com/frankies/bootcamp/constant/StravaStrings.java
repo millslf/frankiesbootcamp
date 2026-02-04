@@ -13,6 +13,7 @@ public final class StravaStrings {
         public static final String WATER_SPORT = "WaterSport";
         public static final String STAND_UP_PADDLING = "StandUpPaddling";
         public static final String WEIGHT_TRAINING = "WeightTraining";
+        public static final String ELLIPTICAL = "Elliptical";
         public static final String WORKOUT = "Workout";
         public static final String ROWING = "Rowing";
         public static final String KAYAKING = "Kayaking";
