@@ -151,7 +151,7 @@
                     }
                 }
                 logoutBtn && logoutBtn.classList.remove('d-none');
-                linkBtn && linkBtn.classList.remove('d-none');
+                linkBtn && linkBtn.classList.add('d-none');
             } else {
                 if (signedInAs) signedInAs.classList.add('d-none');
                 if (loginBtn) {
@@ -162,7 +162,7 @@
                     }
                 }
                 logoutBtn && logoutBtn.classList.add('d-none');
-                linkBtn && linkBtn.classList.add('d-none');
+                linkBtn && linkBtn.classList.remove('d-none');
             }
         }
 

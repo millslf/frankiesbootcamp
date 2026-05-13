@@ -66,7 +66,9 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("<th class='col-goal'><i class='bi bi-bullseye'></i> Goal</th>");
         out.println("<th><i class='bi bi-graph-up'></i> % of goal</th>");
         out.println("<th><i class='bi bi-signpost'></i> Distance left</th>");
-        out.println("<th><i class='bi bi-star-fill'></i> Points scored</th>");
+        out.println("<th><i class='bi bi-star-fill'></i> Progression Points scored</th>");
+        out.println("<th><i class='bi bi-star-fill'></i> Goal Points scored</th>");
+        out.println("<th><i class='bi bi-star-fill'></i> Total Points scored</th>");
         out.println("<th class='col-activities'><i class='bi bi-activity'></i> Activities</th>");
         out.println("</tr>");
         out.println("</thead>");
@@ -87,6 +89,14 @@ public class AthleteHistoryServlet extends BootcampServlet {
             out.println("<td>" + df.format(history.get(i).getWeekGoal()) + "km</td>");
             out.println("<td>" + df.format(history.get(i).getTotalPercentOfGoal() * 100) + "%</td>");
             out.println("<td>" + df.format(history.get(i).getWeekGoal()-history.get(i).getTotalDistance()>0?history.get(i).getWeekGoal()-history.get(i).getTotalDistance():0) + "km</td>");
+            if(history.get(i).isSick()){
+                out.println("<td> <i class='bi bi-heart-pulse-fill' title='Sick Note'></i></td>");
+                out.println("<td> <i class='bi bi-heart-pulse-fill' title='Sick Note'></i></td>");
+            }
+            else{
+                out.println("<td>" + df.format(history.get(i).getWeekProgressionBonus()) + "</td>");
+                out.println("<td>" + df.format(history.get(i).getWeekGoalAchievementScore()) + "</td>");
+            }
             out.println("<td>" + df.format(history.get(i).getWeekScore()) + "</td>");
             out.println("<td>");
             for (String key : history.get(i).getSports().keySet()) {

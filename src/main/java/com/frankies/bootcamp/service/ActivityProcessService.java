@@ -141,7 +141,6 @@ public class ActivityProcessService {
     public String getLoggedInAthleteSummary(String loggedInAthlete)
             throws IOException, CredentialStoreException, NoSuchAlgorithmException, SQLException {
         String loggedInAthleteSummary = "";
-        log.info("Logged in athlete: " + loggedInAthlete);
         try {
             for (PerformanceResponse performance : performanceList) {
                 String mailBody = getMailBody(sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary),

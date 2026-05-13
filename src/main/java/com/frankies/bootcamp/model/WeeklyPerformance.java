@@ -18,9 +18,10 @@ public class WeeklyPerformance {
     private Double totalDistance = 0.0;
     private Double totalPercentOfGoal = 0.0;
     private Double weekScore = 0.0;
+    private Double weekProgressionBonus = 0.0;
+    private Double weekGoalAchievementScore = 0.0;
     private boolean isSick;
     private Double averageWeeklyScore = 0.0;
-
     public WeeklyPerformance(String week, Long weekEnding, Double previousWeekGoal, Double previousWeekTotalDistance) {
         sportsOriginalDistance = new HashMap<>();
         sportsOriginalDuration = new HashMap<>();
@@ -44,6 +45,14 @@ public class WeeklyPerformance {
 
     public Double getWeekScore() {
         return weekScore;
+    }
+
+    public Double getWeekProgressionBonus() {
+        return weekProgressionBonus;
+    }
+
+    public Double getWeekGoalAchievementScore() {
+        return weekGoalAchievementScore;
     }
 
     public Map<String, Double> getSports() {
@@ -128,35 +137,71 @@ public class WeeklyPerformance {
         return sb.append("\n").toString();
     }
 
-    private Double calculateWeekGoal(Double previousWeekGoal, double previousWeekTotalDistance) {
+    private double calculateWeekGoal(double previousWeekGoal, double previousWeekTotalDistance) {
+        double ratio = previousWeekTotalDistance / previousWeekGoal;
+        double weekGoal;
         if(previousWeekTotalDistance == -1.0) {
             return previousWeekGoal;
-        } else if (previousWeekTotalDistance > previousWeekGoal*2) {
-            return previousWeekGoal * 1.2;
-        } else if (previousWeekTotalDistance > previousWeekGoal*1.5) {
-            return previousWeekGoal * 1.1;
-        } else if (previousWeekTotalDistance < previousWeekGoal*0.5) {
-            return previousWeekGoal * 0.9;
-        } else {
-            return previousWeekGoal;
         }
+        if (ratio < 0.50) {
+            weekGoal = previousWeekGoal * 0.90;
+        } else if (ratio < 0.80) {
+            weekGoal = previousWeekGoal * 0.95;
+        } else if (ratio < 1.10) {
+            weekGoal = previousWeekGoal;
+        } else if (ratio < 1.15) {
+            weekGoal = previousWeekGoal * 1.03;
+        } else if (ratio < 1.20) {
+            weekGoal = previousWeekGoal * 1.07;
+        } else if (ratio < 1.50) {
+            weekGoal = previousWeekGoal * 1.1;
+        } else if (ratio < 1.80) {
+            weekGoal = previousWeekGoal * 1.15;
+        } else {
+            weekGoal = previousWeekGoal * 1.2;
+        }
+
+        return roundGoal(weekGoal);
+    }
+
+    private double roundGoal(double goal) {
+        return Math.round(goal * 2.0) / 2.0; // nearest 0.5
     }
 
     private void calculateWeekScore() {
-        if(totalDistance < weekGoal*.5) {
-            this.weekScore =  0.0;
-        }else if (totalDistance > weekGoal*2) {
-            this.weekScore = 1.75;
-        } else if (totalDistance > weekGoal*1.5) {
-            this.weekScore = 1.5;
-        } else if (totalDistance < weekGoal) {
-            this.weekScore = 0.5;
-        } else {
-            this.weekScore =  1.0;
-        }
-        if(isSick){
+        if (isSick) {
+            this.weekGoalAchievementScore = averageWeeklyScore;
+            this.weekProgressionBonus = 0.0;
             this.weekScore = averageWeeklyScore;
+            return;
         }
+
+        if (weekGoal <= 0.0) {
+            this.weekGoalAchievementScore = 0.0;
+            this.weekProgressionBonus = 0.0;
+            this.weekScore = 0.0;
+            return;
+        }
+
+        double ratio = totalDistance / weekGoal;
+
+        this.weekGoalAchievementScore = Math.min(ratio, 1.0);
+
+        if (ratio < 1.1) {
+            this.weekProgressionBonus = 0.0;
+        } else if (ratio < 1.15) {
+            this.weekProgressionBonus = 0.03;
+        } else if (ratio < 1.20) {
+            this.weekProgressionBonus = 0.07;
+        } else if (ratio < 1.50) {
+            this.weekProgressionBonus = 0.1;
+        } else if (ratio < 1.80) {
+            this.weekProgressionBonus = 0.15;
+        } else {
+            this.weekProgressionBonus = 0.2;
+        }
+
+        this.weekScore = this.weekGoalAchievementScore + this.weekProgressionBonus;
     }
 
     private void calculateTotalPercentOfGoal(){
