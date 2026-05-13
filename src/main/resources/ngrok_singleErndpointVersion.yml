@@ -1,7 +1,7 @@
 version: "3"
 
 agent:
-  authtoken: { TOKEN }
+  authtoken: ${NGROK_AUTHTOKEN}
 
 endpoints:
   - name: web
@@ -11,22 +11,42 @@ endpoints:
       url: http://localhost:8080
     traffic_policy:
       on_http_request:
-        - name: oauth-app-and-ngrok
+        - name: ngrok-oauth
           expressions:
-            - "req.url.path.matches('^/app(/.*)?$') || req.url.path.startsWith('/_ngrok/') || req.url.path.startsWith('/ngrok/')"
+            - "req.url.path.startsWith('/_ngrok/') || req.url.path.startsWith('/ngrok/') || req.url.path.matches('^/app(/.*)?$')"
           actions:
-            # 1) Prevent spoofing
-            - type: remove-headers
-              config:
-                headers: ["ngrok-auth-user-email","ngrok-auth-user-name"]
-
-            # 2) OAuth challenge (provides identity variables)
             - type: oauth
               config:
                 provider: google
                 auth_id: bootcamp
-
-            # 3) Inject trusted identity for your app
+                client_id: ${GOOGLE_CLIENT_ID}
+                client_secret: ${GOOGLE_CLIENT_SECRET}
+                scopes:
+                  - https://www.googleapis.com/auth/userinfo.profile
+                  - https://www.googleapis.com/auth/userinfo.email
+        - name: inject-identity-headers
+          expressions:
+            - "(req.url.path.matches('^/app(/.*)?$')) && !(
+               req.url.path.endsWith('/whoami.jsp') ||
+               req.url.path.startsWith('/app/css/')   ||
+               req.url.path.startsWith('/app/js/')    ||
+               req.url.path.startsWith('/app/img/')   ||
+               req.url.path.startsWith('/app/assets/')||
+               req.url.path.startsWith('/app/static/')||
+               req.url.path.startsWith('/app/fonts/') ||
+               req.url.path.endsWith('.css')  || req.url.path.endsWith('.js')   ||
+               req.url.path.endsWith('.mjs')  || req.url.path.endsWith('.map')  ||
+               req.url.path.endsWith('.png')  || req.url.path.endsWith('.jpg')  ||
+               req.url.path.endsWith('.jpeg') || req.url.path.endsWith('.gif')  ||
+               req.url.path.endsWith('.svg')  || req.url.path.endsWith('.ico')  ||
+               req.url.path.endsWith('.webp') || req.url.path.endsWith('.woff') ||
+               req.url.path.endsWith('.woff2')|| req.url.path.endsWith('.ttf')  ||
+               req.url.path.endsWith('.eot')
+              )"
+          actions:
+            - type: remove-headers
+              config:
+                headers: ["ngrok-auth-user-email","ngrok-auth-user-name"]
             - type: add-headers
               config:
                 headers:

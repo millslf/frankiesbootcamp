@@ -64,6 +64,7 @@ public class SportsUtils {
         activity.setType(type);
         activity.setSport_type(sportType);
         activity.setDistance(0.0);
+        activity.setElapsed_time(0);
         activity.setMoving_time(0);
         return activity;
     }
