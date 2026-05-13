@@ -96,7 +96,7 @@ public class StravaWebhook {
                     try {
                         if (event.isHidden()) onActivityHidden(athleteId, activityId, event.updates);
                         else onActivityUpdated(athleteId, activityId, event.updates);
-                    } catch (SQLException e) {
+                    } catch (SQLException | IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
@@ -127,9 +127,15 @@ public class StravaWebhook {
         log.info("StravaWebhook, onActivityCreated" + athlete.getFirstname() + " " + activityId);
     }
 
-    private void onActivityUpdated(Long athleteId, Long activityId, Map<String, String> updates) throws SQLException {
-        //Too much trouble to implement for now, at the moment everything is recalculated daily, so no need for this...
+    private void onActivityUpdated(Long athleteId, Long activityId, Map<String, String> updates) throws SQLException, IOException {
+//      If activity type changes, then remove ad re-add.
         BootcampAthlete athlete = db.findAthleteByStravaID(athleteId.toString());
+        if (updates.containsKey("type")){
+            activityProcessService.removeActivityEvent(athleteId.toString(), activityId);
+            StravaActivityResponse stravaActivityResponse = stravaService.getActivityById(activityId, athlete.getAccessToken(), false);
+            activityProcessService.addActivityEvent(athleteId.toString(), stravaActivityResponse);
+            log.info("StravaWebhook, onActivityUpdated, type changed " +  athlete.getFirstname() + " " + activityId + " " + updates);
+        }
         log.info("StravaWebhook, onActivityUpdated " +  athlete.getFirstname() + " " + activityId + " " + updates);
     }
 
