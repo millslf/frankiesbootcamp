@@ -166,6 +166,74 @@ public class ActivityProcessService {
         return sortedSummaries;
     }
 
+    public String getZenBotStatsContext(String loggedInAthlete) {
+        if (loggedInAthlete == null || performanceList == null) {
+            return "No athlete stats are currently available.";
+        }
+
+        PerformanceResponse performance = null;
+        for (PerformanceResponse candidate : performanceList) {
+            if (loggedInAthlete.equals(candidate.getAthlete().getEmail())) {
+                performance = candidate;
+                break;
+            }
+        }
+
+        if (performance == null || performance.getWeeklyPerformances() == null || performance.getWeeklyPerformances().isEmpty()) {
+            return "No athlete stats are currently available.";
+        }
+
+        int currentWeek = getNumberOfWeeksSinceStart();
+        WeeklyPerformance current = performance.getWeeklyPerformances().get(currentWeek);
+        if (current == null) {
+            return "No athlete stats are currently available.";
+        }
+
+        DecimalFormat shortDf = new DecimalFormat("#.##");
+        StringBuilder context = new StringBuilder();
+        context.append("Current week: ").append(current.getWeek()).append(". ");
+        context.append("Distance this week: ").append(shortDf.format(current.getTotalDistance())).append(" km. ");
+        context.append("Goal this week: ").append(shortDf.format(current.getWeekGoal())).append(" km. ");
+        context.append("Distance left this week: ")
+            .append(shortDf.format(Math.max(current.getWeekGoal() - current.getTotalDistance(), 0.0))).append(" km. ");
+        context.append("Percent of goal: ").append(shortDf.format(current.getTotalPercentOfGoal() * 100)).append("%. ");
+
+        List<String> recentWeeks = new ArrayList<>();
+        double lastFiveWeeksDistance = 0.0;
+        for (int week = currentWeek; week >= Math.max(1, currentWeek - 4); week--) {
+            WeeklyPerformance weekPerformance = performance.getWeeklyPerformances().get(week);
+            if (weekPerformance == null) {
+                continue;
+            }
+            lastFiveWeeksDistance += weekPerformance.getTotalDistance();
+            recentWeeks.add(weekPerformance.getWeek() + ": " + shortDf.format(weekPerformance.getTotalDistance()) + " km");
+        }
+
+        context.append("Distance across the last ").append(recentWeeks.size()).append(" weeks: ")
+            .append(shortDf.format(lastFiveWeeksDistance)).append(" km. ");
+        context.append("Recent weekly distances: ").append(String.join(", ", recentWeeks)).append(". ");
+
+        Integer leaderboardRank = null;
+        HashMap<String, Double> leaderboard = sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary);
+        if (leaderboard != null) {
+            int rank = 1;
+            for (Map.Entry<String, Double> entry : leaderboard.entrySet()) {
+                String athleteFirstName = performance.getAthlete().getFirstname();
+                if (entry.getKey().equalsIgnoreCase(athleteFirstName)) {
+                    leaderboardRank = rank;
+                    break;
+                }
+                rank++;
+            }
+        }
+
+        if (leaderboardRank != null) {
+            context.append("Current leaderboard rank by total challenge score: #").append(leaderboardRank).append(". ");
+        }
+
+        return context.toString().trim();
+    }
+
     private long getStartTimeStamp() {
         return START_TIMESTAMP;
     }

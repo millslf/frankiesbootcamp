@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,8 +21,54 @@ public class DBService {
     {
         try {
             ds = (DataSource) new InitialContext().lookup("java:jboss/strava");
+            ensureZenBotMessagesTable();
+            ensureAthleteAuditLogTable();
         } catch (NamingException e) {
             throw new RuntimeException("Failed to initialize DataSource", e);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to initialize ZenBot message storage", e);
+        }
+    }
+
+    private void ensureZenBotMessagesTable() throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                Statement statement = connection.createStatement()
+        ) {
+            statement.execute(
+                    "CREATE TABLE IF NOT EXISTS zenbot_messages (" +
+                            "id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
+                            "athlete_id VARCHAR(50) NOT NULL, " +
+                            "athlete_email VARCHAR(255) NULL, " +
+                            "athlete_name VARCHAR(255) NULL, " +
+                            "conversation_turn INT NOT NULL, " +
+                            "prompt TEXT NOT NULL, " +
+                            "reply TEXT NOT NULL, " +
+                            "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                            "INDEX idx_zenbot_messages_athlete_id (athlete_id), " +
+                            "CONSTRAINT fk_zenbot_messages_athlete FOREIGN KEY (athlete_id) REFERENCES athletes(id)" +
+                            ")"
+            );
+        }
+    }
+
+    private void ensureAthleteAuditLogTable() throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                Statement statement = connection.createStatement()
+        ) {
+            statement.execute(
+                    "CREATE TABLE IF NOT EXISTS athlete_audit_log (" +
+                            "id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
+                            "athlete_id VARCHAR(50) NOT NULL, " +
+                            "event_type VARCHAR(50) NOT NULL, " +
+                            "event_detail VARCHAR(255) NULL, " +
+                            "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                            "INDEX idx_athlete_audit_log_athlete_id (athlete_id), " +
+                            "INDEX idx_athlete_audit_log_event_type (event_type), " +
+                            "CONSTRAINT fk_athlete_audit_log_athlete FOREIGN KEY (athlete_id) REFERENCES athletes(id)" +
+                            ")"
+            );
         }
     }
 
@@ -160,6 +207,40 @@ public class DBService {
             statement.setString(9, email.getRefresh_token());
             statement.setLong(10, email.getLast_refresh());
 
+            statement.execute();
+        }
+    }
+
+    public void saveZenBotMessage(String athleteId, String athleteEmail, String athleteName,
+                                  int conversationTurn, String prompt, String reply) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO zenbot_messages " +
+                                "(athlete_id, athlete_email, athlete_name, conversation_turn, prompt, reply) " +
+                                "VALUES (?, ?, ?, ?, ?, ?)"
+                )
+        ) {
+            statement.setString(1, athleteId);
+            statement.setString(2, athleteEmail);
+            statement.setString(3, athleteName);
+            statement.setInt(4, conversationTurn);
+            statement.setString(5, prompt == null ? "" : prompt);
+            statement.setString(6, reply == null ? "" : reply);
+            statement.execute();
+        }
+    }
+
+    public void saveAthleteAuditEvent(String athleteId, String eventType, String eventDetail) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO athlete_audit_log (athlete_id, event_type, event_detail) VALUES (?, ?, ?)"
+                )
+        ) {
+            statement.setString(1, athleteId);
+            statement.setString(2, eventType);
+            statement.setString(3, eventDetail);
             statement.execute();
         }
     }

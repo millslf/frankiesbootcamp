@@ -55,7 +55,9 @@ public class StravaService {
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 StravaAuthResponse data = new Gson().fromJson(response.body().string(), StravaAuthResponse.class);
-                db.saveAthlete(data.getBootcampAthlete());
+                BootcampAthlete athlete = data.getBootcampAthlete();
+                db.saveAthlete(athlete);
+                db.saveAthleteAuditEvent(athlete.getId(), "login", "Initial Strava token exchange");
             }
         }
     }
@@ -80,7 +82,9 @@ public class StravaService {
             try (Response response = client.newCall(request).execute()) {
                 if (response.isSuccessful()) {
                     StravaRefreshResponse data = new Gson().fromJson(response.body().string(), StravaRefreshResponse.class);
-                    db.saveAthlete(data.getBootcampAthlete(athlete));
+                    BootcampAthlete refreshedAthlete = data.getBootcampAthlete(athlete);
+                    db.saveAthlete(refreshedAthlete);
+                    db.saveAthleteAuditEvent(refreshedAthlete.getId(), "refresh", "Strava token refresh");
                     athlete.setAccessToken(data.getAccess_token());
                 }
             }
