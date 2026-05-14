@@ -1,0 +1,124 @@
+<%
+    String zenCtx = request.getContextPath();
+    Object zenAthlete = request.getAttribute("athlete");
+    boolean zenbotVisible = zenAthlete != null;
+%>
+<% if (zenbotVisible) { %>
+<div id="zenbotBackdrop" class="zenbot-backdrop d-none" aria-hidden="true"></div>
+<div id="zenbotWidget" class="zenbot-widget">
+    <button id="zenbotToggle" class="zenbot-toggle" type="button" aria-expanded="false" aria-controls="zenbotPanel">
+        <i class="bi bi-chat-heart-fill"></i>
+        <span>FrankiZen</span>
+    </button>
+
+    <div id="zenbotPanel" class="zenbot-panel d-none" aria-live="polite">
+        <div class="zenbot-header">
+            <div>
+                <strong>FrankiZen</strong>
+                <div class="zenbot-subtitle">Small wisdom, light cardio.</div>
+            </div>
+            <button id="zenbotClose" class="btn btn-sm btn-link text-decoration-none" type="button" aria-label="Close chat">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div id="zenbotMessages" class="zenbot-messages">
+            <div class="zenbot-message zenbot-message-bot">Hi I am FrankiZenBot, ask a question to get inspired...</div>
+        </div>
+
+        <form id="zenbotForm" class="zenbot-form">
+            <input id="zenbotInput" class="form-control" type="text" maxlength="280" placeholder="Ask FrankiZen something..." autocomplete="off">
+            <button class="btn btn-primary" type="submit">Ask</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const backdrop = document.getElementById('zenbotBackdrop');
+        const toggle = document.getElementById('zenbotToggle');
+        const panel = document.getElementById('zenbotPanel');
+        const closeBtn = document.getElementById('zenbotClose');
+        const form = document.getElementById('zenbotForm');
+        const input = document.getElementById('zenbotInput');
+        const messages = document.getElementById('zenbotMessages');
+        const endpoint = '<%=zenCtx%>/app/ZenBot';
+        let chatEnabled = true;
+
+        if (!backdrop || !toggle || !panel || !form || !input || !messages) {
+            return;
+        }
+
+        messages.innerHTML = '';
+        appendMessage('Hi I am FrankiZenBot, ask a question to get inspired...', 'bot');
+        input.placeholder = 'Ask FrankiZen something...';
+        input.disabled = false;
+        form.querySelector('button[type="submit"]').disabled = false;
+
+        function setOpen(open) {
+            panel.classList.toggle('d-none', !open);
+            backdrop.classList.toggle('d-none', !open);
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (open) {
+                input.focus();
+            }
+        }
+
+        function appendMessage(text, kind) {
+            const el = document.createElement('div');
+            el.className = 'zenbot-message ' + (kind === 'user' ? 'zenbot-message-user' : 'zenbot-message-bot');
+            el.textContent = text;
+            messages.appendChild(el);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        toggle.addEventListener('click', function () {
+            setOpen(panel.classList.contains('d-none'));
+        });
+
+        closeBtn.addEventListener('click', function () {
+            setOpen(false);
+        });
+
+        backdrop.addEventListener('click', function () {
+            setOpen(false);
+        });
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            if (!chatEnabled) {
+                appendMessage('FrankiZen speaks after login. Until then, the footpath remains available.', 'bot');
+                return;
+            }
+            const question = input.value.trim();
+            if (!question) {
+                return;
+            }
+
+            appendMessage(question, 'user');
+            input.value = '';
+
+            try {
+                const body = new URLSearchParams();
+                body.set('question', question);
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    credentials: 'include',
+                    cache: 'no-store',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                    body: body.toString()
+                });
+
+                if (!res.ok) {
+                    throw new Error('Chat request failed');
+                }
+
+                const data = await res.json();
+                appendMessage(data.reply || 'A brisk walk has interrupted the wisdom stream.', 'bot');
+            } catch (_) {
+                appendMessage('The clouds are buffering. Try again after a stretch.', 'bot');
+            }
+        });
+    })();
+</script>
+<% } %>

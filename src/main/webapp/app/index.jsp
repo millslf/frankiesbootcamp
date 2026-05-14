@@ -74,6 +74,8 @@
     </div>
 </div>
 
+<%@ include file="/WEB-INF/jspf/zenbot.jspf" %>
+
 <script>
     document.getElementsByClassName("tab-button")[0].click(); // Default to first tab
 </script>
