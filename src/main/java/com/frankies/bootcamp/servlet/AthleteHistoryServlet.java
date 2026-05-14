@@ -42,6 +42,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
         String athleteName = "";
         try {
             BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
+            db.saveAthleteAuditEvent(loggedInAthlete.getId(), "HistoryServlet", "Checking out dashboard");
             if (loggedInAthlete == null) {
                 log.info("Athlete not authorised: " + authenticatedUserMail);
                 out.println("<html><body>");

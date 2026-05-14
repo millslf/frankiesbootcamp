@@ -40,6 +40,7 @@ public class LeaderboardServlet extends BootcampServlet {
                 out.println("</body></html>");
                 return;
             }
+            db.saveAthleteAuditEvent(loggedInAthlete.getId(), "LeaderBoard", "Checking out LeaderBoard");
         } catch (SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
         }
