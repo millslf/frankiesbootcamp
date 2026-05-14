@@ -37,13 +37,13 @@
         <button class="tab-button active" onclick="openTab(event, 'Tab1Content')"><i
                 class="bi bi-hourglass-bottom header-icon"></i>Weekly History
         </button>
-        <button class="tab-button" onclick="openTab(event, 'Tab3Content')"><i
+        <button class="tab-button" onclick="openTab(event, 'Tab3Content', '<%=request.getContextPath()%>/app/LeaderBoard')"><i
                 class='bi bi-bar-chart-line-fill header-icon'></i>Leaderboard
         </button>
-        <button class="tab-button" onclick="openTab(event, 'Tab2Content')"><i class="bi bi-trophy-fill header-icon"></i>Honour
+        <button class="tab-button" onclick="openTab(event, 'Tab2Content', '<%=request.getContextPath()%>/app/HonourRoll')"><i class="bi bi-trophy-fill header-icon"></i>Honour
             Roll
         </button>
-        <button class="tab-button" onclick="openTab(event, 'Tab4Content')"><i class="bi bi-list-ol header-icon"></i>Summary
+        <button class="tab-button" onclick="openTab(event, 'Tab4Content', '<%=request.getContextPath()%>/app/AthleteSummary')"><i class="bi bi-list-ol header-icon"></i>Summary
         </button>
     </div>
 </div>
@@ -54,13 +54,10 @@
             <jsp:include page="/app/AthleteHistory"/>
         </div>
         <div id="Tab2Content" class="tab-content">
-            <jsp:include page="/app/HonourRoll"/>
         </div>
         <div id="Tab3Content" class="tab-content">
-            <jsp:include page="/app/LeaderBoard"/>
         </div>
         <div id="Tab4Content" class="tab-content">
-            <jsp:include page="/app/AthleteSummary"/>
         </div>
         <div id="Tab5Content" class="tab-content">
             <%@ include file="/WEB-INF/jspf/scoring-content.jspf" %>
@@ -81,7 +78,7 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function openTab(evt, tabName) {
+    function openTab(evt, tabName, endpoint) {
         var i, tabcontent, tablinks;
         tabcontent = document.getElementsByClassName("tab-content");
         for (i = 0; i < tabcontent.length; i++) {
@@ -91,10 +88,61 @@
         for (i = 0; i < tablinks.length; i++) {
             tablinks[i].classList.remove("active");
         }
-        document.getElementById(tabName).style.display = "block";
+        var tab = document.getElementById(tabName);
+        if (endpoint && !tab.dataset.loaded) {
+            fetch(endpoint, {
+                credentials: 'include',
+                cache: 'no-store'
+            }).then(function (response) {
+                if (!response.ok) {
+                    throw new Error('Failed to load tab');
+                }
+                return response.text();
+            }).then(function (html) {
+                tab.innerHTML = html;
+                tab.dataset.loaded = 'true';
+                initializeLazyTab(tab);
+            }).catch(function () {
+                tab.innerHTML = '<div class="container"><div class="alert alert-warning mt-3">This section could not be loaded right now.</div></div>';
+            });
+        }
+        tab.style.display = "block";
         if (evt.currentTarget.classList.contains("tab-button")) {
             evt.currentTarget.classList.add("active");
         }
+    }
+
+    function initializeLazyTab(tab) {
+        var buttons = tab.querySelectorAll('.accordion-button');
+        if (!buttons.length) {
+            return;
+        }
+
+        buttons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var isActive = this.classList.contains('active');
+
+                buttons.forEach(function (b) {
+                    b.classList.remove('active', 'btn-primary');
+                    b.classList.add('btn-secondary');
+                });
+
+                tab.querySelectorAll('.accordion-content').forEach(function (content) {
+                    content.classList.remove('active');
+                });
+
+                if (!isActive) {
+                    this.classList.add('active', 'btn-primary');
+                    this.classList.remove('btn-secondary');
+
+                    var contentId = this.id === 'btnScore' ? 'scoreContent' : 'progressContent';
+                    var content = tab.querySelector('#' + contentId);
+                    if (content) {
+                        content.classList.add('active');
+                    }
+                }
+            });
+        });
     }
 </script>
 </body>

@@ -39,6 +39,7 @@ public class HonourRollServlet extends BootcampServlet {
                 out.println("</body></html>");
                 return;
             }
+            db.saveAthleteAuditEvent(loggedInAthlete.getId(), "HonourRoll", "Checking out HonourRoll");
         } catch (SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
         }
