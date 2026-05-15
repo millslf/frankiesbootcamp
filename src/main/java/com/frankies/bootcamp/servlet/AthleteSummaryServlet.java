@@ -40,7 +40,6 @@ public class AthleteSummaryServlet extends BootcampServlet {
                 out.println("</body></html>");
                 return;
             }
-            db.saveAthleteAuditEvent(loggedInAthlete.getId(), "AthleteSummary", "Checking out Athlete Summary");
             summaryContent = activityProcessService.getLoggedInAthleteSummary(loggedInAthlete.getEmail());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
