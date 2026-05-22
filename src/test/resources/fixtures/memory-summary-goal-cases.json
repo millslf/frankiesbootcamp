@@ -1,0 +1,162 @@
+[
+  {
+    "athlete": {
+      "lastname": "North",
+      "firstname": "Taylor",
+      "goal": 20.0
+    },
+    "weeklyPerformances": {
+      "1": {
+        "week": "Week1",
+        "weekGoal": 20.0,
+        "sports": {
+          "Run": 12.0,
+          "Workout": 3.0
+        },
+        "sportsCount": {
+          "Run": 2,
+          "Workout": 1
+        },
+        "sportsOriginalDistance": {
+          "Run": 12.0
+        },
+        "sportsOriginalDuration": {
+          "Workout": 0.6
+        },
+        "totalDistance": 15.0,
+        "totalPercentOfGoal": 0.75,
+        "weekScore": 0.5,
+        "isSick": false,
+        "averageWeeklyScore": 0.5
+      }
+    },
+    "distanceToDate": 15.0,
+    "scoreToDate": 0.5,
+    "stravaActivityDetails": [
+      {
+        "week": 1,
+        "stravaActivityId": 4001001,
+        "sport": {
+          "originalDistance": 12.0,
+          "calculatedDistance": 12.0,
+          "sportType": "Run"
+        }
+      },
+      {
+        "week": 1,
+        "stravaActivityId": 4001002,
+        "sport": {
+          "originalDuration": 0.6,
+          "calculatedDistance": 3.0,
+          "sportType": "Workout"
+        }
+      }
+    ]
+  },
+  {
+    "athlete": {
+      "lastname": "Lane",
+      "firstname": "Morgan",
+      "goal": 20.0
+    },
+    "weeklyPerformances": {
+      "1": {
+        "week": "Week1",
+        "weekGoal": 20.0,
+        "sports": {
+          "Run": 16.0,
+          "Walk": 4.0
+        },
+        "sportsCount": {
+          "Run": 2,
+          "Walk": 1
+        },
+        "sportsOriginalDistance": {
+          "Run": 16.0,
+          "Walk": 5.3333
+        },
+        "sportsOriginalDuration": {},
+        "totalDistance": 20.0,
+        "totalPercentOfGoal": 1.0,
+        "weekScore": 1.0,
+        "isSick": false,
+        "averageWeeklyScore": 1.0
+      }
+    },
+    "distanceToDate": 20.0,
+    "scoreToDate": 1.0,
+    "stravaActivityDetails": [
+      {
+        "week": 1,
+        "stravaActivityId": 5001001,
+        "sport": {
+          "originalDistance": 16.0,
+          "calculatedDistance": 16.0,
+          "sportType": "Run"
+        }
+      },
+      {
+        "week": 1,
+        "stravaActivityId": 5001002,
+        "sport": {
+          "originalDistance": 5.3333,
+          "calculatedDistance": 4.0,
+          "sportType": "Walk"
+        }
+      }
+    ]
+  },
+  {
+    "athlete": {
+      "lastname": "Brooks",
+      "firstname": "Jamie",
+      "goal": 20.0
+    },
+    "weeklyPerformances": {
+      "1": {
+        "week": "Week1",
+        "weekGoal": 20.0,
+        "sports": {
+          "Run": 18.0,
+          "Trail run": 6.0
+        },
+        "sportsCount": {
+          "Run": 2,
+          "Trail run": 1
+        },
+        "sportsOriginalDistance": {
+          "Run": 18.0,
+          "Trail run": 5.0
+        },
+        "sportsOriginalDuration": {},
+        "totalDistance": 24.0,
+        "totalPercentOfGoal": 1.2,
+        "weekScore": 1.5,
+        "isSick": false,
+        "averageWeeklyScore": 1.5
+      }
+    },
+    "distanceToDate": 24.0,
+    "scoreToDate": 1.5,
+    "stravaActivityDetails": [
+      {
+        "week": 1,
+        "stravaActivityId": 6001001,
+        "sport": {
+          "originalDistance": 18.0,
+          "calculatedDistance": 18.0,
+          "sportType": "Run"
+        }
+      },
+      {
+        "week": 1,
+        "stravaActivityId": 6001002,
+        "sport": {
+          "originalDistance": 5.0,
+          "calculatedDistance": 6.0,
+          "sportType": "Trail run"
+        }
+      }
+    ]
+  }
+]

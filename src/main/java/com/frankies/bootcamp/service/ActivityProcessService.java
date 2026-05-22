@@ -383,8 +383,14 @@ public class ActivityProcessService {
 
     public boolean removeActivityEvent(String athleteId, Long activityId) {
         PerformanceResponse perf = findPerfByAthleteId(athleteId);
+        if (perf == null || activityId == null) return false;
+
         PerformanceResponse.StravaActivityDetails stravaActivityDetails = perf.getStravaActivityDetailsByStravaID(activityId);
+        if (stravaActivityDetails == null || stravaActivityDetails.getWeek() == null) return false;
+
         final int targetWeek = stravaActivityDetails.getWeek();
+
+        if (perf.getWeeklyPerformances() == null) return false;
 
         WeeklyPerformance weekPerf = perf.getWeeklyPerformances().get(targetWeek);
         if (weekPerf == null) return false;
@@ -422,18 +428,35 @@ public class ActivityProcessService {
                                  long startTsSec,
                                  long weekSecs) {
         if (perf.getWeeklyPerformances() == null || perf.getWeeklyPerformances().isEmpty()) {
-            long weekEnding = startTsSec + weekSecs;
-            WeeklyPerformance wp = new WeeklyPerformance("Week1", weekEnding, athlete.getGoal(), -1.0);
-            perf.addWeeklyPerformance(wp, 1);
+            long weekOneEnding = startTsSec + weekSecs;
+            WeeklyPerformance weekOne = new WeeklyPerformance("Week1", weekOneEnding, athlete.getGoal(), -1.0);
+            perf.addWeeklyPerformance(weekOne, 1);
         }
-        int have = perf.getWeeklyPerformances().size();
-        for (int w = have + 1; w <= upToWeek; w++) {
-            long weekEnding = startTsSec + (w * weekSecs);
-            com.frankies.bootcamp.model.WeeklyPerformance prev = perf.getWeeklyPerformances().get(w - 2);
-            double goalForWeek = prev.getWeekGoal();
-            double carryForward = (w == have + 1) ? prev.getTotalDistance() : 0.0;
-            WeeklyPerformance wp = new WeeklyPerformance("Week" + w, weekEnding, goalForWeek, carryForward);
-            perf.addWeeklyPerformance(wp, w);
+
+        int highestExistingWeek = perf.getWeeklyPerformances().keySet().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(1);
+
+        for (int weekNumber = 2; weekNumber <= upToWeek; weekNumber++) {
+            if (perf.getWeeklyPerformances().containsKey(weekNumber)) {
+                continue;
+            }
+
+            WeeklyPerformance previousWeek = perf.getWeeklyPerformances().get(weekNumber - 1);
+            if (previousWeek == null) {
+                throw new IllegalStateException("Missing weekly performance for week " + (weekNumber - 1));
+            }
+
+            long weekEnding = startTsSec + (weekNumber * weekSecs);
+            boolean isFirstNewWeek = weekNumber > highestExistingWeek;
+            double carryForward = isFirstNewWeek ? previousWeek.getTotalDistance() : 0.0;
+            WeeklyPerformance nextWeek = new WeeklyPerformance(
+                    "Week" + weekNumber,
+                    weekEnding,
+                    previousWeek.getWeekGoal(),
+                    carryForward);
+            perf.addWeeklyPerformance(nextWeek, weekNumber);
         }
     }
 

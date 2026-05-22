@@ -49,8 +49,11 @@ public class ZenBotServlet extends BootcampServlet {
             session.setAttribute("zenBotConversationTurn", conversationTurn);
         }
 
+        boolean usedLookup = aiMessageService != null && aiMessageService.shouldUseWebLookup(question);
         String reply = aiMessageService != null
-            ? aiMessageService.getZenBotReply(question, athleteName, conversationTurn, statsContext)
+            ? (usedLookup
+                ? aiMessageService.getZenBotReplyWithLookup(question, athleteName, conversationTurn, statsContext)
+                : aiMessageService.getZenBotReply(question, athleteName, conversationTurn, statsContext))
             : "The tiny coach is resting. A short walk is still available to you.";
 
         if (dbService != null) {
@@ -62,7 +65,7 @@ public class ZenBotServlet extends BootcampServlet {
         }
 
         try (PrintWriter out = response.getWriter()) {
-            out.write("{\"reply\":\"" + escapeJson(reply) + "\"}");
+            out.write("{\"reply\":\"" + escapeJson(reply) + "\",\"usedLookup\":" + usedLookup + "}");
         }
     }
 
