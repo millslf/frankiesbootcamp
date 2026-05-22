@@ -1,0 +1,397 @@
+[
+  {
+    "athlete": {
+      "lastname": "Stone",
+      "firstname": "Alex",
+      "goal": 18.0
+    },
+    "sports": {
+      "Walk": 6.45,
+      "Trail run": 12.34,
+      "Run": 36.72,
+      "Workout": 10.85,
+      "Road ride": 5.91
+    },
+    "weeklyPerformances": {
+      "1": {
+        "week": "Week1",
+        "weekGoal": 18.0,
+        "sports": {
+          "Walk": 2.4,
+          "Run": 10.2,
+          "Workout": 3.4
+        },
+        "sportsCount": {
+          "Walk": 2,
+          "Run": 2,
+          "Workout": 1
+        },
+        "sportsOriginalDistance": {
+          "Walk": 3.2,
+          "Run": 10.2
+        },
+        "sportsOriginalDuration": {
+          "Workout": 0.68
+        },
+        "totalDistance": 16.0,
+        "totalPercentOfGoal": 0.8889,
+        "weekScore": 0.5,
+        "isSick": false,
+        "averageWeeklyScore": 0.5
+      },
+      "2": {
+        "week": "Week2",
+        "weekGoal": 18.0,
+        "sports": {
+          "Trail run": 5.8,
+          "Run": 9.6,
+          "Workout": 3.8
+        },
+        "sportsCount": {
+          "Trail run": 1,
+          "Run": 2,
+          "Workout": 1
+        },
+        "sportsOriginalDistance": {
+          "Trail run": 4.83,
+          "Run": 9.6
+        },
+        "sportsOriginalDuration": {
+          "Workout": 0.76
+        },
+        "totalDistance": 19.2,
+        "totalPercentOfGoal": 1.0667,
+        "weekScore": 1.0,
+        "isSick": false,
+        "averageWeeklyScore": 0.75
+      },
+      "3": {
+        "week": "Week3",
+        "weekGoal": 19.8,
+        "sports": {
+          "Run": 8.1,
+          "Road ride": 5.91,
+          "Workout": 3.65
+        },
+        "sportsCount": {
+          "Run": 1,
+          "Road ride": 1,
+          "Workout": 1
+        },
+        "sportsOriginalDistance": {
+          "Run": 8.1,
+          "Road ride": 11.82
+        },
+        "sportsOriginalDuration": {
+          "Workout": 0.73
+        },
+        "totalDistance": 17.66,
+        "totalPercentOfGoal": 0.8919,
+        "weekScore": 0.5,
+        "isSick": true,
+        "averageWeeklyScore": 0.75
+      }
+    },
+    "distanceToDate": 52.86,
+    "scoreToDate": 2.0,
+    "stravaActivityDetails": [
+      {
+        "week": 1,
+        "stravaActivityId": 1001001,
+        "sport": {
+          "originalDistance": 3.2,
+          "calculatedDistance": 2.4,
+          "sportType": "Walk"
+        }
+      },
+      {
+        "week": 1,
+        "stravaActivityId": 1001002,
+        "sport": {
+          "originalDistance": 5.1,
+          "calculatedDistance": 5.1,
+          "sportType": "Run"
+        }
+      },
+      {
+        "week": 1,
+        "stravaActivityId": 1001003,
+        "sport": {
+          "originalDuration": 0.68,
+          "calculatedDistance": 3.4,
+          "sportType": "Workout"
+        }
+      },
+      {
+        "week": 2,
+        "stravaActivityId": 1002001,
+        "sport": {
+          "originalDistance": 4.83,
+          "calculatedDistance": 5.8,
+          "sportType": "Trail run"
+        }
+      },
+      {
+        "week": 2,
+        "stravaActivityId": 1002002,
+        "sport": {
+          "originalDistance": 9.6,
+          "calculatedDistance": 9.6,
+          "sportType": "Run"
+        }
+      },
+      {
+        "week": 3,
+        "stravaActivityId": 1003001,
+        "sport": {
+          "originalDistance": 11.82,
+          "calculatedDistance": 5.91,
+          "sportType": "Road ride"
+        }
+      }
+    ]
+  },
+  {
+    "athlete": {
+      "lastname": "Rivera",
+      "firstname": "Jordan",
+      "goal": 22.0
+    },
+    "sports": {
+      "Walk": 4.2,
+      "Kayak": 7.8,
+      "Run": 28.4,
+      "Workout": 8.25,
+      "StandUpPaddling": 6.5
+    },
+    "weeklyPerformances": {
+      "1": {
+        "week": "Week1",
+        "weekGoal": 22.0,
+        "sports": {
+          "Run": 12.5,
+          "Workout": 4.1
+        },
+        "sportsCount": {
+          "Run": 2,
+          "Workout": 1
+        },
+        "sportsOriginalDistance": {
+          "Run": 12.5
+        },
+        "sportsOriginalDuration": {
+          "Workout": 0.82
+        },
+        "totalDistance": 16.6,
+        "totalPercentOfGoal": 0.7545,
+        "weekScore": 0.5,
+        "isSick": false,
+        "averageWeeklyScore": 0.5
+      },
+      "2": {
+        "week": "Week2",
+        "weekGoal": 22.0,
+        "sports": {
+          "Walk": 4.2,
+          "Run": 9.9,
+          "Kayak": 7.8
+        },
+        "sportsCount": {
+          "Walk": 2,
+          "Run": 1,
+          "Kayak": 1
+        },
+        "sportsOriginalDistance": {
+          "Walk": 5.6,
+          "Run": 9.9
+        },
+        "sportsOriginalDuration": {
+          "Kayak": 1.04
+        },
+        "totalDistance": 21.9,
+        "totalPercentOfGoal": 0.9955,
+        "weekScore": 0.5,
+        "isSick": false,
+        "averageWeeklyScore": 0.5
+      },
+      "3": {
+        "week": "Week3",
+        "weekGoal": 24.2,
+        "sports": {
+          "StandUpPaddling": 6.5,
+          "Run": 6.0,
+          "Workout": 4.15
+        },
+        "sportsCount": {
+          "StandUpPaddling": 1,
+          "Run": 1,
+          "Workout": 1
+        },
+        "sportsOriginalDistance": {
+          "Run": 6.0
+        },
+        "sportsOriginalDuration": {
+          "StandUpPaddling": 0.87,
+          "Workout": 0.83
+        },
+        "totalDistance": 16.65,
+        "totalPercentOfGoal": 0.688,
+        "weekScore": 0.5,
+        "isSick": false,
+        "averageWeeklyScore": 0.5
+      }
+    },
+    "distanceToDate": 55.15,
+    "scoreToDate": 1.5,
+    "stravaActivityDetails": [
+      {
+        "week": 1,
+        "stravaActivityId": 2001001,
+        "sport": {
+          "originalDistance": 12.5,
+          "calculatedDistance": 12.5,
+          "sportType": "Run"
+        }
+      },
+      {
+        "week": 1,
+        "stravaActivityId": 2001002,
+        "sport": {
+          "originalDuration": 0.82,
+          "calculatedDistance": 4.1,
+          "sportType": "Workout"
+        }
+      },
+      {
+        "week": 2,
+        "stravaActivityId": 2002001,
+        "sport": {
+          "originalDistance": 5.6,
+          "calculatedDistance": 4.2,
+          "sportType": "Walk"
+        }
+      },
+      {
+        "week": 2,
+        "stravaActivityId": 2002002,
+        "sport": {
+          "originalDuration": 1.04,
+          "calculatedDistance": 7.8,
+          "sportType": "Kayak"
+        }
+      },
+      {
+        "week": 3,
+        "stravaActivityId": 2003001,
+        "sport": {
+          "originalDuration": 0.87,
+          "calculatedDistance": 6.5,
+          "sportType": "StandUpPaddling"
+        }
+      }
+    ]
+  },
+  {
+    "athlete": {
+      "lastname": "Patel",
+      "firstname": "Casey",
+      "goal": 15.0
+    },
+    "sports": {
+      "Run": 14.4,
+      "Walk": 3.0,
+      "Workout": 7.2
+    },
+    "weeklyPerformances": {
+      "1": {
+        "week": "Week1",
+        "weekGoal": 15.0,
+        "sports": {
+          "Run": 7.0,
+          "Workout": 3.6
+        },
+        "sportsCount": {
+          "Run": 1,
+          "Workout": 1
+        },
+        "sportsOriginalDistance": {
+          "Run": 7.0
+        },
+        "sportsOriginalDuration": {
+          "Workout": 0.72
+        },
+        "totalDistance": 10.6,
+        "totalPercentOfGoal": 0.7067,
+        "weekScore": 0.5,
+        "isSick": false,
+        "averageWeeklyScore": 0.5
+      },
+      "2": {
+        "week": "Week2",
+        "weekGoal": 15.0,
+        "sports": {
+          "Walk": 3.0,
+          "Run": 7.4,
+          "Workout": 3.6
+        },
+        "sportsCount": {
+          "Walk": 1,
+          "Run": 1,
+          "Workout": 1
+        },
+        "sportsOriginalDistance": {
+          "Walk": 4.0,
+          "Run": 7.4
+        },
+        "sportsOriginalDuration": {
+          "Workout": 0.72
+        },
+        "totalDistance": 14.0,
+        "totalPercentOfGoal": 0.9333,
+        "weekScore": 0.5,
+        "isSick": false,
+        "averageWeeklyScore": 0.5
+      }
+    },
+    "distanceToDate": 24.6,
+    "scoreToDate": 1.0,
+    "stravaActivityDetails": [
+      {
+        "week": 1,
+        "stravaActivityId": 3001001,
+        "sport": {
+          "originalDistance": 7.0,
+          "calculatedDistance": 7.0,
+          "sportType": "Run"
+        }
+      },
+      {
+        "week": 1,
+        "stravaActivityId": 3001002,
+        "sport": {
+          "originalDuration": 0.72,
+          "calculatedDistance": 3.6,
+          "sportType": "Workout"
+        }
+      },
+      {
+        "week": 2,
+        "stravaActivityId": 3002001,
+        "sport": {
+          "originalDistance": 4.0,
+          "calculatedDistance": 3.0,
+          "sportType": "Walk"
+        }
+      },
+      {
+        "week": 2,
+        "stravaActivityId": 3002002,
+        "sport": {
+          "originalDistance": 7.4,
+          "calculatedDistance": 7.4,
+          "sportType": "Run"
+        }
+      }
+    ]
+  }
+]

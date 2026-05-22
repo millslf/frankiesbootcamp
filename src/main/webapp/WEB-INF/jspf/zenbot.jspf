@@ -70,6 +70,7 @@
             el.textContent = text;
             messages.appendChild(el);
             messages.scrollTop = messages.scrollHeight;
+            return el;
         }
 
         toggle.addEventListener('click', function () {
@@ -97,6 +98,7 @@
 
             appendMessage(question, 'user');
             input.value = '';
+            const waitingMessage = appendMessage('FrankiZen is checking the outer internet mists...', 'bot');
 
             try {
                 const body = new URLSearchParams();
@@ -114,9 +116,9 @@
                 }
 
                 const data = await res.json();
-                appendMessage(data.reply || 'A brisk walk has interrupted the wisdom stream.', 'bot');
+                waitingMessage.textContent = data.reply || 'A brisk walk has interrupted the wisdom stream.';
             } catch (_) {
-                appendMessage('The clouds are buffering. Try again after a stretch.', 'bot');
+                waitingMessage.textContent = 'The clouds are buffering. Try again after a stretch.';
             }
         });
     })();

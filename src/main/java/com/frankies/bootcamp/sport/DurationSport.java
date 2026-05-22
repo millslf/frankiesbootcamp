@@ -15,8 +15,8 @@ public abstract class DurationSport extends BaseSport {
 
     @Override
     public void calculateDistance(StravaActivityResponse activity, Double multiplier) {
-        super.setCalculatedDistance((double) activity.getElapsed_time() / 3600 * multiplier);
-        setOriginalDuration((double) activity.getElapsed_time() / 3600);
+        super.setCalculatedDistance((double) activity.getMoving_time() / 3600 * multiplier);
+        setOriginalDuration((double) activity.getMoving_time() / 3600);
     }
 
 }
