@@ -20,13 +20,12 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import static com.frankies.bootcamp.constant.BootcampConstants.START_TIMESTAMP;
 
 @ApplicationScoped
-public class ActivityProcessService {
+public class ActivityProcessOld {
 
     private DBService db;
     private StravaService strava;
@@ -39,12 +38,12 @@ public class ActivityProcessService {
     private static Map<String, HashMap<String, Double>> sortedSummaries = new HashMap<>();
 
     @Inject
-    public ActivityProcessService(DBService db, StravaService strava) {
+    public ActivityProcessOld(DBService db, StravaService strava) {
         this.db = db;
         this.strava = strava;
     }
 
-    protected ActivityProcessService() {
+    protected ActivityProcessOld() {
         // for CDI proxying
     }
 
@@ -58,19 +57,63 @@ public class ActivityProcessService {
         List<StravaActivityResponse> stravaActivities;
         for (BootcampAthlete athlete : athleteList) {
             athlete = strava.refreshToken(athlete);
-            BuildContext context = initializeBuildContext(athlete);
-            PerformanceResponse performance = context.performance();
+            PerformanceResponse performance = new PerformanceResponse();
+            performance.setAthlete(athlete);
+            log.info("Busy with athlete:" + athlete.getFirstname() + " Token Expiry at:" +
+                    LocalDateTime.ofInstant(Instant.ofEpochMilli(athlete.getExpiresAt() * 1000), ZoneId.systemDefault()));
             stravaActivities = strava.getAthleteActivitiesForPeriod(getStartTimeStamp(), athlete.getAccessToken());
+            double distance = 0;
+            double score = 0;
+            int week = 1;
+            long weekEnding = getStartTimeStamp() + BootcampConstants.WEEK_IN_SECONDS;
+            WeeklyPerformance weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, athlete.getGoal(), -1.0);
             for (StravaActivityResponse activity : stravaActivities) {
                 if (!sports.contains(activity.getType() + " " + activity.getSport_type())) {
                     sports.add(activity.getType() + " " + activity.getSport_type());
                 }
-                context = applyActivity(performance, athlete, context, activity);
+                //Keep adding weeks in case an athlete did nothing for a week or more between activities.
+                int loopCount = 0;
+                while (Instant.parse(activity.getStart_date()).getEpochSecond() > weekEnding) {
+                    updateHonourRolls(week, weeklyPerformance, athlete);
+                    weeklyPerformance.setAverageWeeklyScore(score, week - 1);
+                    weeklyPerformance.setIsSick(athlete.isSick(week));
+                    score += weeklyPerformance.getWeekScore();
+                    performance.addWeeklyPerformance(weeklyPerformance, week);
+                    week++;
+                    weekEnding = weekEnding + BootcampConstants.WEEK_IN_SECONDS;
+                    weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, weeklyPerformance.getWeekGoal(),
+                            loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0);
+                    loopCount++;
+                }
+                BaseSport sport = SportFactory.getSport(activity);
+                if (sport != null) {
+                    performance.addSport(activity.getId(), week, sport);
+                    weeklyPerformance.addSports(sport);
+                    distance += sport.getCalculatedDistance();
+                }
             }
-            completePerformance(performance, athlete, context);
+            //Keep adding weeks in case an athlete did nothing for a week or more after last activity.
+            int loopCount = 0;
+            if (performance.getWeeklyPerformances() == null) {
+                performance.addWeeklyPerformance(weeklyPerformance, week);
+            }
+            while (performance.getWeeklyPerformances().size() < getNumberOfWeeksSinceStart()) {
+                updateHonourRolls(week, weeklyPerformance, athlete);
+                weeklyPerformance.setAverageWeeklyScore(score, week - 1);
+                weeklyPerformance.setIsSick(athlete.isSick(week));
+                score += weeklyPerformance.getWeekScore();
+                performance.addWeeklyPerformance(weeklyPerformance, week);
+                week++;
+                weekEnding = weekEnding + BootcampConstants.WEEK_IN_SECONDS;
+                weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, weeklyPerformance.getWeekGoal(),
+                        loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0);
+                loopCount++;
+            }
+            performance.setDistanceToDate(distance);
+            performance.setScoreToDate(score);
             performanceList.add(performance);
         }
-        ActivityProcessService.performanceList = performanceList;
+        ActivityProcessOld.performanceList = performanceList;
         log.info("All sports: " + sports);
     }
 
@@ -88,7 +131,7 @@ public class ActivityProcessService {
                 && athlete.getId().equals(existing.getAthlete().getId()));
 
         updatedPerformanceList.add(buildPerformanceForAthlete(athlete));
-        ActivityProcessService.performanceList = updatedPerformanceList;
+        ActivityProcessOld.performanceList = updatedPerformanceList;
         generateAllSummaryMaps();
     }
 
@@ -96,17 +139,61 @@ public class ActivityProcessService {
         return performanceList;
     }
 
-    protected PerformanceResponse buildPerformanceForAthlete(BootcampAthlete athlete) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
+    private PerformanceResponse buildPerformanceForAthlete(BootcampAthlete athlete) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
         BootcampAthlete refreshedAthlete = strava.refreshToken(athlete);
-        BuildContext context = initializeBuildContext(refreshedAthlete);
-        PerformanceResponse performance = context.performance();
+        PerformanceResponse performance = new PerformanceResponse();
+        performance.setAthlete(refreshedAthlete);
+        log.info("Busy with athlete:" + refreshedAthlete.getFirstname() + " Token Expiry at:" +
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(refreshedAthlete.getExpiresAt() * 1000), ZoneId.systemDefault()));
+
         List<StravaActivityResponse> stravaActivities = strava.getAthleteActivitiesForPeriod(getStartTimeStamp(), refreshedAthlete.getAccessToken());
+        double distance = 0;
+        double score = 0;
+        int week = 1;
+        long weekEnding = getStartTimeStamp() + BootcampConstants.WEEK_IN_SECONDS;
+        WeeklyPerformance weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, refreshedAthlete.getGoal(), -1.0);
 
         for (StravaActivityResponse activity : stravaActivities) {
-            context = applyActivity(performance, refreshedAthlete, context, activity);
+            int loopCount = 0;
+            while (Instant.parse(activity.getStart_date()).getEpochSecond() > weekEnding) {
+                updateHonourRolls(week, weeklyPerformance, refreshedAthlete);
+                weeklyPerformance.setAverageWeeklyScore(score, week - 1);
+                weeklyPerformance.setIsSick(refreshedAthlete.isSick(week));
+                score += weeklyPerformance.getWeekScore();
+                performance.addWeeklyPerformance(weeklyPerformance, week);
+                week++;
+                weekEnding = weekEnding + BootcampConstants.WEEK_IN_SECONDS;
+                weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, weeklyPerformance.getWeekGoal(),
+                        loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0);
+                loopCount++;
+            }
+            BaseSport sport = SportFactory.getSport(activity);
+            if (sport != null) {
+                performance.addSport(activity.getId(), week, sport);
+                weeklyPerformance.addSports(sport);
+                distance += sport.getCalculatedDistance();
+            }
         }
 
-        completePerformance(performance, refreshedAthlete, context);
+        int loopCount = 0;
+        if (performance.getWeeklyPerformances() == null) {
+            performance.addWeeklyPerformance(weeklyPerformance, week);
+        }
+        while (performance.getWeeklyPerformances().size() < getNumberOfWeeksSinceStart()) {
+            updateHonourRolls(week, weeklyPerformance, refreshedAthlete);
+            weeklyPerformance.setAverageWeeklyScore(score, week - 1);
+            weeklyPerformance.setIsSick(refreshedAthlete.isSick(week));
+            score += weeklyPerformance.getWeekScore();
+            performance.addWeeklyPerformance(weeklyPerformance, week);
+            week++;
+            weekEnding = weekEnding + BootcampConstants.WEEK_IN_SECONDS;
+            weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, weeklyPerformance.getWeekGoal(),
+                    loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0);
+            loopCount++;
+        }
+
+        performance.setDistanceToDate(distance);
+        performance.setScoreToDate(score);
         return performance;
     }
 
@@ -233,124 +320,6 @@ public class ActivityProcessService {
         return START_TIMESTAMP;
     }
 
-    private BuildContext initializeBuildContext(BootcampAthlete athlete) {
-        PerformanceResponse performance = new PerformanceResponse();
-        performance.setAthlete(athlete);
-        log.info("Busy with athlete:" + athlete.getFirstname() + " Token Expiry at:" +
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(athlete.getExpiresAt() * 1000), ZoneId.systemDefault()));
-        int week = 1;
-        long weekEnding = getStartTimeStamp() + BootcampConstants.WEEK_IN_SECONDS;
-        WeeklyPerformance weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, athlete.getGoal(), -1.0);
-        return new BuildContext(performance, weeklyPerformance, week, weekEnding, 0.0, 0.0);
-    }
-
-    private BuildContext applyActivity(PerformanceResponse performance,
-                                       BootcampAthlete athlete,
-                                       BuildContext context,
-                                       StravaActivityResponse activity) {
-        WeekProgress progress = advanceWeeksUntil(performance, athlete, context.weeklyPerformance(), context.week(), context.weekEnding(), context.score(),
-                Instant.parse(activity.getStart_date()).getEpochSecond());
-        context = context.withProgress(progress);
-        BaseSport sport = SportFactory.getSport(activity);
-        if (sport != null) {
-            performance.addSport(activity.getId(), context.week(), sport);
-            context.weeklyPerformance().addSports(sport);
-            context = context.withDistance(context.distance() + sport.getCalculatedDistance());
-        }
-        return context;
-    }
-
-    private void completePerformance(PerformanceResponse performance,
-                                     BootcampAthlete athlete,
-                                     BuildContext context) {
-        if (performance.getWeeklyPerformances() == null) {
-            performance.addWeeklyPerformance(context.weeklyPerformance(), context.week());
-        }
-        context = context.withProgress(advanceWeeksUntilCurrent(performance, athlete, context.weeklyPerformance(), context.week(), context.weekEnding(), context.score()));
-        performance.setDistanceToDate(context.distance());
-        performance.setScoreToDate(context.score());
-    }
-
-    private WeekProgress finalizeWeekAndAdvance(PerformanceResponse performance,
-                                                BootcampAthlete athlete,
-                                                WeeklyPerformance weeklyPerformance,
-                                                int week,
-                                                long weekEnding,
-                                                double score,
-                                                int loopCount) {
-        updateHonourRolls(week, weeklyPerformance, athlete);
-        weeklyPerformance.setAverageWeeklyScore(score, week - 1);
-        weeklyPerformance.setIsSick(athlete.isSick(week));
-        score += weeklyPerformance.getWeekScore();
-        performance.addWeeklyPerformance(weeklyPerformance, week);
-
-        int nextWeek = week + 1;
-        long nextWeekEnding = weekEnding + BootcampConstants.WEEK_IN_SECONDS;
-        WeeklyPerformance nextWeeklyPerformance = new WeeklyPerformance(
-                "Week" + nextWeek,
-                nextWeekEnding,
-                weeklyPerformance.getWeekGoal(),
-                loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0
-        );
-
-        return new WeekProgress(nextWeeklyPerformance, nextWeek, nextWeekEnding, score);
-    }
-
-    private WeekProgress advanceWeeksUntil(PerformanceResponse performance,
-                                           BootcampAthlete athlete,
-                                           WeeklyPerformance weeklyPerformance,
-                                           int week,
-                                           long weekEnding,
-                                           double score,
-                                           long targetEpochSecond) {
-        int loopCount = 0;
-        while (targetEpochSecond > weekEnding) {
-            WeekProgress progress = finalizeWeekAndAdvance(performance, athlete, weeklyPerformance, week, weekEnding, score, loopCount);
-            weeklyPerformance = progress.weeklyPerformance();
-            week = progress.week();
-            weekEnding = progress.weekEnding();
-            score = progress.score();
-            loopCount++;
-        }
-        return new WeekProgress(weeklyPerformance, week, weekEnding, score);
-    }
-
-    private WeekProgress advanceWeeksUntilCurrent(PerformanceResponse performance,
-                                                  BootcampAthlete athlete,
-                                                  WeeklyPerformance weeklyPerformance,
-                                                  int week,
-                                                  long weekEnding,
-                                                  double score) {
-        int loopCount = 0;
-        while (performance.getWeeklyPerformances().size() < getNumberOfWeeksSinceStart()) {
-            WeekProgress progress = finalizeWeekAndAdvance(performance, athlete, weeklyPerformance, week, weekEnding, score, loopCount);
-            weeklyPerformance = progress.weeklyPerformance();
-            week = progress.week();
-            weekEnding = progress.weekEnding();
-            score = progress.score();
-            loopCount++;
-        }
-        return new WeekProgress(weeklyPerformance, week, weekEnding, score);
-    }
-
-    private record WeekProgress(WeeklyPerformance weeklyPerformance, int week, long weekEnding, double score) {
-    }
-
-    private record BuildContext(PerformanceResponse performance,
-                                WeeklyPerformance weeklyPerformance,
-                                int week,
-                                long weekEnding,
-                                double score,
-                                double distance) {
-        private BuildContext withProgress(WeekProgress progress) {
-            return new BuildContext(performance, progress.weeklyPerformance(), progress.week(), progress.weekEnding(), progress.score(), distance);
-        }
-
-        private BuildContext withDistance(double updatedDistance) {
-            return new BuildContext(performance, weeklyPerformance, week, weekEnding, score, updatedDistance);
-        }
-    }
-
     public void generateAllSummaryMaps() {
         HashMap<String, Double> currentWeekTotalDistanceSummary = new HashMap<>();
         for (PerformanceResponse performance : performanceList) {
@@ -389,17 +358,9 @@ public class ActivityProcessService {
     }
 
     private String getSummary(HashMap<String, Double> currentWeekSummary, String suffix) {
-        if (currentWeekSummary == null || currentWeekSummary.isEmpty()) {
-            return "\nNog niemand het data vir hierdie opsomming beskikbaar nie.\n\n";
-        }
-
-        String leader = currentWeekSummary.keySet().stream().findFirst().orElse("Onbekend");
-        Double leaderValue = currentWeekSummary.values().stream().findFirst().orElse(0.0);
-        String remaining = currentWeekSummary.keySet().stream().skip(1).collect(Collectors.joining(", "));
-
         return "\nOns gewaardeerde voorloper vir die week is honourable " + currentWeekSummary.keySet().stream().findFirst().get()
-                + " met 'n totaal van " + df.format(leaderValue) + suffix + "\n" +
-                "Dan, in BAIE spesifieke volgorde het ons: " + remaining + "\n\n";
+                + " met 'n totaal van " + df.format(currentWeekSummary.values().stream().findFirst().get()) + suffix + "\n" +
+                "Dan, in BAIE spesifieke volgorde het ons: " + currentWeekSummary.keySet().stream().skip(1).collect(Collectors.joining(", ")) + "\n\n";
     }
 
     private String getScoreSummary(HashMap<String, Double> currentWeekSummary) {
@@ -534,8 +495,8 @@ public class ActivityProcessService {
     }
 
     private PerformanceResponse findPerfByAthleteId(String athleteId) {
-        if (ActivityProcessService.performanceList == null) return null;
-        for (PerformanceResponse p : ActivityProcessService.performanceList) {
+        if (ActivityProcessOld.performanceList == null) return null;
+        for (PerformanceResponse p : ActivityProcessOld.performanceList) {
             if (p.getAthlete() != null && p.getAthlete().getId().equals(athleteId)) {
                 return p;
             }

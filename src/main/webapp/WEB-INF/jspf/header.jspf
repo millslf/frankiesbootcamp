@@ -37,13 +37,18 @@
                         </a>
 
                         <a id="loginBtn" class="btn btn-outline-secondary mb-2"
-                           href="/app/">
+                           href="<%=ctx%>/login">
                             <i class="bi bi-box-arrow-in-right me-1"></i> Login
                         </a>
 
                         <a id="logoutBtn" class="btn btn-outline-secondary mb-2 d-none"
-                           href="javascript:void(0)" onclick="forceLogout()">
+                           href="<%=ctx%>/logout">
                             <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </a>
+
+                        <a id="switchUserBtn" class="btn btn-outline-secondary mb-2 d-none"
+                           href="<%=ctx%>/switch-user">
+                            <i class="bi bi-arrow-repeat me-1"></i> Switch user
                         </a>
 
                         <a class="btn btn-outline-dark mb-2" href="<%=ctx%>/scoring">
@@ -96,18 +101,19 @@
 <script>
     (function () {
         const ctx = '<%=ctx%>';
-        const state = { authed: false, name: '', email: '' };
+        const state = { authed: false, name: '', email: '', stravaLinked: false };
 
         async function fetchAuth() {
             try {
                 // cache buster + no-store to avoid any stale result
                 const r = await fetch(ctx + '/app/whoami.jsp?ts=' + Date.now(), {
                     credentials: 'include',
-                    cache: 'no-store'
+                    cache: 'no-store',
+                    redirect: 'manual'
                 });
 
-                // if ngrok bounced us to its login, treat as logged-out
-                if (r.redirected && (r.url.includes('/_ngrok/login') || r.url.includes('/ngrok/login'))) {
+                // if auth bounced us to any login endpoint, treat as logged-out without re-triggering auth
+                if (r.type === 'opaqueredirect' || (r.status >= 300 && r.status < 400)) {
                     setLoggedOut();
                 } else if (r.ok && (r.headers.get('content-type') || '').includes('application/json')) {
                     const d = await r.json();
@@ -115,6 +121,7 @@
                         state.authed = true;
                         state.name = d.name || '';
                         state.email = d.email || '';
+                        state.stravaLinked = d.stravaLinked === true;
                     } else {
                         setLoggedOut();
                     }
@@ -127,13 +134,14 @@
             render();
         }
 
-        function setLoggedOut() { state.authed = false; state.name = ''; state.email = ''; }
+        function setLoggedOut() { state.authed = false; state.name = ''; state.email = ''; state.stravaLinked = false; }
 
         function render() {
             const group = document.querySelector('#offcanvasMenu .btn-group-vertical');
             const homeBtn       = document.getElementById('homeBtn');
             const loginBtn      = document.getElementById('loginBtn');
             const logoutBtn     = document.getElementById('logoutBtn');
+            const switchUserBtn = document.getElementById('switchUserBtn');
             const linkBtn   = document.getElementById('linkStravaBtn');   // <--
             const signedInAs    = document.getElementById('signedInAs');
             const signedInName  = document.getElementById('signedInName');
@@ -151,18 +159,22 @@
                     }
                 }
                 logoutBtn && logoutBtn.classList.remove('d-none');
-                linkBtn && linkBtn.classList.add('d-none');
+                switchUserBtn && switchUserBtn.classList.remove('d-none');
+                if (linkBtn) {
+                    linkBtn.classList.toggle('d-none', state.stravaLinked);
+                }
             } else {
                 if (signedInAs) signedInAs.classList.add('d-none');
                 if (loginBtn) {
                     loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
-                    loginBtn.href = '/app/'; // /app triggers OAuth
+                    loginBtn.href = ctx + '/login';
                     if (group && homeBtn && homeBtn.nextElementSibling !== loginBtn) {
                         group.insertBefore(loginBtn, homeBtn.nextElementSibling);
                     }
                 }
                 logoutBtn && logoutBtn.classList.add('d-none');
-                linkBtn && linkBtn.classList.remove('d-none');
+                switchUserBtn && switchUserBtn.classList.add('d-none');
+                linkBtn && linkBtn.classList.add('d-none');
             }
         }
 
@@ -172,14 +184,6 @@
         const oc = document.getElementById('offcanvasMenu');
         if (oc) oc.addEventListener('show.bs.offcanvas', fetchAuth);
 
-        // logout helper
-        window.forceLogout = function () {
-            const i = document.createElement('iframe');
-            i.style.display = 'none';
-            i.src = '/ngrok/logout?auth_id=bootcamp';
-            document.body.appendChild(i);
-            setTimeout(() => { setLoggedOut(); render(); location.replace('/'); }, 500);
-        };
     })();
 
     function linkStravaPopup() {
@@ -201,5 +205,3 @@
         window.addEventListener('message', onMsg);
     }
 </script>
-
-

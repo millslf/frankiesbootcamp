@@ -40,7 +40,7 @@ public class ZenBotServlet extends BootcampServlet {
             athleteId = bootcampAthlete.getId();
         }
         String statsContext = activityProcessService != null
-            ? activityProcessService.getZenBotStatsContext(athleteEmail)
+            ? activityProcessService.getZenBotStatsContext(athleteId)
             : "No athlete stats are currently available.";
 
         if (session != null) {

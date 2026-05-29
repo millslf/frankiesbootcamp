@@ -1,18 +1,14 @@
 package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.constant.BootcampConstants;
-import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.service.ActivityProcessService;
-import com.frankies.bootcamp.service.DBService;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,28 +17,10 @@ import java.util.Map;
 public class LeaderboardServlet extends BootcampServlet {
     @Inject
     private ActivityProcessService activityProcessService;
-    @Inject
-    private DBService db;
-    private static final Logger log = Logger.getLogger(LeaderboardServlet.class);
-
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         DecimalFormat df = new DecimalFormat("#.##");
         response.setContentType("text/html");
-        String authenticatedUserMail = request.getHeader("Ngrok-Auth-User-Email");
         PrintWriter out = response.getWriter();
-
-        try {
-            BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
-            if (loggedInAthlete == null) {
-                log.info("Athlete not authorised: " + authenticatedUserMail);
-                out.println("<html><body>");
-                out.println("<h1>" + HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised</h1>");
-                out.println("</body></html>");
-                return;
-            }
-        } catch (SQLException e) {
-            log.error("AthletesResource, allAthleteSummary", e);
-        }
 
         Map<String, HashMap<String, Double>> sortedSummaries = activityProcessService.getSortedSummaries();
 

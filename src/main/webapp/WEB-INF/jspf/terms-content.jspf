@@ -43,7 +43,7 @@
             <p class="section-title">12. Contact</p>
             <p>Questions? <a href="mailto:frankiesbootcamp@gmail.com">frankiesbootcamp@gmail.com</a></p>
 
-            <p class="mt-4">See also our <a href="https://www.frankiesbootcamp.com/privacy">Privacy Policy</a>.</p>
+            <p class="mt-4">See also our <a href="<%=request.getContextPath()%>/privacy">Privacy Policy</a>.</p>
         </div>
     </div>
 </div>

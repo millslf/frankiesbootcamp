@@ -109,6 +109,12 @@
             <artifactId>service</artifactId>
             <version>0.18.2</version>
         </dependency>
+        <!-- Auth0 MVC helpers for Jakarta Servlet API -->
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>mvc-auth-commons</artifactId>
+            <version>1.11.0</version>
+        </dependency>
     </dependencies>
 
     <build>

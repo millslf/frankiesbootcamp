@@ -17,6 +17,7 @@ import org.wildfly.security.credential.store.CredentialStoreException;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.security.NoSuchAlgorithmException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public class StravaService {
         // for CDI proxying
     }
 
-    public void tokenExchange(String code) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
+    public BootcampAthlete tokenExchange(String code, String userId, String userEmail) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException, StravaLinkConflictException {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
         WildflyUtils wf = new WildflyUtils();
@@ -56,10 +57,23 @@ public class StravaService {
             if (response.isSuccessful()) {
                 StravaAuthResponse data = new Gson().fromJson(response.body().string(), StravaAuthResponse.class);
                 BootcampAthlete athlete = data.getBootcampAthlete();
-                db.saveAthlete(athlete);
+                athlete.setUserId(userId);
+                if (athlete.getEmail() == null || athlete.getEmail().isBlank()) {
+                    athlete.setEmail(userEmail);
+                }
+                if (athlete.getGoal() == null || athlete.getGoal() <= 0) {
+                    athlete.setGoal(20.0);
+                }
+                try {
+                    db.saveAthlete(athlete);
+                } catch (SQLIntegrityConstraintViolationException e) {
+                    throw new StravaLinkConflictException("This Strava profile is already linked to another Frankies Bootcamp user.", e);
+                }
                 db.saveAthleteAuditEvent(athlete.getId(), "login", "Initial Strava token exchange");
+                return athlete;
             }
         }
+        return null;
     }
 
     public BootcampAthlete refreshToken(BootcampAthlete athlete) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {

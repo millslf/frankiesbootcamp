@@ -47,6 +47,37 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
 - Both tables are intended to link to `athletes.id`.
 - There is currently no proper migration framework, so schema changes are still handled via startup DDL.
 
+### Test fixture added for future refactor safety
+
+- A sanitized check-in-safe fixture was added at `src\test\resources\fixtures\memory-summary-sanitized.json`.
+- It preserves the current in-memory summary structure shape while using fake names and a smaller realistic data set.
+- Intended primary use: `FBC-40` automated tests protecting current summary/scoring behavior before persistence refactors.
+- A second focused fixture was added at `src\test\resources\fixtures\memory-summary-goal-cases.json` for under-goal / exact-goal / over-goal scenarios.
+
+### Unit test progress
+
+- Unit test work for `FBC-40` was started and is meaningfully underway.
+- Added test classes:
+  - `src\test\java\com\frankies\bootcamp\model\WeeklyPerformanceTest.java`
+  - `src\test\java\com\frankies\bootcamp\model\PerformanceResponseTest.java`
+  - `src\test\java\com\frankies\bootcamp\service\ActivityProcessServiceTest.java`
+  - `src\test\java\com\frankies\bootcamp\fixture\PerformanceFixtureLoadingTest.java`
+  - `src\test\java\com\frankies\bootcamp\sport\SportFactoryTest.java`
+- Current estimated progress against the `FBC-40` prompt: about **68%**.
+- Covered so far:
+  - weekly goal progression rules
+  - exact-goal and over-goal scoring
+  - sick week scoring behavior
+  - sport add/remove behavior
+  - add/remove/update-style activity mutations in `ActivityProcessService`
+  - leaderboard ordering basics
+  - sport factory routing / unsupported sport handling
+  - fixture-driven totals, score ranking, remaining-distance, and goal-band checks
+- Important discovered issue while testing:
+  - `ActivityProcessService.ensureWeeksUpTo(...)` appears to have an off-by-one/null bug due to `get(w - 2)` when creating later weeks. This was exposed by a test path, but not fixed yet.
+- Important testing note:
+  - fixture-loading tests must use raw JSON assertions rather than Gson deserialization into `PerformanceResponse`, because `stravaActivityDetails.sport` is typed as abstract `BaseSport`.
+
 ## Important files
 
 - `src\main\java\com\frankies\bootcamp\service\AiMessageService.java`
@@ -59,6 +90,13 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
 - `src\main\webapp\WEB-INF\jspf\zenbot.jspf`
 - `src\main\webapp\WEB-INF\jspf\head-common.jspf`
 - `src\main\webapp\styles\main.css`
+- `src\test\resources\fixtures\memory-summary-sanitized.json`
+- `src\test\resources\fixtures\memory-summary-goal-cases.json`
+- `src\test\java\com\frankies\bootcamp\model\WeeklyPerformanceTest.java`
+- `src\test\java\com\frankies\bootcamp\model\PerformanceResponseTest.java`
+- `src\test\java\com\frankies\bootcamp\service\ActivityProcessServiceTest.java`
+- `src\test\java\com\frankies\bootcamp\fixture\PerformanceFixtureLoadingTest.java`
+- `src\test\java\com\frankies\bootcamp\sport\SportFactoryTest.java`
 
 ## Known constraints and follow-up notes
 
@@ -66,10 +104,51 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
 - Existing deployed databases may need manual migration work if the tables already existed before the latest FK/index changes.
 - There is an unsafe file at `src\main\resources\credentials.json` containing a live secret and it should not be committed.
 
+## Backlog grooming status
+
+Backlog grooming was continued and a prioritized "dev ready" board order was established for the next major phase. The current top of the board is:
+
+1. `FBC-47` auth foundation / multiple providers + email/password
+2. `FBC-40` automated tests protecting current scoring/summary behavior
+3. `FBC-86` "All Sports Equal" product philosophy
+4. `FBC-32` Hibernate + migration/persistence foundation
+5. `FBC-2` reproducible local development environment
+6. `FBC-3` containerized build + automated deployment pipeline
+7. `FBC-4` automated security scanning in CI/CD
+8. `FBC-36` narrowed credential/secret configuration cleanup
+9. `FBC-53` direct HTTPS + aligned upstream/proxy configuration
+10. `FBC-6` stricter browser script security / less inline script dependence
+11. `FBC-19` MAUI mobile app shell using WebView
+12. `FBC-20` App Store / Play Store readiness
+13. `FBC-12` complete registration flow
+14. `FBC-56` Strava link only in authenticated onboarding state
+15. `FBC-54` global + competition-scoped authorization model
+16. `FBC-16` competition creation/setup flow
+17. `FBC-30` athlete can belong to multiple competitions
+18. `FBC-37` competition-specific eligible sports
+19. `FBC-38` competition-specific distance ratios / normalization rules
+20. `FBC-22` replace large in-memory activity summary with persisted normalized activities + derived stats
+
+Additional board/backlog decisions made:
+
+- `FBC-35` was absorbed into `FBC-56`.
+- `FBC-8` was absorbed into `FBC-53` and `FBC-6`, so it no longer needs to stand alone.
+- `FBC-86` was moved up because it is a small early product-principle ticket that should shape later copy and defaults.
+- The app's future product direction is now explicitly multi-competition, with global admin, competition admin, owner, and athlete/member concepts.
+- Three new placeholder tickets were added to the backlog for:
+  - competition invitations and join flow
+  - global admin console / admin operations
+  - competition admin console
+
 ## Best next checks next session
 
 1. Verify the `page-landing` audit logs exactly once on initial `/app/` load.
 2. Verify `history`, `leaderboard`, `honour-roll`, and `summary` only audit on real user clicks.
 3. Confirm ZenBot visibility is correct in normal browsing and not just incognito.
 4. If needed, plan a real migration path for `zenbot_messages` and `athlete_audit_log` instead of relying on startup DDL.
+5. Resume backlog grooming from the remaining backlog items not yet reprioritized/prompted, starting with architecture/backlog items such as `FBC-60`, `FBC-24`, `FBC-52`, `FBC-26`, `FBC-27`, `FBC-28`, `FBC-29`, `FBC-33`, `FBC-34`, `FBC-44`, and the existing MCP/React migration sequences if more shaping is needed.
+6. Resume `FBC-40` from the current ~68% state, focusing next on:
+   - recalculation consistency from realistic flows
+   - summary-facing outputs / stats-context style assertions
+   - any additional edge-case coverage needed before major persistence refactors
 

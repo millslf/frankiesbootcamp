@@ -19,7 +19,7 @@ import java.util.Set;
 public class AuthenticationFilter implements Filter {
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/", "/index.jsp", "/privacy", "/privacy.jsp", "/terms", "/terms.jsp", "/scoring", "/scoring.jsp",
-            "/login", "/logout", "/error.jsp",
+            "/login", "/logout", "/error.jsp", "/api/strava/webhook",
             "/auth/external/login", "/auth/external/callback", "/app/whoami.jsp"
     );
 
@@ -46,7 +46,11 @@ public class AuthenticationFilter implements Filter {
             if (path.startsWith("/api/")) {
                 resp.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             } else {
-                resp.sendRedirect(req.getContextPath() + "/login");
+                if ("/app/".equals(path)) {
+                    resp.sendRedirect(req.getContextPath() + "/app");
+                } else {
+                    resp.sendRedirect(req.getContextPath() + "/login");
+                }
             }
             return;
         }

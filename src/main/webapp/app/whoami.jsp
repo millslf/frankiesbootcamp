@@ -35,6 +35,17 @@
 <%
   String name  = (String) session.getAttribute("athleteName");
   String email = (String) session.getAttribute("athleteEmail");
+  String handle = null;
+  boolean stravaLinked = false;
+  Object authUser = session.getAttribute("authUser");
+  if (authUser instanceof com.frankies.bootcamp.model.AuthenticatedUser) {
+    handle = ((com.frankies.bootcamp.model.AuthenticatedUser) authUser).getHandle();
+  }
+  Object athlete = session.getAttribute("athlete");
+  if (athlete instanceof com.frankies.bootcamp.model.BootcampAthlete) {
+    String athleteId = ((com.frankies.bootcamp.model.BootcampAthlete) athlete).getId();
+    stravaLinked = athleteId != null && !athleteId.startsWith("local-");
+  }
   boolean authed = (email != null);
 
   StringBuilder json = new StringBuilder(96);
@@ -42,6 +53,8 @@
   if (authed) {
     if (name != null)  json.append(",\"name\":\"").append(jsonEscape(name)).append("\"");
     json.append(",\"email\":\"").append(jsonEscape(email)).append("\"");
+    if (handle != null) json.append(",\"handle\":\"").append(jsonEscape(handle)).append("\"");
+    json.append(",\"stravaLinked\":").append(stravaLinked ? "true" : "false");
   }
   json.append('}');
 
