@@ -262,7 +262,7 @@ class ActivityProcessServiceTest {
         }
     }
 
-    private static final class TestActivityProcessOld extends ActivityProcessOld {
+    private static final class TestActivityProcessOld extends ActivityProcessService {
         private TestActivityProcessOld(List<StravaActivityResponse> activities) {
             try {
                 setObjectField(this, "strava", new FakeStravaService(activities));

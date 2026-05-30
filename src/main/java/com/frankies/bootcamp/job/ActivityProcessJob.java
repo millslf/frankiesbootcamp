@@ -1,6 +1,6 @@
 package com.frankies.bootcamp.job;
 
-import com.frankies.bootcamp.service.ActivityProcessOld;
+import com.frankies.bootcamp.service.ActivityProcessService;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Asynchronous;
 import jakarta.ejb.Schedule;
@@ -13,7 +13,7 @@ import jakarta.inject.Inject;
 public class ActivityProcessJob {
 
     @Inject
-    ActivityProcessOld activityProcessService;
+    ActivityProcessService activityProcessService;
 
     @PostConstruct
     public void onStartup() {
