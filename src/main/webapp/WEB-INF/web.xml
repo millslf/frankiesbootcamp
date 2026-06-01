@@ -28,6 +28,19 @@
     </filter-mapping>
 
     <servlet>
+        <servlet-name>AppHome</servlet-name>
+        <servlet-class>com.frankies.bootcamp.servlet.AppServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AppHome</servlet-name>
+        <url-pattern>/app</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>AppHome</servlet-name>
+        <url-pattern>/app/</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>PrivacyPage</servlet-name>
         <jsp-file>/privacy.jsp</jsp-file>
     </servlet>

@@ -117,13 +117,92 @@ public class ActivityProcessService {
         log.info("All sports: " + sports);
     }
 
+    public void prepareAthleteSummary(BootcampAthlete athlete) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        if (athlete == null) {
+            return;
+        }
+
+        List<PerformanceResponse> updatedPerformanceList = performanceList == null
+                ? new ArrayList<>()
+                : new ArrayList<>(performanceList);
+
+        updatedPerformanceList.removeIf(existing -> existing.getAthlete() != null
+                && athlete.getId() != null
+                && athlete.getId().equals(existing.getAthlete().getId()));
+
+        updatedPerformanceList.add(buildPerformanceForAthlete(athlete));
+        ActivityProcessService.performanceList = updatedPerformanceList;
+        generateAllSummaryMaps();
+    }
+
     public List<PerformanceResponse> getPerformanceList() {
         return performanceList;
     }
 
-    public Map<Integer, WeeklyPerformance> getAthleteHistory(String loggedInAthlete) {
+    protected PerformanceResponse buildPerformanceForAthlete(BootcampAthlete athlete) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
+        BootcampAthlete refreshedAthlete = strava.refreshToken(athlete);
+        PerformanceResponse performance = new PerformanceResponse();
+        performance.setAthlete(refreshedAthlete);
+        log.info("Busy with athlete:" + refreshedAthlete.getFirstname() + " Token Expiry at:" +
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(refreshedAthlete.getExpiresAt() * 1000), ZoneId.systemDefault()));
+
+        List<StravaActivityResponse> stravaActivities = strava.getAthleteActivitiesForPeriod(getStartTimeStamp(), refreshedAthlete.getAccessToken());
+        double distance = 0;
+        double score = 0;
+        int week = 1;
+        long weekEnding = getStartTimeStamp() + BootcampConstants.WEEK_IN_SECONDS;
+        WeeklyPerformance weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, refreshedAthlete.getGoal(), -1.0);
+
+        for (StravaActivityResponse activity : stravaActivities) {
+            int loopCount = 0;
+            while (Instant.parse(activity.getStart_date()).getEpochSecond() > weekEnding) {
+                updateHonourRolls(week, weeklyPerformance, refreshedAthlete);
+                weeklyPerformance.setAverageWeeklyScore(score, week - 1);
+                weeklyPerformance.setIsSick(refreshedAthlete.isSick(week));
+                score += weeklyPerformance.getWeekScore();
+                performance.addWeeklyPerformance(weeklyPerformance, week);
+                week++;
+                weekEnding = weekEnding + BootcampConstants.WEEK_IN_SECONDS;
+                weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, weeklyPerformance.getWeekGoal(),
+                        loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0);
+                loopCount++;
+            }
+            BaseSport sport = SportFactory.getSport(activity);
+            if (sport != null) {
+                performance.addSport(activity.getId(), week, sport);
+                weeklyPerformance.addSports(sport);
+                distance += sport.getCalculatedDistance();
+            }
+        }
+
+        int loopCount = 0;
+        if (performance.getWeeklyPerformances() == null) {
+            performance.addWeeklyPerformance(weeklyPerformance, week);
+        }
+        while (performance.getWeeklyPerformances().size() < getNumberOfWeeksSinceStart()) {
+            updateHonourRolls(week, weeklyPerformance, refreshedAthlete);
+            weeklyPerformance.setAverageWeeklyScore(score, week - 1);
+            weeklyPerformance.setIsSick(refreshedAthlete.isSick(week));
+            score += weeklyPerformance.getWeekScore();
+            performance.addWeeklyPerformance(weeklyPerformance, week);
+            week++;
+            weekEnding = weekEnding + BootcampConstants.WEEK_IN_SECONDS;
+            weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, weeklyPerformance.getWeekGoal(),
+                    loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0);
+            loopCount++;
+        }
+
+        performance.setDistanceToDate(distance);
+        performance.setScoreToDate(score);
+        return performance;
+    }
+
+    public Map<Integer, WeeklyPerformance> getAthleteHistory(String athleteId) {
+        if (athleteId == null || performanceList == null) {
+            return null;
+        }
         for (PerformanceResponse performance : performanceList) {
-            if (loggedInAthlete.equals(performance.getAthlete().getEmail())) {
+            if (performance.getAthlete() != null && athleteId.equals(performance.getAthlete().getId())) {
                 return performance.getWeeklyPerformances();
             }
         }
@@ -138,15 +217,18 @@ public class ActivityProcessService {
         return honourRollPercentageOfGoal;
     }
 
-    public String getLoggedInAthleteSummary(String loggedInAthlete)
+    public String getLoggedInAthleteSummary(String athleteId)
             throws IOException, CredentialStoreException, NoSuchAlgorithmException, SQLException {
         String loggedInAthleteSummary = "";
+        if (athleteId == null || performanceList == null) {
+            return loggedInAthleteSummary;
+        }
         try {
             for (PerformanceResponse performance : performanceList) {
                 String mailBody = getMailBody(sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary),
                         sortedSummaries.get(BootcampConstants.currentWeekPercentageOfGoalSummary),
                         sortedSummaries.get(BootcampConstants.currentWeekTotalDistanceSummary), performance);
-                if (loggedInAthlete.equals(performance.getAthlete().getEmail())) {
+                if (performance.getAthlete() != null && athleteId.equals(performance.getAthlete().getId())) {
                     loggedInAthleteSummary = mailBody;
                 }
             }
@@ -166,14 +248,14 @@ public class ActivityProcessService {
         return sortedSummaries;
     }
 
-    public String getZenBotStatsContext(String loggedInAthlete) {
-        if (loggedInAthlete == null || performanceList == null) {
+    public String getZenBotStatsContext(String athleteId) {
+        if (athleteId == null || performanceList == null) {
             return "No athlete stats are currently available.";
         }
 
         PerformanceResponse performance = null;
         for (PerformanceResponse candidate : performanceList) {
-            if (loggedInAthlete.equals(candidate.getAthlete().getEmail())) {
+            if (candidate.getAthlete() != null && athleteId.equals(candidate.getAthlete().getId())) {
                 performance = candidate;
                 break;
             }
@@ -195,7 +277,7 @@ public class ActivityProcessService {
         context.append("Distance this week: ").append(shortDf.format(current.getTotalDistance())).append(" km. ");
         context.append("Goal this week: ").append(shortDf.format(current.getWeekGoal())).append(" km. ");
         context.append("Distance left this week: ")
-            .append(shortDf.format(Math.max(current.getWeekGoal() - current.getTotalDistance(), 0.0))).append(" km. ");
+                .append(shortDf.format(Math.max(current.getWeekGoal() - current.getTotalDistance(), 0.0))).append(" km. ");
         context.append("Percent of goal: ").append(shortDf.format(current.getTotalPercentOfGoal() * 100)).append("%. ");
 
         List<String> recentWeeks = new ArrayList<>();
@@ -210,7 +292,7 @@ public class ActivityProcessService {
         }
 
         context.append("Distance across the last ").append(recentWeeks.size()).append(" weeks: ")
-            .append(shortDf.format(lastFiveWeeksDistance)).append(" km. ");
+                .append(shortDf.format(lastFiveWeeksDistance)).append(" km. ");
         context.append("Recent weekly distances: ").append(String.join(", ", recentWeeks)).append(". ");
 
         Integer leaderboardRank = null;

@@ -1,9 +1,7 @@
 package com.frankies.bootcamp.servlet;
 
-import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.WeeklyPerformance;
 import com.frankies.bootcamp.service.ActivityProcessService;
-import com.frankies.bootcamp.service.DBService;
 import com.frankies.bootcamp.utils.DateTimeUtils;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,7 +11,6 @@ import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -23,13 +20,10 @@ import com.frankies.bootcamp.service.AiMessageService;
 
 @WebServlet(name = "athleteHistory", value = "/app/AthleteHistory")
 public class AthleteHistoryServlet extends BootcampServlet {
-    @Inject
-    private ActivityProcessService activityProcessService;
-    @Inject
-    private DBService db;
-
     private static final Logger log = Logger.getLogger(AthleteHistoryServlet.class);
 
+    @Inject
+    private ActivityProcessService activityProcessService;
     @Inject
     private AiMessageService aiMessageService;
 
@@ -38,21 +32,12 @@ public class AthleteHistoryServlet extends BootcampServlet {
         Map<Integer, WeeklyPerformance> history = new HashMap<>();
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
-        String authenticatedUserMail = request.getHeader("Ngrok-Auth-User-Email");
-        String athleteName = "";
-        try {
-            BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
-            if (loggedInAthlete == null) {
-                log.info("Athlete not authorised: " + authenticatedUserMail);
-                out.println("<html><body>");
-                out.println("<h1>" + HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised" + "</h1>");
-                out.println("</body></html>");
-                return;
-            }
-            athleteName = loggedInAthlete.getFirstname();
-            history = activityProcessService.getAthleteHistory(loggedInAthlete.getEmail());
-        } catch (SQLException e) {
-            log.error("AthleteHistoryServlet, doGet", e);
+        com.frankies.bootcamp.model.BootcampAthlete loggedInAthlete = (com.frankies.bootcamp.model.BootcampAthlete) request.getAttribute("athlete");
+        String athleteName = loggedInAthlete.getFirstname();
+        String authenticatedUserMail = (String) request.getAttribute("athleteEmail");
+        history = activityProcessService.getAthleteHistory(loggedInAthlete.getId());
+        if (history == null) {
+            history = new HashMap<>();
         }
         int numberOfWeeksSinceStart = activityProcessService.getNumberOfWeeksSinceStart();
 
@@ -65,6 +50,13 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("<i class='bi bi-clock-history'></i> My Weekly Competition History");
         out.println("</h2>");
         out.println("<p class='history-subheading'><i class='bi bi-graph-up-arrow'></i> Track how you performed each week across all activities, see your progress, week by week!</p>");
+
+        if (history.isEmpty()) {
+            out.println("<div class='alert alert-info'>We are getting things ready for your Strava account. Your history should appear shortly.</div>");
+            out.println("</div>");
+            out.println("</body></html>");
+            return;
+        }
 
         WeeklyPerformance latest = history.get(numberOfWeeksSinceStart);
         if (latest != null) {
@@ -113,9 +105,13 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("</thead>");
         out.println("<tbody>");
         for (int i = numberOfWeeksSinceStart; i >= 1; i--) {
+            WeeklyPerformance weekHistory = history.get(i);
+            if (weekHistory == null) {
+                continue;
+            }
             out.println("<tr>");
-            String weekText = history.get(i).getWeek();
-            if(history.get(i).isSick()){
+            String weekText = weekHistory.getWeek();
+            if(weekHistory.isSick()){
                 weekText += " <i class='bi bi-heart-pulse-fill' title='Sick Note'></i>";
             }
             if (i == numberOfWeeksSinceStart) {
@@ -124,26 +120,26 @@ public class AthleteHistoryServlet extends BootcampServlet {
             } else {
                 out.println("<td>" + weekText + "</td>");
             }
-            out.println("<td>" + df.format(history.get(i).getTotalDistance()) + " km </td>");
-            out.println("<td>" + df.format(history.get(i).getWeekGoal()) + "km</td>");
-            out.println("<td>" + df.format(history.get(i).getTotalPercentOfGoal() * 100) + "%</td>");
-            out.println("<td>" + df.format(history.get(i).getWeekGoal()-history.get(i).getTotalDistance()>0?history.get(i).getWeekGoal()-history.get(i).getTotalDistance():0) + "km</td>");
-            if(history.get(i).isSick()){
+            out.println("<td>" + df.format(weekHistory.getTotalDistance()) + " km </td>");
+            out.println("<td>" + df.format(weekHistory.getWeekGoal()) + "km</td>");
+            out.println("<td>" + df.format(weekHistory.getTotalPercentOfGoal() * 100) + "%</td>");
+            out.println("<td>" + df.format(weekHistory.getWeekGoal()-weekHistory.getTotalDistance()>0?weekHistory.getWeekGoal()-weekHistory.getTotalDistance():0) + "km</td>");
+            if(weekHistory.isSick()){
                 out.println("<td> <i class='bi bi-heart-pulse-fill' title='Sick Note'></i></td>");
                 out.println("<td> <i class='bi bi-heart-pulse-fill' title='Sick Note'></i></td>");
             }
             else{
-                out.println("<td>" + df.format(history.get(i).getWeekProgressionBonus()) + "</td>");
-                out.println("<td>" + df.format(history.get(i).getWeekGoalAchievementScore()) + "</td>");
+                out.println("<td>" + df.format(weekHistory.getWeekProgressionBonus()) + "</td>");
+                out.println("<td>" + df.format(weekHistory.getWeekGoalAchievementScore()) + "</td>");
             }
-            out.println("<td>" + df.format(history.get(i).getWeekScore()) + "</td>");
+            out.println("<td>" + df.format(weekHistory.getWeekScore()) + "</td>");
             out.println("<td>");
-            for (String key : history.get(i).getSports().keySet()) {
-                out.println(key + "(x" + history.get(i).getSportsCount().get(key) + ") " + df.format(history.get(i).getSports().get(key)) + "km");
-                if (history.get(i).getSportsOriginalDistance().containsKey(key)) {
-                    out.println(" (" + df.format(history.get(i).getSportsOriginalDistance().get(key)) + "km)</br>");
-                } else if (history.get(i).getSportsOriginalDuration().containsKey(key)) {
-                    out.println(" (" + DateTimeUtils.convertMinutesToTimeFormat(history.get(i).getSportsOriginalDuration().get(key)*60) + ")</br>");
+            for (String key : weekHistory.getSports().keySet()) {
+                out.println(key + "(x" + weekHistory.getSportsCount().get(key) + ") " + df.format(weekHistory.getSports().get(key)) + "km");
+                if (weekHistory.getSportsOriginalDistance().containsKey(key)) {
+                    out.println(" (" + df.format(weekHistory.getSportsOriginalDistance().get(key)) + "km)</br>");
+                } else if (weekHistory.getSportsOriginalDuration().containsKey(key)) {
+                    out.println(" (" + DateTimeUtils.convertMinutesToTimeFormat(weekHistory.getSportsOriginalDuration().get(key)*60) + ")</br>");
                 }
             }
             out.println("</td>");

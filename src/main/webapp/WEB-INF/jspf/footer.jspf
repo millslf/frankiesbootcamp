@@ -1,5 +1,5 @@
 <footer class="container my-4 text-muted small">
-    <a href="https://www.frankiesbootcamp.com/privacy" class="me-3">Privacy Policy</a>
-    <a href="https://www.frankiesbootcamp.com/terms" class="me-3">Terms of Service</a>
-    <a href="/scoring">Scoring</a>
+    <a href="<%=request.getContextPath()%>/privacy" class="me-3">Privacy Policy</a>
+    <a href="<%=request.getContextPath()%>/terms" class="me-3">Terms of Service</a>
+    <a href="<%=request.getContextPath()%>/scoring">Scoring</a>
 </footer>

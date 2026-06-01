@@ -12,22 +12,41 @@
                 scaled
                 distances (see below) and adjusts weekly:</p>
 
-            <ul class="mb-4">
-                <li>&#x274C; Missed by more than half &rarr; Goal decreases by 10%</li>
-                <li>&#x2705; Exceeded by more than 50% &rarr; Goal increases by 10%</li>
-                <li>&#x1F3C6; Doubled your goal? &rarr; Earn a bonus and goal increases by 20%</li>
-            </ul>
+            <p class="mb-4">Your coach adjusts your weekly target to keep it challenging but achievable. If you miss your goal repeatedly your coach will gently lower it; if you consistently exceed it your coach will raise it. Adjustments are small, designed to help you progress safely, and are rounded to the nearest 0.5 km. This helps calibrate your target as you get stronger while still encouraging steady improvement.</p>
 
             <p>This system supports multiple forms of competition: total distances, personal targets, and
                 overachievement.</p>
 
             <h2 class="h5 mt-4">Scoring</h2>
+            <p>Points come from two simple parts: meeting/going over your weekly goal, and an extra bonus if you go well beyond it.</p>
             <ul>
-                <li>&#x1F3AF; Goal met: <strong>1 point</strong></li>
-                <li>&#x26A0;&#xFE0F; Missed by less than half: <strong>0.5 points</strong></li>
-                <li>&#x1F4AA; Exceeded by more than half: <strong>1.5 points</strong></li>
-                <li>&#x1F525; Goal doubled: <strong>1.75 points</strong></li>
+                <li><strong>Achievement</strong> - you get 1 point for meeting your weekly goal. If you go a little over, each extra percent gives a small extra. Examples: doing 100% -> <strong>1.00 point</strong>; 101% -> <strong>1.01 points</strong>; 110% -> <strong>1.10 points</strong>.</li>
+                <li><strong>Progression bonus</strong> - once you exceed 110% you earn an additional bonus on top of the achievement score. Tiers are:
+                    <ul>
+                        <li>110% - 115% -> <strong>+0.03</strong></li>
+                        <li>115% - 120% -> <strong>+0.07</strong></li>
+                        <li>120% - 150% -> <strong>+0.10</strong></li>
+                        <li>150% - 180% -> <strong>+0.15</strong></li>
+                        <li>>= 180% -> <strong>+0.20</strong></li>
+                    </ul>
+                </li>
+                <li><strong>How total points are calculated</strong> - add the achievement value and any progression bonus. Example: 120% -> 1.10 (achievement) + 0.10 (bonus) = <strong>1.20 points</strong>.</li>
+                <li>If you are marked <em>sick</em> for the week, we use your average weekly score instead of the calculation above.</li>
             </ul>
+
+            <h2 class="h5 mt-4">Weekly goal adjustment</h2>
+            <p>Next week's goal updates based on previous week's performance (ratio = previous total distance / previous goal):</p>
+            <ul>
+                <li>&lt; 50% &rarr; decrease by <strong>10%</strong></li>
+                <li>50% - 80% &rarr; decrease by <strong>5%</strong></li>
+                <li>80% - 110% &rarr; <strong>no change</strong></li>
+                <li>110% - 115% &rarr; increase by <strong>3%</strong></li>
+                <li>115% - 120% &rarr; increase by <strong>7%</strong></li>
+                <li>120% - 150% &rarr; increase by <strong>10%</strong></li>
+                <li>150% - 180% &rarr; increase by <strong>15%</strong></li>
+                <li>&gt;= 180% &rarr; increase by <strong>20%</strong></li>
+            </ul>
+            <p>Goals are rounded to the nearest <strong>0.5 km</strong>.</p>
 
             <h2 class="h5 mt-4">Relative Distance Conversion</h2>
             <p>Different activities are scaled to normalize effort. Here&rsquo;s how each activity counts toward your
@@ -49,7 +68,7 @@
                 <li>&#x1F3C4; Surfing: 7.5 km per hour</li>
                 <li>&#x26BD; Hockey/Soccer: 1.5 km per km</li>
                 <li>&#x1F6A3; Virtual Row: 1.0 km per km</li>
-                <li>&#x1F6F6; Kayaking: 2.5 km per km</li>
+                <li>&#x1F6F6; Kayak: 1.5 km per km</li>
                 <li>&#x1F3CA; Swim: 5 km per km</li>
                 <li>&#x1F3C4; Stand up paddling: 7.5 km per hour</li>
                 <li>&#x1F5A5;&#xFE0F; Virtual Ride: 0.33 km per km</li>

@@ -1,14 +1,11 @@
 package com.frankies.bootcamp.servlet;
 
-import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.service.ActivityProcessService;
-import com.frankies.bootcamp.service.DBService;
 import com.frankies.bootcamp.utils.WildflyUtils;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.jboss.logging.Logger;
 import org.wildfly.security.credential.store.CredentialStoreException;
 
 import java.io.IOException;
@@ -20,29 +17,16 @@ import java.sql.SQLException;
 public class AthleteSummaryServlet extends BootcampServlet {
     @Inject
     private ActivityProcessService activityProcessService;
-    @Inject
-    private DBService db;
-
-    private static final Logger log = Logger.getLogger(AthleteSummaryServlet.class);
-
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("text/html");
-        String authenticatedUserMail = request.getHeader("Ngrok-Auth-User-Email");
         PrintWriter out = response.getWriter();
         String summaryContent = "";
 
         try {
-            BootcampAthlete loggedInAthlete = db.findAthleteByEmail(authenticatedUserMail);
-            if (loggedInAthlete == null) {
-                log.info("Athlete not authorised: " + authenticatedUserMail);
-                out.println("<html><body>");
-                out.println("<h1>" + HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised</h1>");
-                out.println("</body></html>");
-                return;
-            }
-            summaryContent = activityProcessService.getLoggedInAthleteSummary(loggedInAthlete.getEmail());
+            com.frankies.bootcamp.model.BootcampAthlete loggedInAthlete = (com.frankies.bootcamp.model.BootcampAthlete) request.getAttribute("athlete");
+            summaryContent = activityProcessService.getLoggedInAthleteSummary(loggedInAthlete.getId());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
-            log.error("AthletesResource, allAthleteSummary", e);
+            throw new IOException("Failed to load athlete summary", e);
         }
 
         out.println("<!DOCTYPE html>");

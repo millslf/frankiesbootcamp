@@ -5,6 +5,8 @@ import java.util.Arrays;
 public class BootcampAthlete {
     private transient String id;
 
+    private transient String userId;
+
     private transient String accessToken;
 
     private transient String refreshToken;
@@ -31,6 +33,14 @@ public class BootcampAthlete {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public String getAccessToken() {

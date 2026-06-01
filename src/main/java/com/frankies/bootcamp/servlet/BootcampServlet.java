@@ -1,7 +1,10 @@
 package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.model.BootcampAthlete;
-import com.frankies.bootcamp.service.DBService;
+import com.frankies.bootcamp.model.AuthenticatedUser;
+import com.frankies.bootcamp.service.AuthService;
+import com.frankies.bootcamp.service.StravaService;
+import com.frankies.bootcamp.service.AuthSessionService;
 import jakarta.inject.Inject;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
@@ -13,7 +16,11 @@ import java.sql.SQLException;
 
 public class BootcampServlet extends HttpServlet {
     @Inject
-    private DBService db;
+    private AuthSessionService authSessionService;
+    @Inject
+    private AuthService authService;
+    @Inject
+    private StravaService stravaService;
 
     private static final Logger log = Logger.getLogger(BootcampServlet.class);
 
@@ -23,26 +30,33 @@ public class BootcampServlet extends HttpServlet {
 
         HttpSession session = req.getSession(true);
         BootcampAthlete athlete = (BootcampAthlete) session.getAttribute("athlete");
+        AuthenticatedUser authenticatedUser = authSessionService.getAuthenticatedUser(req);
 
         if (athlete == null) {
-            String email = req.getHeader("Ngrok-Auth-User-Email");
-            if (email == null || email.isBlank()) {
-                unauthorized(resp, "Missing auth header");
+            if (authenticatedUser == null || authenticatedUser.getEmail() == null || authenticatedUser.getEmail().isBlank()) {
+                unauthorized(resp, "Login required");
                 return;
             }
             try {
-                athlete = db.findAthleteByEmail(email);
-                if (athlete == null) {
-                    log.info("Athlete not authorised: " + email);
-                    unauthorized(resp, "Athlete not authorised");
+                athlete = authService.loadAthleteForUser(authenticatedUser);
+                if (athlete == null || isStravaPending(athlete)) {
+                    log.info("Strava link required: " + authenticatedUser.getEmail());
+                    // Use StravaService to provide server-controlled config
+                    String clientId = stravaService.getClientId();
+                    String callback = stravaService.buildCallbackUrl(req);
+
+                    req.setAttribute("stravaClientId", clientId);
+                    req.setAttribute("stravaCallback", callback);
+                    req.setAttribute("stravaOnboardingUser", authenticatedUser);
+                    req.getRequestDispatcher("/app/strava-onboarding.jsp").forward(req, resp);
                     return;
                 }
 
                 // Cache in session for future requests
                 session.setAttribute("athlete", athlete);
-                session.setAttribute("athleteEmail", email);
-                session.setAttribute("athleteName", buildDisplayName(athlete, email));
-                log.info("Athlete authorised: " + buildDisplayName(athlete, email));
+                session.setAttribute("athleteEmail", authenticatedUser.getEmail());
+                session.setAttribute("athleteName", authenticatedUser.getDisplayName());
+                log.info("Athlete authorised: " + buildDisplayName(athlete, authenticatedUser.getEmail()));
             } catch (SQLException e) {
                 log.error("Error looking up athlete by email", e);
                 resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -82,4 +96,9 @@ public class BootcampServlet extends HttpServlet {
             out.println("</body></html>");
         }
     }
+
+    private boolean isStravaPending(BootcampAthlete athlete) {
+        return athlete.getId() == null || athlete.getId().isBlank() || athlete.getId().startsWith("local-");
+    }
+
 }

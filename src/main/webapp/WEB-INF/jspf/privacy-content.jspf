@@ -67,7 +67,7 @@
             <p class="section-title">11. Contact</p>
             <p>Questions or deletion requests? Email <a href="mailto:frankiesbootcamp@gmail.com">frankiesbootcamp@gmail.com</a>.</p>
 
-            <p class="mt-4">See also our <a href="https://www.frankiesbootcamp.com/terms">Terms of Service</a>.</p>
+            <p class="mt-4">See also our <a href="<%=request.getContextPath()%>/terms">Terms of Service</a>.</p>
         </div>
     </div>
 </div>

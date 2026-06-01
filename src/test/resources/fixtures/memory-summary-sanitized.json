@@ -1,6 +1,7 @@
 [
   {
     "athlete": {
+      "id": "fixture-alex",
       "lastname": "Stone",
       "firstname": "Alex",
       "goal": 18.0
@@ -153,6 +154,7 @@
   },
   {
     "athlete": {
+      "id": "fixture-jordan",
       "lastname": "Rivera",
       "firstname": "Jordan",
       "goal": 22.0
@@ -293,6 +295,7 @@
   },
   {
     "athlete": {
+      "id": "fixture-casey",
       "lastname": "Patel",
       "firstname": "Casey",
       "goal": 15.0

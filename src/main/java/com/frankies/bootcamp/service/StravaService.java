@@ -17,8 +17,12 @@ import org.wildfly.security.credential.store.CredentialStoreException;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.security.NoSuchAlgorithmException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.SQLException;
 import java.time.Instant;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,7 +41,46 @@ public class StravaService {
         // for CDI proxying
     }
 
-    public void tokenExchange(String code) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
+    public String getClientId() {
+        try {
+            return new WildflyUtils().giveMeAPass("stravaClientId");
+        } catch (Exception e) {
+            log.debug("StravaService.getClientId: credential store lookup failed, falling back to env", e);
+            String env = System.getenv("STRAVA_CLIENT_ID");
+            return env == null || env.isBlank() ? "143025" : env;
+        }
+    }
+
+    public String buildCallbackUrl(HttpServletRequest req) {
+        String scheme = req.getScheme();
+        String host = req.getServerName();
+        int port = req.getServerPort();
+        StringBuilder base = new StringBuilder();
+        base.append(scheme).append("://").append(host);
+        if (port != 80 && port != 443) {
+            base.append(":").append(port);
+        }
+        base.append(req.getContextPath());
+        base.append("/api/Auth");
+        return base.toString();
+    }
+
+    public String buildAuthUrl(HttpServletRequest req, String state) {
+        String clientId = getClientId();
+        String callback = buildCallbackUrl(req);
+        try {
+            return "https://www.strava.com/oauth/authorize" +
+                    "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8.toString()) +
+                    "&redirect_uri=" + URLEncoder.encode(callback, StandardCharsets.UTF_8.toString()) +
+                    "&response_type=code&scope=activity:read&state=" + URLEncoder.encode(state == null ? "" : state, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            log.error("StravaService.buildAuthUrl encoding failed", e);
+            // fallback non-encoded
+            return "https://www.strava.com/oauth/authorize?client_id=" + clientId + "&redirect_uri=" + callback + "&response_type=code&scope=activity:read&state=" + (state==null?"":state);
+        }
+    }
+
+    public BootcampAthlete tokenExchange(String code, String userId, String userEmail) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException, StravaLinkConflictException {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
         WildflyUtils wf = new WildflyUtils();
@@ -56,10 +99,23 @@ public class StravaService {
             if (response.isSuccessful()) {
                 StravaAuthResponse data = new Gson().fromJson(response.body().string(), StravaAuthResponse.class);
                 BootcampAthlete athlete = data.getBootcampAthlete();
-                db.saveAthlete(athlete);
+                athlete.setUserId(userId);
+                if (athlete.getEmail() == null || athlete.getEmail().isBlank()) {
+                    athlete.setEmail(userEmail);
+                }
+                if (athlete.getGoal() == null || athlete.getGoal() <= 0) {
+                    athlete.setGoal(20.0);
+                }
+                try {
+                    db.saveAthlete(athlete);
+                } catch (SQLIntegrityConstraintViolationException e) {
+                    throw new StravaLinkConflictException("This Strava profile is already linked to another Frankies Bootcamp user.", e);
+                }
                 db.saveAthleteAuditEvent(athlete.getId(), "login", "Initial Strava token exchange");
+                return athlete;
             }
         }
+        return null;
     }
 
     public BootcampAthlete refreshToken(BootcampAthlete athlete) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {

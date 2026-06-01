@@ -36,31 +36,37 @@
                 Friendly competition, weekly goals, and a dash of Strava-powered fun. Join in and see how you stack up!
             </p>
 
+            <div class="mb-4 d-flex flex-wrap gap-2">
+                <a class="btn btn-primary btn-lg" href="<%=request.getContextPath()%>/login">Login</a>
+                <a class="btn btn-outline-primary btn-lg" href="<%=request.getContextPath()%>/join">Join</a>
+                <a class="btn btn-outline-primary btn-lg" href="<%=request.getContextPath()%>/scoring">See how scoring works</a>
+            </div>
+
             <div class="row g-3 mb-4">
                 <div class="col-sm-6 col-lg-4">
                     <div class="card h-100">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column">
                             <h5 class="card-title">Scoring</h5>
                             <p class="card-text">How points work across running, cycling, hiking, and more.</p>
-                            <a href="/scoring" class="btn btn-outline-primary">View Scoring</a>
+                            <a href="<%=request.getContextPath()%>/scoring" class="btn btn-outline-primary mt-auto align-self-start">View Scoring</a>
                         </div>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-4">
                     <div class="card h-100">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column">
                             <h5 class="card-title">Terms of Service</h5>
                             <p class="card-text">Safety, fair play, and general participation rules.</p>
-                            <a href="https://www.frankiesbootcamp.com/terms" class="btn btn-outline-primary">Read Terms of Service</a>
+                            <a href="<%=request.getContextPath()%>/terms" class="btn btn-outline-primary mt-auto align-self-start">Read Terms of Service</a>
                         </div>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-4">
                     <div class="card h-100">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column">
                             <h5 class="card-title">Privacy Policy</h5>
                             <p class="card-text">What we collect and how we use it.</p>
-                            <a href="https://www.frankiesbootcamp.com/privacy" class="btn btn-outline-primary">Privacy Policy</a>
+                            <a href="<%=request.getContextPath()%>/privacy" class="btn btn-outline-primary mt-auto align-self-start">Privacy Policy</a>
                         </div>
                     </div>
                 </div>
@@ -68,8 +74,9 @@
 
             <!-- info box: change /auth/login -> /app/ -->
             <div class="alert alert-info">
-                Already linked with Strava?
-                <a class="alert-link" href="/app/">Login</a> to see your dashboard.
+                Ready to join or already have an account?
+                <a class="alert-link" href="<%=request.getContextPath()%>/login">Login</a>
+                to sign in or create your account through Auth0, then head to your dashboard.
             </div>
         </div>
     </div>
@@ -79,60 +86,6 @@
 <%@ include file="/WEB-INF/jspf/zenbot.jspf" %>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    (async function () {
-        try {
-            const res = await fetch('<%=ctx%>/app/whoami.jsp', { credentials: 'include' });
-
-            let authed = false, data = null;
-            if (res.redirected && (res.url.includes('/_ngrok/login') || res.url.includes('/ngrok/login'))) {
-                authed = false;
-            } else if (res.ok) {
-                data = await res.json().catch(() => null);
-                authed = !!(data && (data.auth === true || data.auth === "true"));
-            }
-
-            const group      = document.querySelector('#offcanvasMenu .btn-group-vertical');
-            const homeBtn    = document.getElementById('homeBtn');
-            const loginBtn   = document.getElementById('loginBtn');
-            const logoutBtn  = document.getElementById('logoutBtn');
-
-            const chip       = document.getElementById('userChip');
-            const chipName   = document.getElementById('userChipName');
-            const signedBox  = document.getElementById('signedInAs');
-            const signedName = document.getElementById('signedInName');
-
-            const name = data?.name || data?.displayName || (data?.email ? data.email.split('@')[0] : null);
-
-            if (authed) {
-                // header/offcanvas name
-                if (chip && chipName) { chipName.textContent = name || 'You'; chip.classList.remove('d-none'); }
-                if (signedBox && signedName) { signedName.textContent = name || data?.email || ''; signedBox.classList.remove('d-none'); }
-
-                // nav buttons
-                if (loginBtn) {
-                    loginBtn.innerHTML = '<i class="bi bi-speedometer2 me-1"></i> Go to dashboard';
-                    loginBtn.href = '<%=ctx%>/app/';
-                    if (group && group.firstElementChild !== loginBtn) group.insertBefore(loginBtn, group.firstElementChild);
-                }
-                if (logoutBtn) logoutBtn.classList.remove('d-none');
-
-            } else {
-                // hide name
-                if (chip) chip.classList.add('d-none');
-                if (signedBox) signedBox.classList.add('d-none');
-
-                // reset nav buttons
-                if (loginBtn) {
-                    loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
-                    loginBtn.href = '/app/';
-                    if (group && homeBtn && homeBtn.nextElementSibling !== loginBtn) group.insertBefore(loginBtn, homeBtn.nextElementSibling);
-                }
-                if (logoutBtn) logoutBtn.classList.add('d-none');
-            }
-        } catch (_) { /* ignore */ }
-    })();
-</script>
 
 
 </body>

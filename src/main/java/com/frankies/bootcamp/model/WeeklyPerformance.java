@@ -185,8 +185,10 @@ public class WeeklyPerformance {
 
         double ratio = totalDistance / weekGoal;
 
-        this.weekGoalAchievementScore = Math.min(ratio, 1.0);
+        // Achievement: count actual percentage up to 110% (so 101% -> 1.01). Cap at 1.10 so progression bonuses stack on top.
+        this.weekGoalAchievementScore = Math.min(ratio, 1.10);
 
+        // Progression bonus tiers (unchanged) — applied on top of the achievement score for >=110%
         if (ratio < 1.1) {
             this.weekProgressionBonus = 0.0;
         } else if (ratio < 1.15) {
