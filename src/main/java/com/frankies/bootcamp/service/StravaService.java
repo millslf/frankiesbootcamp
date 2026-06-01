@@ -20,6 +20,9 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.SQLException;
 import java.time.Instant;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +39,45 @@ public class StravaService {
 
     protected StravaService() {
         // for CDI proxying
+    }
+
+    public String getClientId() {
+        try {
+            return new WildflyUtils().giveMeAPass("stravaClientId");
+        } catch (Exception e) {
+            log.debug("StravaService.getClientId: credential store lookup failed, falling back to env", e);
+            String env = System.getenv("STRAVA_CLIENT_ID");
+            return env == null || env.isBlank() ? "143025" : env;
+        }
+    }
+
+    public String buildCallbackUrl(HttpServletRequest req) {
+        String scheme = req.getScheme();
+        String host = req.getServerName();
+        int port = req.getServerPort();
+        StringBuilder base = new StringBuilder();
+        base.append(scheme).append("://").append(host);
+        if (port != 80 && port != 443) {
+            base.append(":").append(port);
+        }
+        base.append(req.getContextPath());
+        base.append("/api/Auth");
+        return base.toString();
+    }
+
+    public String buildAuthUrl(HttpServletRequest req, String state) {
+        String clientId = getClientId();
+        String callback = buildCallbackUrl(req);
+        try {
+            return "https://www.strava.com/oauth/authorize" +
+                    "?client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8.toString()) +
+                    "&redirect_uri=" + URLEncoder.encode(callback, StandardCharsets.UTF_8.toString()) +
+                    "&response_type=code&scope=activity:read&state=" + URLEncoder.encode(state == null ? "" : state, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            log.error("StravaService.buildAuthUrl encoding failed", e);
+            // fallback non-encoded
+            return "https://www.strava.com/oauth/authorize?client_id=" + clientId + "&redirect_uri=" + callback + "&response_type=code&scope=activity:read&state=" + (state==null?"":state);
+        }
     }
 
     public BootcampAthlete tokenExchange(String code, String userId, String userEmail) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException, StravaLinkConflictException {

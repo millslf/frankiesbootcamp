@@ -4,7 +4,10 @@ import com.frankies.bootcamp.model.strava.StravaActivityResponse;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,10 +56,40 @@ public class SportsUtils {
 
     public static String getSuggestedSport(Set<String> triedSports) {
         Set<String> allSports = getAllSportTypes();
-        if (triedSports != null) {
-            allSports.removeAll(triedSports);
+        if (allSports == null || allSports.isEmpty()) return "";
+
+        // Build a normalized map so comparisons ignore case/spacing/punctuation
+        Map<String, String> normalizedToOriginal = new LinkedHashMap<>();
+        for (String s : allSports) {
+            if (s == null) continue;
+            normalizedToOriginal.put(normalizeSport(s), s);
         }
-        return allSports.stream().findAny().orElse("");
+
+        // Normalize tried sports so mismatched labels don't cause accidental misses
+        Set<String> normalizedTried = new HashSet<>();
+        if (triedSports != null) {
+            for (String t : triedSports) {
+                if (t == null) continue;
+                normalizedTried.add(normalizeSport(t));
+            }
+        }
+
+        // Collect candidates (those not tried)
+        List<String> candidates = normalizedToOriginal.entrySet().stream()
+                .filter(e -> !normalizedTried.contains(e.getKey()))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toList());
+
+        if (candidates.isEmpty()) return "";
+
+        // Pick a random candidate to avoid deterministic repeats
+        int idx = new Random().nextInt(candidates.size());
+        return candidates.get(idx);
+    }
+
+    private static String normalizeSport(String s) {
+        if (s == null) return "";
+        return s.replaceAll("[^A-Za-z0-9]", "").toLowerCase();
     }
 
     private static StravaActivityResponse createActivity(String type, String sportType) {

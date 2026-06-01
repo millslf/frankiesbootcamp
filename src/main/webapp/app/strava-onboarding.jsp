@@ -43,7 +43,7 @@
                     </div>
 
                     <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mt-4">
-                        <button class="btn btn-primary btn-lg" onclick="linkStravaPopup()">
+                                        <button class="btn btn-primary btn-lg" onclick="linkStravaPopup()">
                             <i class="bi bi-link-45deg me-2"></i>Link Strava
                         </button>
                         <a class="btn btn-outline-secondary btn-lg" href="<%=pageContextPath%>/">Back to home</a>
@@ -56,9 +56,10 @@
 
 <script>
     function linkStravaPopup() {
-        const callback = 'https://www.frankiesbootcamp.com/api/Auth';
+        const callback = '<%= request.getAttribute("stravaCallback") %>';
+        const clientId = '<%= request.getAttribute("stravaClientId") %>';
         const authUrl = 'https://www.strava.com/oauth/authorize'
-            + '?client_id=143025'
+            + '?client_id=' + encodeURIComponent(clientId)
             + '&redirect_uri=' + encodeURIComponent(callback)
             + '&response_type=code'
             + '&scope=activity:read'
@@ -66,10 +67,12 @@
 
         const w = window.open(authUrl, 'stravaAuth', 'width=520,height=720');
         function onMsg(e) {
-            if (e.origin === 'https://www.frankiesbootcamp.com' && e.data === 'strava-linked') {
-                window.removeEventListener('message', onMsg);
-                location.reload();
-            }
+            try {
+                if (e.origin === window.location.origin && e.data === 'strava-linked') {
+                    window.removeEventListener('message', onMsg);
+                    location.reload();
+                }
+            } catch (err) { /* ignore */ }
         }
         window.addEventListener('message', onMsg);
     }

@@ -38,6 +38,7 @@
 
             <div class="mb-4 d-flex flex-wrap gap-2">
                 <a class="btn btn-primary btn-lg" href="<%=request.getContextPath()%>/login">Login</a>
+                <a class="btn btn-outline-primary btn-lg" href="<%=request.getContextPath()%>/join">Join</a>
                 <a class="btn btn-outline-primary btn-lg" href="<%=request.getContextPath()%>/scoring">See how scoring works</a>
             </div>
 

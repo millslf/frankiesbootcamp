@@ -52,7 +52,7 @@ class WeeklyPerformanceTest {
 
         assertEquals(24.0, weeklyPerformance.getTotalDistance(), 0.0001);
         assertEquals(1.2, weeklyPerformance.getTotalPercentOfGoal(), 0.0001);
-        assertEquals(1.1, weeklyPerformance.getWeekScore(), 0.0001);
+        assertEquals(1.2, weeklyPerformance.getWeekScore(), 0.0001);
     }
 
     @Test

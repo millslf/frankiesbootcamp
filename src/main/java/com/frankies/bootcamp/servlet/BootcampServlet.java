@@ -3,6 +3,7 @@ package com.frankies.bootcamp.servlet;
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.AuthenticatedUser;
 import com.frankies.bootcamp.service.AuthService;
+import com.frankies.bootcamp.service.StravaService;
 import com.frankies.bootcamp.service.AuthSessionService;
 import jakarta.inject.Inject;
 import jakarta.servlet.ServletException;
@@ -18,6 +19,8 @@ public class BootcampServlet extends HttpServlet {
     private AuthSessionService authSessionService;
     @Inject
     private AuthService authService;
+    @Inject
+    private StravaService stravaService;
 
     private static final Logger log = Logger.getLogger(BootcampServlet.class);
 
@@ -38,6 +41,12 @@ public class BootcampServlet extends HttpServlet {
                 athlete = authService.loadAthleteForUser(authenticatedUser);
                 if (athlete == null || isStravaPending(athlete)) {
                     log.info("Strava link required: " + authenticatedUser.getEmail());
+                    // Use StravaService to provide server-controlled config
+                    String clientId = stravaService.getClientId();
+                    String callback = stravaService.buildCallbackUrl(req);
+
+                    req.setAttribute("stravaClientId", clientId);
+                    req.setAttribute("stravaCallback", callback);
                     req.setAttribute("stravaOnboardingUser", authenticatedUser);
                     req.getRequestDispatcher("/app/strava-onboarding.jsp").forward(req, resp);
                     return;
