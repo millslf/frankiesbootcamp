@@ -255,4 +255,39 @@ public class WeeklyPerformance {
         calculateTotalPercentOfGoal();
     }
 
+    public void setPersistedValues(Double totalDistance,
+                                   Double totalPercentOfGoal,
+                                   Double weekGoalAchievementScore,
+                                   Double weekProgressionBonus,
+                                   Double weekScore,
+                                   Double averageWeeklyScore,
+                                   boolean isSick) {
+        this.totalDistance = totalDistance == null ? 0.0 : totalDistance;
+        this.totalPercentOfGoal = totalPercentOfGoal == null ? 0.0 : totalPercentOfGoal;
+        this.weekGoalAchievementScore = weekGoalAchievementScore == null ? 0.0 : weekGoalAchievementScore;
+        this.weekProgressionBonus = weekProgressionBonus == null ? 0.0 : weekProgressionBonus;
+        this.weekScore = weekScore == null ? 0.0 : weekScore;
+        this.averageWeeklyScore = averageWeeklyScore == null ? 0.0 : averageWeeklyScore;
+        this.isSick = isSick;
+    }
+
+    public void setPersistedSportTotals(String sportType,
+                                        Integer activityCount,
+                                        Double calculatedDistance,
+                                        Double originalDistance,
+                                        Double originalDuration) {
+        if (sportType == null || sportType.isBlank()) {
+            return;
+        }
+
+        sports.put(sportType, calculatedDistance == null ? 0.0 : calculatedDistance);
+        sportsCount.put(sportType, activityCount == null ? 0 : activityCount);
+        if (originalDistance != null) {
+            sportsOriginalDistance.put(sportType, originalDistance);
+        }
+        if (originalDuration != null) {
+            sportsOriginalDuration.put(sportType, originalDuration);
+        }
+    }
+
 }
