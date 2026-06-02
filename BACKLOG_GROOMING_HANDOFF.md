@@ -52,6 +52,12 @@ A "dev ready" top-of-board order was established to prioritize:
   - persist weekly stats, weekly sport stats, summary stats, summary sport stats, and honour-roll rows as read models
   - rebuild one `competition_athlete` at a time and delete/recreate derived rows during recalculation
   - treat `FBC-32` as the first persistence/migration slice that enables this model rather than as an isolated framework ticket
+- Current delivery status for `FBC-22`:
+  - a delivered first implementation slice is now in place
+  - persistent leaderboard and honour-roll reads are working from DB-backed read models
+  - persistent webhook add/delete is currently stable again, but still uses full athlete refetch from Strava
+  - the attempted local persisted-activity webhook rebuild was reverted after causing missing derived rows / stale UI behavior
+  - `FBC-91` explicitly holds that deferred webhook optimization work, so `FBC-22` should be treated as materially done apart from remaining persistent-service test coverage and ticket closeout
 
 ## Agreed current board order
 
@@ -124,6 +130,9 @@ Prompts/order discussions were completed for:
   - persist derived competition stats separately for dumb reads
   - use webhook events for incremental updates where practical
   - use scheduled full sync as reconciliation/backfill
+- Updated practical note after implementation work:
+   - incremental webhook rebuild from persisted local activity rows is now explicitly tracked in `FBC-91`, not `FBC-22`
+   - current stable behavior in persistent mode is full athlete refetch from Strava on webhook add/delete
 - Do not mirror the full Strava JSON shape as the main table design.
 - Raw Strava payload storage is still considered unnecessary.
 - The current preferred table set is:
@@ -148,6 +157,7 @@ Work was started directly on `FBC-40`.
 - `src\test\java\com\frankies\bootcamp\model\WeeklyPerformanceTest.java`
 - `src\test\java\com\frankies\bootcamp\model\PerformanceResponseTest.java`
 - `src\test\java\com\frankies\bootcamp\service\ActivityProcessServiceTest.java`
+- `src\test\java\com\frankies\bootcamp\service\PersistentActivityProcessServiceTest.java`
 - `src\test\java\com\frankies\bootcamp\fixture\PerformanceFixtureLoadingTest.java`
 - `src\test\java\com\frankies\bootcamp\sport\SportFactoryTest.java`
 
@@ -165,6 +175,16 @@ About **68%** complete.
 - leaderboard ordering basics
 - sport mapping and unsupported sport handling
 - fixture-driven totals, score ranking, remaining-distance, and goal-band checks
+
+### FBC-22 closeout note
+
+- Additional unit/parity coverage was started for the DB-backed path in `PersistentActivityProcessServiceTest`.
+- That new test class focuses on:
+  - athlete rebuild totals and persisted-row shaping
+  - webhook-triggered rebuild behavior in persistent mode
+  - parity checks against the overlapping legacy calculation flow
+- `PersistentActivityProcessService` gained small protected test seams for DB-backed writes so these tests can run without a JNDI datasource.
+- Practical closeout rule now: if the persistent-service tests are green, `FBC-22` should be ready to close while leaving `FBC-91` open as the separate optimization ticket.
 
 ### Important findings
 

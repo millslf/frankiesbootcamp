@@ -6,6 +6,7 @@
 $defaultCopilotProviderType = "openai"
 $defaultCopilotProviderBaseUrl = "https://api.openai.com/v1"
 $defaultCopilotModel = "gpt-5.4"
+$defaultMavenBinPath = "C:\TFS\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin"
 $defaultAtlassianBaseUrl = "https://millses.atlassian.net"
 $defaultAtlassianEmail = "millslf@gmail.com"
 $defaultJiraProjectKey = "FBC"
@@ -48,6 +49,13 @@ function Set-SessionValue {
 $env:COPILOT_PROVIDER_TYPE = $defaultCopilotProviderType
 $env:COPILOT_PROVIDER_BASE_URL = $defaultCopilotProviderBaseUrl
 $env:COPILOT_MODEL = $defaultCopilotModel
+if (Test-Path $defaultMavenBinPath) {
+    $env:Path = "$defaultMavenBinPath;$env:Path"
+    Write-Host "Maven added to PATH for this terminal session: $defaultMavenBinPath"
+}
+else {
+    Write-Host "Maven bin path not found, skipping PATH update: $defaultMavenBinPath"
+}
 
 $plainKey = Read-PlainSecret -Prompt "Enter your OpenAI API key"
 Set-SessionValue -Name "COPILOT_PROVIDER_API_KEY" -Value $plainKey

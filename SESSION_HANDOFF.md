@@ -36,6 +36,25 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
 - Agreed admin rule: each competition must have at least one competition admin athlete, and only a competition admin can update another athlete's starting goal.
 - Screen coverage was reviewed against the current UI screenshots and current in-memory object. Honour Roll is now expected to have its own read-model table.
 
+### FBC-22 implementation status
+
+- `FBC-22` now has a delivered first implementation slice on the working branch.
+- Completed in this slice:
+  - parallel non-breaking processing toggle via `BOOTCAMP_ACTIVITY_MODE`
+  - new persistent competition-scoped tables and startup DDL
+  - persistent leaderboard reads from `competition_summary`
+  - persistent honour-roll reads from `competition_honour_roll`
+  - thin persisted activity rows in `competition_activity_detail`
+  - stable webhook add/delete behavior restored in persistent mode
+- Important current constraint:
+  - webhook add/delete in persistent mode currently rebuilds the athlete from Strava again
+  - this was intentionally kept because the first attempt to rebuild purely from persisted activity rows caused missing derived rows and stale UI behavior
+- Assumed follow-up ticket:
+  - `FBC-91` captures the deferred optimization to rebuild webhook changes from persisted activity rows instead of full Strava refetch, mainly to reduce future Strava API limit risk
+- Practical status:
+  - treat `FBC-22` as materially implemented and potentially closeable as a first slice if `FBC-91` owns the deferred webhook/local-rebuild optimization
+  - otherwise it remains technically in progress
+
 ### Session workflow / AI-working setup
 
 - A lightweight transferable AI workflow was added to the repo:
@@ -127,6 +146,7 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
   - `src\test\java\com\frankies\bootcamp\model\WeeklyPerformanceTest.java`
   - `src\test\java\com\frankies\bootcamp\model\PerformanceResponseTest.java`
   - `src\test\java\com\frankies\bootcamp\service\ActivityProcessServiceTest.java`
+  - `src\test\java\com\frankies\bootcamp\service\PersistentActivityProcessServiceTest.java`
   - `src\test\java\com\frankies\bootcamp\fixture\PerformanceFixtureLoadingTest.java`
   - `src\test\java\com\frankies\bootcamp\sport\SportFactoryTest.java`
 - Current estimated progress against the `FBC-40` prompt: about **68%**.
@@ -136,6 +156,8 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
   - sick week scoring behavior
   - sport add/remove behavior
   - add/remove/update-style activity mutations in `ActivityProcessService`
+  - persistent activity rebuild totals, persisted-row shaping, and webhook-triggered rebuild behavior in `PersistentActivityProcessService`
+  - persistent-vs-legacy parity checks for overlapping calculation flows
   - leaderboard ordering basics
   - sport factory routing / unsupported sport handling
   - fixture-driven totals, score ranking, remaining-distance, and goal-band checks
@@ -143,6 +165,19 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
   - `ActivityProcessService.ensureWeeksUpTo(...)` appears to have an off-by-one/null bug due to `get(w - 2)` when creating later weeks. This was exposed by a test path, but not fixed yet.
 - Important testing note:
   - fixture-loading tests must use raw JSON assertions rather than Gson deserialization into `PerformanceResponse`, because `stravaActivityDetails.sport` is typed as abstract `BaseSport`.
+
+### FBC-22 closeout status
+
+- `FBC-91` exists in Jira and explicitly owns the deferred webhook optimization to rebuild from persisted activity rows instead of full Strava refetch.
+- `FBC-22` is still `In Progress` in Jira, but the current practical position is that it is materially implemented as a first slice.
+- The remaining closeout work was narrowed to persistent-service unit/parity tests, and `PersistentActivityProcessServiceTest` was added for that purpose.
+- While landing those tests, `PersistentActivityProcessService` gained small protected test seams for DB-backed writes:
+  - `rebuildAthleteState(...)` is now `protected`
+  - `ensureCompetitionAthlete(...)`
+  - `replacePersistentCompetitionState(...)`
+  - `replaceCompetitionHonourRoll(...)`
+- `copilot-byok.ps1` now prepends the local Maven bin path `C:\TFS\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin` when present so future Copilot CLI sessions can run `mvn` directly.
+- Next practical step: rerun `mvn -Dtest=PersistentActivityProcessServiceTest test` and then `mvn test`; if green, `FBC-22` is ready to close with `FBC-91` left as the separate follow-up.
 
 ## Important files
 
@@ -164,12 +199,13 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
 - `src\test\java\com\frankies\bootcamp\model\WeeklyPerformanceTest.java`
 - `src\test\java\com\frankies\bootcamp\model\PerformanceResponseTest.java`
 - `src\test\java\com\frankies\bootcamp\service\ActivityProcessServiceTest.java`
+- `src\test\java\com\frankies\bootcamp\service\PersistentActivityProcessServiceTest.java`
 - `src\test\java\com\frankies\bootcamp\fixture\PerformanceFixtureLoadingTest.java`
 - `src\test\java\com\frankies\bootcamp\sport\SportFactoryTest.java`
 
 ## Known constraints and follow-up notes
 
-- Maven was not available in the shell during the session, so full build/test verification was not run here.
+- Maven was initially not available in the shell during the session, but `copilot-byok.ps1` now adds the local Maven bin path for future sessions.
 - `mvnw.cmd` is present but the Maven wrapper is incomplete in this repo (`.mvn\wrapper\maven-wrapper.properties` missing), so wrapper-based commands currently fail.
 - Existing deployed databases may need manual migration work if the tables already existed before the latest FK/index changes.
 - There is an unsafe file at `src\main\resources\credentials.json` containing a live secret and it should not be committed.
