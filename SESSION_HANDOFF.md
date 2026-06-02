@@ -169,15 +169,21 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
 ### FBC-22 closeout status
 
 - `FBC-91` exists in Jira and explicitly owns the deferred webhook optimization to rebuild from persisted activity rows instead of full Strava refetch.
-- `FBC-22` is still `In Progress` in Jira, but the current practical position is that it is materially implemented as a first slice.
-- The remaining closeout work was narrowed to persistent-service unit/parity tests, and `PersistentActivityProcessServiceTest` was added for that purpose.
+- `FBC-22` is now effectively complete as a first usable slice and is ready to move to closed once Jira is updated.
+- The persistent path now serves the main app reads from DB-backed state instead of the retained persistent-mode in-memory cache.
+- `PersistentActivityProcessService` no longer retains `performanceList`; performance-list, history, summary, honour-roll, and ZenBot read paths now reconstruct/read from persisted tables.
+- The remaining closeout work was narrowed to persistent-service unit/parity tests, and `PersistentActivityProcessServiceTest` was added and updated for that purpose.
 - While landing those tests, `PersistentActivityProcessService` gained small protected test seams for DB-backed writes:
   - `rebuildAthleteState(...)` is now `protected`
   - `ensureCompetitionAthlete(...)`
   - `replacePersistentCompetitionState(...)`
   - `replaceCompetitionHonourRoll(...)`
+- A legacy auth shortcut was also removed: `AuthenticationFilter` no longer trusts `Ngrok-Auth-User-Email` to bootstrap a logged-in session. API/browser requests now need a real authenticated session cookie.
 - `copilot-byok.ps1` now prepends the local Maven bin path `C:\TFS\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin` when present so future Copilot CLI sessions can run `mvn` directly.
-- Next practical step: rerun `mvn -Dtest=PersistentActivityProcessServiceTest test` and then `mvn test`; if green, `FBC-22` is ready to close with `FBC-91` left as the separate follow-up.
+- Deferred follow-up tickets now stand as:
+  - `FBC-91` webhook optimization from persisted activity rows
+  - `FBC-92` broader removal of remaining legacy in-memory summary code
+  - `FBC-93` analysis-only heart-rate-informed equivalent-distance metric
 
 ## Important files
 

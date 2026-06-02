@@ -57,7 +57,9 @@ A "dev ready" top-of-board order was established to prioritize:
   - persistent leaderboard and honour-roll reads are working from DB-backed read models
   - persistent webhook add/delete is currently stable again, but still uses full athlete refetch from Strava
   - the attempted local persisted-activity webhook rebuild was reverted after causing missing derived rows / stale UI behavior
-  - `FBC-91` explicitly holds that deferred webhook optimization work, so `FBC-22` should be treated as materially done apart from remaining persistent-service test coverage and ticket closeout
+  - history, summary, ZenBot stats context, and full performance-list reads are now DB-backed as well
+  - the retained persistent-mode `performanceList` cache has been removed from `PersistentActivityProcessService`
+  - `FBC-91`, `FBC-92`, and `FBC-93` now hold the deferred follow-up work, so `FBC-22` should be treated as ready to close as the first persistence slice
 
 ## Agreed current board order
 
@@ -80,7 +82,7 @@ A "dev ready" top-of-board order was established to prioritize:
 17. `FBC-30` Allow an athlete to belong to multiple competitions.
 18. `FBC-37` Allow competition-specific eligible sports while preserving "All Sports Equal" as the default model.
 19. `FBC-38` Specify relative distances per competition.
-20. `FBC-22` Replace in-memory activity summary with persisted normalized activities and derived stats.
+20. `FBC-22` Replace in-memory activity summary with persisted normalized activities and derived stats. (Implemented first slice; close after Jira/admin cleanup.)
 
 ## Ticket shaping completed in this session
 

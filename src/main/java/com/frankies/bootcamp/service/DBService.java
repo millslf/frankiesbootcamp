@@ -3,6 +3,7 @@ package com.frankies.bootcamp.service;
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.AuthenticatedUser;
 import com.frankies.bootcamp.model.EmailAccess;
+import com.frankies.bootcamp.model.PerformanceResponse;
 import com.frankies.bootcamp.model.WeeklyPerformance;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -764,6 +765,38 @@ public class DBService {
         return getPersistentHonourRollMap(competitionId, false);
     }
 
+    public HashMap<Integer, HashMap<String, Double>> calculatePersistentHonourRollMap(long competitionId, boolean distance) throws SQLException {
+        HashMap<Integer, HashMap<String, Double>> results = new HashMap<>();
+        String valueColumn = distance ? "cws.total_distance" : "cws.total_percent_of_goal";
+
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT cws.week_number, CONCAT(a.firstname, ' ', a.lastname) AS athlete_name, " + valueColumn + " AS winner_value " +
+                                "FROM competition_weekly_stats cws " +
+                                "JOIN competition_athlete ca ON ca.id = cws.competition_athlete_id " +
+                                "JOIN athletes a ON a.id = ca.athlete_id " +
+                                "WHERE ca.competition_id = ? AND ca.status = 'active' " +
+                                "ORDER BY cws.week_number ASC, winner_value DESC"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    int weekNumber = resultSet.getInt("week_number");
+                    if (results.containsKey(weekNumber)) {
+                        continue;
+                    }
+                    HashMap<String, Double> winner = new LinkedHashMap<>();
+                    winner.put(resultSet.getString("athlete_name"), resultSet.getDouble("winner_value"));
+                    results.put(weekNumber, winner);
+                }
+            }
+        }
+
+        return results;
+    }
+
     public List<PersistentActivityProcessService.PersistentActivityDetailRow> getPersistentActivityRows(String athleteId) throws SQLException {
         List<PersistentActivityProcessService.PersistentActivityDetailRow> rows = new ArrayList<>();
         try (
@@ -896,6 +929,52 @@ public class DBService {
         }
 
         return null;
+    }
+
+    public List<PerformanceResponse> getPersistentPerformanceList(long competitionId) throws SQLException {
+        List<PerformanceResponse> performances = new ArrayList<>();
+
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT a.id, a.firstname, a.lastname, a.email, cs.distance_to_date, cs.score_to_date, cs.original_weekly_goal " +
+                                "FROM competition_summary cs " +
+                                "JOIN competition_athlete ca ON ca.id = cs.competition_athlete_id " +
+                                "JOIN athletes a ON a.id = ca.athlete_id " +
+                                "WHERE ca.competition_id = ? AND ca.status = 'active'"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    BootcampAthlete athlete = new BootcampAthlete();
+                    athlete.setId(resultSet.getString("id"));
+                    athlete.setFirstname(resultSet.getString("firstname"));
+                    athlete.setLastname(resultSet.getString("lastname"));
+                    athlete.setEmail(resultSet.getString("email"));
+                    athlete.setGoal(resultSet.getDouble("original_weekly_goal"));
+
+                    PerformanceResponse performance = new PerformanceResponse();
+                    performance.setAthlete(athlete);
+                    performance.setDistanceToDate(resultSet.getDouble("distance_to_date"));
+                    performance.setScoreToDate(resultSet.getDouble("score_to_date"));
+
+                    Map<Integer, WeeklyPerformance> history = getPersistentAthleteHistory(athlete.getId());
+                    for (Map.Entry<Integer, WeeklyPerformance> entry : history.entrySet()) {
+                        performance.addWeeklyPerformance(entry.getValue(), entry.getKey());
+                    }
+                    for (WeeklyPerformance week : history.values()) {
+                        for (Map.Entry<String, Double> sportEntry : week.getSports().entrySet()) {
+                            performance.getSports().merge(sportEntry.getKey(), sportEntry.getValue(), Double::sum);
+                        }
+                    }
+
+                    performances.add(performance);
+                }
+            }
+        }
+
+        return performances;
     }
 
     public record PersistentAthleteSummarySnapshot(

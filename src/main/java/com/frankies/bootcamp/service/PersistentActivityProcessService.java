@@ -37,10 +37,8 @@ public class PersistentActivityProcessService {
     private final StravaService stravaService;
     private final DecimalFormat df = new DecimalFormat("#.##");
 
-    private volatile List<PerformanceResponse> performanceList = new ArrayList<>();
     private volatile HashMap<Integer, HashMap<String, Double>> honourRollTotalDistance = new HashMap<>();
     private volatile HashMap<Integer, HashMap<String, Double>> honourRollPercentageOfGoal = new HashMap<>();
-    private volatile Map<String, HashMap<String, Double>> sortedSummaries = new HashMap<>();
 
     @Inject
     public PersistentActivityProcessService(DBService dbService, StravaService stravaService) {
@@ -55,14 +53,12 @@ public class PersistentActivityProcessService {
 
     public void prepareSummary() throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         List<BootcampAthlete> athletes = dbService.findAllAthletes();
-        List<PerformanceResponse> rebuilt = new ArrayList<>();
         for (BootcampAthlete athlete : athletes) {
             if (athlete.getId() == null || athlete.getId().isBlank() || athlete.getId().startsWith("local-")) {
                 continue;
             }
-            rebuilt.add(rebuildAthleteState(athlete));
+            rebuildAthleteState(athlete);
         }
-        this.performanceList = rebuilt;
         persistHonourRollRows();
         regenerateSummaryMaps();
     }
@@ -71,11 +67,7 @@ public class PersistentActivityProcessService {
         if (athlete == null || athlete.getId() == null || athlete.getId().isBlank() || athlete.getId().startsWith("local-")) {
             return;
         }
-        PerformanceResponse rebuilt = rebuildAthleteState(athlete);
-        List<PerformanceResponse> updated = new ArrayList<>(performanceList);
-        updated.removeIf(existing -> existing.getAthlete() != null && athlete.getId().equals(existing.getAthlete().getId()));
-        updated.add(rebuilt);
-        this.performanceList = updated;
+        rebuildAthleteState(athlete);
         persistHonourRollRows();
         regenerateSummaryMaps();
     }
@@ -245,7 +237,11 @@ public class PersistentActivityProcessService {
     }
 
     public List<PerformanceResponse> getPerformanceList() {
-        return performanceList;
+        try {
+            return dbService.getPersistentPerformanceList(1L);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Unable to load persistent performance list", e);
+        }
     }
 
     public Map<Integer, WeeklyPerformance> getAthleteHistory(String athleteId) {
@@ -297,22 +293,6 @@ public class PersistentActivityProcessService {
                 (currentWeek == null ? "" : currentWeek.toString()) +
                 "OVERALL SCORE COMPETITION:\n" +
                 getScoreSummary(getSortedSummaries().get(BootcampConstants.currentYearlyScoreSummary));
-    }
-
-    private String buildSummaryBody(PerformanceResponse performance) {
-        WeeklyPerformance currentWeek = performance.getWeeklyPerformances().get(getNumberOfWeeksSinceStart());
-        StringBuilder sports = new StringBuilder();
-        for (Map.Entry<String, Double> entry : performance.getSports().entrySet()) {
-            sports.append(entry.getKey()).append(" ").append(df.format(entry.getValue())).append("km\n");
-        }
-        return "Liewe " + performance.getAthlete().getFirstname() + ",\n\n" +
-                "Distance this challenge: " + df.format(performance.getDistanceToDate()) + "km\n" +
-                "Total points: " + df.format(performance.getScoreToDate()) + "\n" +
-                "Sports: \n" + sports +
-                "Original weekly goal: " + df.format(performance.getAthlete().getGoal()) + "km\n\n" +
-                (currentWeek == null ? "" : currentWeek.toString()) +
-                "OVERALL SCORE COMPETITION:\n" +
-                getScoreSummary(sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary));
     }
 
     private String getScoreSummary(HashMap<String, Double> currentWeekSummary) {
@@ -392,31 +372,15 @@ public class PersistentActivityProcessService {
     }
 
     private void regenerateSummaryMaps() {
-        HashMap<String, Double> currentWeekPercentageOfGoalSummary = new HashMap<>();
-        HashMap<String, Double> currentYearlyScoreSummary = new HashMap<>();
-
-        int currentWeek = getNumberOfWeeksSinceStart();
-        for (PerformanceResponse performance : performanceList) {
-            WeeklyPerformance week = performance.getWeeklyPerformances().get(currentWeek);
-            if (week != null) {
-                currentWeekPercentageOfGoalSummary.put(performance.getAthlete().getFirstname(), week.getTotalPercentOfGoal() * 100);
-            }
-            currentYearlyScoreSummary.put(performance.getAthlete().getFirstname(), performance.getScoreToDate());
-        }
-
-        Map<String, HashMap<String, Double>> rebuilt = new HashMap<>();
-        rebuilt.put(BootcampConstants.currentWeekPercentageOfGoalSummary, sortByValue(currentWeekPercentageOfGoalSummary));
-        rebuilt.put(BootcampConstants.currentYearlyScoreSummary, sortByValue(currentYearlyScoreSummary));
-        this.sortedSummaries = rebuilt;
-        this.honourRollTotalDistance = buildHonourRollMap(true);
-        this.honourRollPercentageOfGoal = buildHonourRollMap(false);
+        this.honourRollTotalDistance = getHonourRollTotalDistance();
+        this.honourRollPercentageOfGoal = getHonourRollPercentageOfGoal();
     }
 
 
     private void persistHonourRollRows() throws SQLException {
         Map<Integer, PersistentHonourRollRow> honourRollRows = new LinkedHashMap<>();
-        HashMap<Integer, HashMap<String, Double>> distanceMap = buildHonourRollMap(true);
-        HashMap<Integer, HashMap<String, Double>> percentMap = buildHonourRollMap(false);
+        HashMap<Integer, HashMap<String, Double>> distanceMap = calculatePersistentHonourRollMap(1L, true);
+        HashMap<Integer, HashMap<String, Double>> percentMap = calculatePersistentHonourRollMap(1L, false);
 
         for (Map.Entry<Integer, HashMap<String, Double>> distanceEntry : distanceMap.entrySet()) {
             Map.Entry<String, Double> distanceWinner = distanceEntry.getValue().entrySet().iterator().next();
@@ -434,21 +398,8 @@ public class PersistentActivityProcessService {
         replaceCompetitionHonourRoll(1L, honourRollRows);
     }
 
-    private HashMap<Integer, HashMap<String, Double>> buildHonourRollMap(boolean distance) {
-        HashMap<Integer, HashMap<String, Double>> results = new HashMap<>();
-        for (PerformanceResponse performance : performanceList) {
-            for (Map.Entry<Integer, WeeklyPerformance> weeklyEntry : performance.getWeeklyPerformances().entrySet()) {
-                WeeklyPerformance week = weeklyEntry.getValue();
-                double value = distance ? week.getTotalDistance() : week.getTotalPercentOfGoal();
-                results.computeIfAbsent(weeklyEntry.getKey(), ignored -> new HashMap<>());
-                HashMap<String, Double> existing = results.get(weeklyEntry.getKey());
-                if (existing.isEmpty() || value > existing.values().iterator().next()) {
-                    existing.clear();
-                    existing.put(performance.getAthlete().getFirstname() + " " + performance.getAthlete().getLastname(), value);
-                }
-            }
-        }
-        return results;
+    protected HashMap<Integer, HashMap<String, Double>> calculatePersistentHonourRollMap(long competitionId, boolean distance) throws SQLException {
+        return dbService.calculatePersistentHonourRollMap(competitionId, distance);
     }
 
     private HashMap<String, Double> sortByValue(HashMap<String, Double> map) {
