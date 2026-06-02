@@ -1,6 +1,6 @@
 package com.frankies.bootcamp.servlet;
 
-import com.frankies.bootcamp.service.ActivityProcessService;
+import com.frankies.bootcamp.service.ActivityProcessFacade;
 import com.frankies.bootcamp.utils.WildflyUtils;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
@@ -16,7 +16,7 @@ import java.sql.SQLException;
 @WebServlet(name = "athleteSummary", value = "/app/AthleteSummary")
 public class AthleteSummaryServlet extends BootcampServlet {
     @Inject
-    private ActivityProcessService activityProcessService;
+    private ActivityProcessFacade activityProcessFacade;
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
@@ -24,7 +24,7 @@ public class AthleteSummaryServlet extends BootcampServlet {
 
         try {
             com.frankies.bootcamp.model.BootcampAthlete loggedInAthlete = (com.frankies.bootcamp.model.BootcampAthlete) request.getAttribute("athlete");
-            summaryContent = activityProcessService.getLoggedInAthleteSummary(loggedInAthlete.getId());
+            summaryContent = activityProcessFacade.getLoggedInAthleteSummary(loggedInAthlete.getId());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
             throw new IOException("Failed to load athlete summary", e);
         }

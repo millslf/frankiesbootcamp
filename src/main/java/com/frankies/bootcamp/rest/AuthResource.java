@@ -5,7 +5,7 @@ import com.frankies.bootcamp.model.AuthenticatedUser;
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.service.AuthService;
 import com.frankies.bootcamp.service.AuthSessionService;
-import com.frankies.bootcamp.service.ActivityProcessService;
+import com.frankies.bootcamp.service.ActivityProcessFacade;
 import com.frankies.bootcamp.service.StravaLinkConflictException;
 import com.frankies.bootcamp.service.StravaService;
 import com.frankies.bootcamp.service.DBService;
@@ -36,7 +36,7 @@ public class AuthResource {
     private AuthService authService;
 
     @Inject
-    private ActivityProcessService activityProcessService;
+    private ActivityProcessFacade activityProcessFacade;
 
     @Inject
     private DBService dbService;
@@ -89,7 +89,7 @@ public class AuthResource {
                 BootcampAthlete linkedAthlete = stravaService.tokenExchange(code, currentUser.getUserId(), currentUser.getEmail());
                 if (linkedAthlete != null) {
                     dbService.updateAuthUserAthleteId(currentUser.getUserId(), linkedAthlete.getId());
-                    activityProcessService.prepareAthleteSummary(linkedAthlete);
+                    activityProcessFacade.prepareAthleteSummary(linkedAthlete);
                     request.getSession(true).setAttribute("athlete", linkedAthlete);
                     request.getSession().setAttribute("athleteEmail", currentUser.getEmail());
                     request.getSession().setAttribute("athleteName", currentUser.getDisplayName());

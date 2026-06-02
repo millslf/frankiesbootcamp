@@ -1,7 +1,7 @@
 package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.service.AiMessageService;
-import com.frankies.bootcamp.service.ActivityProcessService;
+import com.frankies.bootcamp.service.ActivityProcessFacade;
 import com.frankies.bootcamp.service.DBService;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
@@ -18,7 +18,7 @@ public class ZenBotServlet extends BootcampServlet {
     @Inject
     private AiMessageService aiMessageService;
     @Inject
-    private ActivityProcessService activityProcessService;
+    private ActivityProcessFacade activityProcessFacade;
     @Inject
     private DBService dbService;
 
@@ -39,8 +39,8 @@ public class ZenBotServlet extends BootcampServlet {
         if (athlete instanceof com.frankies.bootcamp.model.BootcampAthlete bootcampAthlete) {
             athleteId = bootcampAthlete.getId();
         }
-        String statsContext = activityProcessService != null
-            ? activityProcessService.getZenBotStatsContext(athleteId)
+        String statsContext = activityProcessFacade != null
+            ? activityProcessFacade.getZenBotStatsContext(athleteId)
             : "No athlete stats are currently available.";
 
         if (session != null) {
