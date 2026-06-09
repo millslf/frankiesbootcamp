@@ -75,8 +75,8 @@ A "dev ready" top-of-board order was established to prioritize:
 10. `FBC-6` Tighten browser script security and remove inline script dependence.
 11. `FBC-19` Create a MAUI mobile app shell using WebView for the existing app.
 12. `FBC-20` Prepare the mobile app for App Store and Play Store submission.
-13. `FBC-12` Complete registration flow.
-14. `FBC-56` Strava link button should only appear when the user is authenticated and ready to link Strava, and should no longer act as an enrolment shortcut.
+13. `FBC-12` Competition-aware onboarding flow.
+14. `FBC-56` Strava link button should only appear when the user is authenticated and ready to link Strava, and should no longer act as an enrolment shortcut. (Done)
 15. `FBC-54` Implement global and competition-scoped authorization model.
 16. `FBC-16` Set up screens to create competition if athlete is not part of any competitions, set up start week, and set up start goal per competition.
 17. `FBC-30` Allow an athlete to belong to multiple competitions.
@@ -117,6 +117,21 @@ Prompts/order discussions were completed for:
 - The future model should allow a separate chosen username/display handle.
 - Strava linking should happen after authenticated onboarding, not act as the main enrolment path.
 - Strava link initiation should be server-controlled and not built directly in the frontend.
+- `FBC-12` was later updated in Jira and should now be treated as a competition-aware onboarding-state and routing ticket, not a registration-flow ticket.
+- `FBC-12` should represent explicit post-auth states including:
+  - authenticated but not fully onboarded
+  - app user exists but Strava not linked
+  - Strava linked but no competition membership yet
+  - eligible for competition join/create next step
+  - fully onboarded and ready for normal dashboard use
+- `FBC-56` is already done, so `FBC-12` should reuse the completed authenticated Strava-link gating rather than re-solving that behavior.
+- Updated practical ordering after this clarification:
+  1. `FBC-12`
+  2. `FBC-16`
+  3. `FBC-30`
+  4. `FBC-54`
+  5. `FBC-37`
+  6. `FBC-38`
 
 ### Product philosophy
 

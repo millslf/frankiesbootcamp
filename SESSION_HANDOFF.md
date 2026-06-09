@@ -232,8 +232,8 @@ Backlog grooming was continued and a prioritized "dev ready" board order was est
 10. `FBC-6` stricter browser script security / less inline script dependence
 11. `FBC-19` MAUI mobile app shell using WebView
 12. `FBC-20` App Store / Play Store readiness
-13. `FBC-12` complete registration flow
-14. `FBC-56` Strava link only in authenticated onboarding state
+13. `FBC-12` competition-aware onboarding flow
+14. `FBC-56` Strava link only in authenticated onboarding state (done)
 15. `FBC-54` global + competition-scoped authorization model
 16. `FBC-16` competition creation/setup flow
 17. `FBC-30` athlete can belong to multiple competitions
@@ -251,6 +251,17 @@ Additional board/backlog decisions made:
   - competition invitations and join flow
   - global admin console / admin operations
   - competition admin console
+- `FBC-12` was re-checked against Jira and is no longer a registration/auth ticket.
+- Current `FBC-12` meaning is competition-aware onboarding flow after authentication.
+- `FBC-12` now owns explicit onboarding states and routing such as:
+  - authenticated but not fully onboarded
+  - app user exists but Strava not linked
+  - Strava linked but no competition membership yet
+  - eligible for join/create next step
+  - fully onboarded and ready for normal dashboard use
+- `FBC-12` should build on the already-complete `FBC-56` Strava-link gating rather than reimplementing it.
+- Practical sequencing update:
+  - `FBC-12` should now sit before `FBC-16`, `FBC-30`, and `FBC-54` as the onboarding-state/routing layer those tickets build on.
 
 ## Best next checks next session
 
