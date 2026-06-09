@@ -1,7 +1,7 @@
 package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.model.WeeklyPerformance;
-import com.frankies.bootcamp.service.ActivityProcessService;
+import com.frankies.bootcamp.service.ActivityProcessFacade;
 import com.frankies.bootcamp.utils.DateTimeUtils;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
@@ -23,7 +23,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
     private static final Logger log = Logger.getLogger(AthleteHistoryServlet.class);
 
     @Inject
-    private ActivityProcessService activityProcessService;
+    private ActivityProcessFacade activityProcessFacade;
     @Inject
     private AiMessageService aiMessageService;
 
@@ -35,11 +35,11 @@ public class AthleteHistoryServlet extends BootcampServlet {
         com.frankies.bootcamp.model.BootcampAthlete loggedInAthlete = (com.frankies.bootcamp.model.BootcampAthlete) request.getAttribute("athlete");
         String athleteName = loggedInAthlete.getFirstname();
         String authenticatedUserMail = (String) request.getAttribute("athleteEmail");
-        history = activityProcessService.getAthleteHistory(loggedInAthlete.getId());
+        history = activityProcessFacade.getAthleteHistory(loggedInAthlete.getId());
         if (history == null) {
             history = new HashMap<>();
         }
-        int numberOfWeeksSinceStart = activityProcessService.getNumberOfWeeksSinceStart();
+        int numberOfWeeksSinceStart = activityProcessFacade.getNumberOfWeeksSinceStart();
 
         out.println("<html><head>");
         out.println("</head><body>");
@@ -66,7 +66,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
 
             Integer leaderboardRank = null;
             try {
-                Map<String, HashMap<String, Double>> sortedSummaries = activityProcessService.getSortedSummaries();
+                Map<String, HashMap<String, Double>> sortedSummaries = activityProcessFacade.getSortedSummaries();
                 int rank = 1;
                 for (String email : sortedSummaries.keySet()) {
                     if (email.equalsIgnoreCase(authenticatedUserMail)) {

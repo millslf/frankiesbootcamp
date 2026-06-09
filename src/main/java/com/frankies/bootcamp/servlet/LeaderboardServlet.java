@@ -1,7 +1,7 @@
 package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.constant.BootcampConstants;
-import com.frankies.bootcamp.service.ActivityProcessService;
+import com.frankies.bootcamp.service.ActivityProcessFacade;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,13 +16,13 @@ import java.util.Map;
 @WebServlet(name = "leaderBoard", value = "/app/LeaderBoard")
 public class LeaderboardServlet extends BootcampServlet {
     @Inject
-    private ActivityProcessService activityProcessService;
+    private ActivityProcessFacade activityProcessFacade;
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         DecimalFormat df = new DecimalFormat("#.##");
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
 
-        Map<String, HashMap<String, Double>> sortedSummaries = activityProcessService.getSortedSummaries();
+        Map<String, HashMap<String, Double>> sortedSummaries = activityProcessFacade.getSortedSummaries();
 
         out.println("<html><head>");
         out.println("</head><body>");
@@ -35,7 +35,7 @@ public class LeaderboardServlet extends BootcampServlet {
         out.println("</p>");
 
 // Accordion Buttons
-        out.println("<button id='btnScore' class='accordion-button btn btn-secondary'>");
+        out.println("<button id='btnScore' class='accordion-button btn btn-primary active'>");
         out.println("<span><i class='bi bi-trophy me-2'></i> Total Challenge Score</span>");
         out.println("<i class='bi bi-caret-down-fill accordion-arrow'></i>");
         out.println("</button>");
@@ -48,7 +48,7 @@ public class LeaderboardServlet extends BootcampServlet {
 // Accordion Contents
 
 // Total Challenge Score Table
-        out.println("<div id='scoreContent' class='accordion-content'>");
+        out.println("<div id='scoreContent' class='accordion-content active'>");
         out.println("<p class='history-subheading'>");
         out.println("🏅 Cumulative scores for athletes conquering the full challenge.");
         out.println("</p>");

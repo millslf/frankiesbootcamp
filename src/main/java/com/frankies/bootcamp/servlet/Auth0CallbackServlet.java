@@ -89,7 +89,7 @@ public class Auth0CallbackServlet extends HttpServlet {
         String accessToken;
         try (Response tokenResponse = client.newCall(tokenRequest).execute()) {
             String tokenResponseBody = tokenResponse.body().string();
-            log.infof("Auth0 token response status=%d body=%s", tokenResponse.code(), tokenResponseBody);
+            log.infof("Auth0 token response status=%d", tokenResponse.code());
             if (!tokenResponse.isSuccessful()) {
                 throw new IOException("Auth0 token exchange failed with status " + tokenResponse.code());
             }

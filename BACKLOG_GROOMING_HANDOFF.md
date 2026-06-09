@@ -1,5 +1,13 @@
 # Backlog grooming handoff
 
+New way of working
+
+- Use SESSION_HANDOFF.md for session context and BACKLOG_GROOMING_HANDOFF.md for backlog priorities.
+- Keep answers ~50% shorter than default and be direct and practical.
+- Work one ticket at a time and use existing tickets before proposing new ones.
+- For each ticket provide: refined goal, a pasteable ticket prompt, suggested ordering/dependencies, and key risks/scope boundaries.
+- Flag tickets that should be renamed, split, or moved in order.
+
 ## Purpose
 
 This file captures where backlog grooming stopped, what ticket prompts/order were agreed, what was merged, and where to resume next time.
@@ -18,6 +26,40 @@ A "dev ready" top-of-board order was established to prioritize:
 8. onboarding and authorization
 9. multi-competition model and competition-specific rules
 10. replacement of the large in-memory summary model
+
+## Since this handoff was written
+
+- `FBC-40` is now considered done by the user.
+- The user wants to bring forward removal of the large in-memory summary object and move toward DB-backed activity/stat handling.
+- Recommendation given in-session: bring `FBC-22` forward and keep it tightly coupled to `FBC-32` rather than letting product-philosophy work interrupt the persistence transition.
+- The user also clarified the next major business direction after that refactor:
+  - move toward explicit competition membership
+  - stop implicitly placing newly joined users into the one active competition
+  - reduce cross-competition visibility assumptions
+  - prepare for multi-competition and later multi-sport behavior
+- Recommendation given in-session for the next competition-related sequence after `FBC-22` / `FBC-32`:
+  1. `FBC-30`
+  2. `FBC-16`
+  3. `FBC-54`
+  4. `FBC-37`
+  5. `FBC-38`
+- A concrete architecture interrogation was completed for `FBC-22` / `FBC-32` and documented in Confluence:
+  - `https://millses.atlassian.net/wiki/spaces/FB/pages/4751361/FBC-22+Persistence+Architecture`
+- A local ADR was also added at `docs\adr\0001-fbc22-competition-derived-persistence.md`.
+- Current recommended implementation shape:
+  - use `competition_athlete` as the core competition-scoped relation
+  - store thin `competition_activity_detail` rows matching current `stravaActivityDetails` fields so webhook add/update/delete remains possible
+  - persist weekly stats, weekly sport stats, summary stats, summary sport stats, and honour-roll rows as read models
+  - rebuild one `competition_athlete` at a time and delete/recreate derived rows during recalculation
+  - treat `FBC-32` as the first persistence/migration slice that enables this model rather than as an isolated framework ticket
+- Current delivery status for `FBC-22`:
+  - a delivered first implementation slice is now in place
+  - persistent leaderboard and honour-roll reads are working from DB-backed read models
+  - persistent webhook add/delete is currently stable again, but still uses full athlete refetch from Strava
+  - the attempted local persisted-activity webhook rebuild was reverted after causing missing derived rows / stale UI behavior
+  - history, summary, ZenBot stats context, and full performance-list reads are now DB-backed as well
+  - the retained persistent-mode `performanceList` cache has been removed from `PersistentActivityProcessService`
+  - `FBC-91`, `FBC-92`, and `FBC-93` now hold the deferred follow-up work, so `FBC-22` should be treated as ready to close as the first persistence slice
 
 ## Agreed current board order
 
@@ -40,7 +82,7 @@ A "dev ready" top-of-board order was established to prioritize:
 17. `FBC-30` Allow an athlete to belong to multiple competitions.
 18. `FBC-37` Allow competition-specific eligible sports while preserving "All Sports Equal" as the default model.
 19. `FBC-38` Specify relative distances per competition.
-20. `FBC-22` Replace in-memory activity summary with persisted normalized activities and derived stats.
+20. `FBC-22` Replace in-memory activity summary with persisted normalized activities and derived stats. (Implemented first slice; close after Jira/admin cleanup.)
 
 ## Ticket shaping completed in this session
 
@@ -86,12 +128,25 @@ Prompts/order discussions were completed for:
 
 - The large in-memory summary structure should eventually be replaced.
 - Best-practice direction is:
-  - persist normalized activities
-  - persist derived stats separately
-  - use webhook events for incremental updates
+  - persist thin normalized activity detail rows only where needed to preserve current webhook behavior
+  - persist derived competition stats separately for dumb reads
+  - use webhook events for incremental updates where practical
   - use scheduled full sync as reconciliation/backfill
+- Updated practical note after implementation work:
+   - incremental webhook rebuild from persisted local activity rows is now explicitly tracked in `FBC-91`, not `FBC-22`
+   - current stable behavior in persistent mode is full athlete refetch from Strava on webhook add/delete
 - Do not mirror the full Strava JSON shape as the main table design.
-- Raw Strava payload storage was considered unnecessary for now.
+- Raw Strava payload storage is still considered unnecessary.
+- The current preferred table set is:
+  - `competition`
+  - `competition_athlete`
+  - `competition_activity_detail`
+  - `competition_weekly_stats`
+  - `competition_weekly_sport_stats`
+  - `competition_summary`
+  - `competition_summary_sport_stats`
+  - `competition_honour_roll`
+- Current rule addition: each competition must have at least one competition admin athlete, and only a competition admin can change another athlete's starting goal.
 - A safe fixture based on the current summary shape was created at `src\test\resources\fixtures\memory-summary-sanitized.json` for future `FBC-40` tests.
 - A second focused fixture was added at `src\test\resources\fixtures\memory-summary-goal-cases.json` for goal-specific test cases.
 
@@ -104,6 +159,7 @@ Work was started directly on `FBC-40`.
 - `src\test\java\com\frankies\bootcamp\model\WeeklyPerformanceTest.java`
 - `src\test\java\com\frankies\bootcamp\model\PerformanceResponseTest.java`
 - `src\test\java\com\frankies\bootcamp\service\ActivityProcessServiceTest.java`
+- `src\test\java\com\frankies\bootcamp\service\PersistentActivityProcessServiceTest.java`
 - `src\test\java\com\frankies\bootcamp\fixture\PerformanceFixtureLoadingTest.java`
 - `src\test\java\com\frankies\bootcamp\sport\SportFactoryTest.java`
 
@@ -121,6 +177,16 @@ About **68%** complete.
 - leaderboard ordering basics
 - sport mapping and unsupported sport handling
 - fixture-driven totals, score ranking, remaining-distance, and goal-band checks
+
+### FBC-22 closeout note
+
+- Additional unit/parity coverage was started for the DB-backed path in `PersistentActivityProcessServiceTest`.
+- That new test class focuses on:
+  - athlete rebuild totals and persisted-row shaping
+  - webhook-triggered rebuild behavior in persistent mode
+  - parity checks against the overlapping legacy calculation flow
+- `PersistentActivityProcessService` gained small protected test seams for DB-backed writes so these tests can run without a JNDI datasource.
+- Practical closeout rule now: if the persistent-service tests are green, `FBC-22` should be ready to close while leaving `FBC-91` open as the separate optimization ticket.
 
 ### Important findings
 
@@ -183,9 +249,25 @@ Resume backlog grooming from the remaining backlog, starting with either:
 
 If backlog grooming is paused in favor of testing work, resume `FBC-40` from the current ~68% state before major persistence refactors.
 
+Updated recommendation after later discussion:
+
+1. Treat `FBC-40` as done.
+2. Bring `FBC-22` forward as the next major technical ticket.
+3. Keep `FBC-32` directly adjacent to `FBC-22` as the persistence foundation required for that change.
+4. Then bring forward competition-boundary work, starting with `FBC-30`.
+
 ## Session style preference captured
 
 The user asked for answers about 50 percent shorter than prior defaults.
+
+Additional workflow preference captured later:
+
+- The user wants repo workflow patterns that are also transferable to workplace AI usage, not just project-specific convenience.
+- A lightweight repo workflow was introduced around:
+  - `SESSION_HANDOFF.md`
+  - `BACKLOG_GROOMING_HANDOFF.md`
+  - `CONTEXT.md`
+  - `docs\adr\`
 
 Suggested reusable session starter prompt:
 

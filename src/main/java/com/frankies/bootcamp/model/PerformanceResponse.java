@@ -50,6 +50,10 @@ public class PerformanceResponse {
         this.weeklyPerformances.put(week, weeklyPerformance);
     }
 
+    public Map<String, Double> getSports() {
+        return sports;
+    }
+
     public Double getDistanceToDate() {
         return distanceToDate;
     }

@@ -1,8 +1,92 @@
 # Session handoff
 
+New way of working
+
+- Treat these handoff files (SESSION_HANDOFF.md and BACKLOG_GROOMING_HANDOFF.md) as the primary context for sessions.
+- Keep answers ~50% shorter than default; be direct and practical.
+- Prefer clear recommendations over long option lists.
+- Work one ticket at a time unless explicitly asked to broaden scope.
+- For each ticket provide: 1) a refined goal; 2) a pasteable ticket prompt; 3) suggested ordering/dependencies; 4) key risks and scope boundaries.
+- Flag tickets that should be renamed, split, or moved in order.
+- Do not assume repo-specific setup unless stated in the handoff.
+
 ## Current state
 
 The current work focused on FrankiZen visibility/behavior, audit logging, and keeping the existing JSP dashboard stable.
+
+### FBC-22 / FBC-32 architecture interrogation outcome
+
+- A working architecture direction was agreed and documented in Confluence:
+  - `https://millses.atlassian.net/wiki/spaces/FB/pages/4751361/FBC-22+Persistence+Architecture`
+- A short local ADR was added at `docs\adr\0001-fbc22-competition-derived-persistence.md`.
+- The current preferred persistence shape is competition-scoped and uses:
+  - `competition`
+  - `competition_athlete`
+  - `competition_activity_detail`
+  - `competition_weekly_stats`
+  - `competition_weekly_sport_stats`
+  - `competition_summary`
+  - `competition_summary_sport_stats`
+  - `competition_honour_roll`
+- `competition_athlete` is the key relation instead of hanging weekly rows directly off `athlete`, because one athlete can participate in multiple competitions.
+- `competition_activity_detail` was added back into the design after reviewing the current in-memory object. It keeps the thin activity-level fields already carried in `stravaActivityDetails` so webhook add/update/delete remains possible without storing the full raw Strava payload.
+- Agreed read/write rule: reads stay dumb; rebuild/sync paths do the calculations and write fully computed rows.
+- Agreed rebuild scope: one `competition_athlete` at a time, using competition-specific time boundaries.
+- Agreed recalculation rule: delete and recreate all derived rows for that `competition_athlete`.
+- Agreed admin rule: each competition must have at least one competition admin athlete, and only a competition admin can update another athlete's starting goal.
+- Screen coverage was reviewed against the current UI screenshots and current in-memory object. Honour Roll is now expected to have its own read-model table.
+
+### FBC-22 implementation status
+
+- `FBC-22` now has a delivered first implementation slice on the working branch.
+- Completed in this slice:
+  - parallel non-breaking processing toggle via `BOOTCAMP_ACTIVITY_MODE`
+  - new persistent competition-scoped tables and startup DDL
+  - persistent leaderboard reads from `competition_summary`
+  - persistent honour-roll reads from `competition_honour_roll`
+  - thin persisted activity rows in `competition_activity_detail`
+  - stable webhook add/delete behavior restored in persistent mode
+- Important current constraint:
+  - webhook add/delete in persistent mode currently rebuilds the athlete from Strava again
+  - this was intentionally kept because the first attempt to rebuild purely from persisted activity rows caused missing derived rows and stale UI behavior
+- Assumed follow-up ticket:
+  - `FBC-91` captures the deferred optimization to rebuild webhook changes from persisted activity rows instead of full Strava refetch, mainly to reduce future Strava API limit risk
+- Practical status:
+  - treat `FBC-22` as materially implemented and potentially closeable as a first slice if `FBC-91` owns the deferred webhook/local-rebuild optimization
+  - otherwise it remains technically in progress
+
+### Session workflow / AI-working setup
+
+- A lightweight transferable AI workflow was added to the repo:
+  - `CONTEXT.md` now holds shared project language and current strategic direction.
+  - `docs\adr\README.md` defines a minimal ADR convention for structural decisions.
+- The intended working pattern going forward is:
+  1. refine/grill the ticket first
+  2. check or update `CONTEXT.md` when domain language changes
+  3. add a short ADR for structural decisions
+  4. implement in small slices
+  5. leave/update session handoff notes
+- This was chosen to be useful both for this repo and as a workplace-style AI workflow the user can practice.
+
+### Local BYOK / Atlassian bootstrap
+
+- Added `copilot-byok.ps1` to bootstrap a terminal session for Copilot CLI BYOK and Atlassian access.
+- The script now:
+  - sets Copilot OpenAI provider defaults
+  - prompts for the OpenAI API key
+  - optionally prompts for Atlassian API token
+  - prepopulates non-secret Atlassian/Jira/Confluence defaults at the top of the file for easy editing
+- Current non-secret defaults in the script:
+  - Atlassian base URL: `https://millses.atlassian.net`
+  - Atlassian email: `millslf@gmail.com`
+  - Jira project key: `FBC`
+  - Jira board ID: `35`
+  - Jira board URL: `https://millses.atlassian.net/jira/software/projects/FBC/boards/35`
+  - Confluence space key: `FB`
+  - Confluence space URL: `https://millses.atlassian.net/wiki/spaces/FB/overview`
+  - Confluence homepage ID: `4587688`
+- Secrets are still intended to be entered interactively per session rather than stored in the repo.
+- No Jira/Confluence helper commands were added yet; only session environment variable setup exists so far.
 
 ### FrankiZen
 
@@ -46,6 +130,7 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
   - `athlete_audit_log`
 - Both tables are intended to link to `athletes.id`.
 - There is currently no proper migration framework, so schema changes are still handled via startup DDL.
+- `FBC-22` / `FBC-32` should introduce a proper persistence slice with migration tooling instead of extending startup DDL for the new competition-derived model.
 
 ### Test fixture added for future refactor safety
 
@@ -61,6 +146,7 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
   - `src\test\java\com\frankies\bootcamp\model\WeeklyPerformanceTest.java`
   - `src\test\java\com\frankies\bootcamp\model\PerformanceResponseTest.java`
   - `src\test\java\com\frankies\bootcamp\service\ActivityProcessServiceTest.java`
+  - `src\test\java\com\frankies\bootcamp\service\PersistentActivityProcessServiceTest.java`
   - `src\test\java\com\frankies\bootcamp\fixture\PerformanceFixtureLoadingTest.java`
   - `src\test\java\com\frankies\bootcamp\sport\SportFactoryTest.java`
 - Current estimated progress against the `FBC-40` prompt: about **68%**.
@@ -70,6 +156,8 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
   - sick week scoring behavior
   - sport add/remove behavior
   - add/remove/update-style activity mutations in `ActivityProcessService`
+  - persistent activity rebuild totals, persisted-row shaping, and webhook-triggered rebuild behavior in `PersistentActivityProcessService`
+  - persistent-vs-legacy parity checks for overlapping calculation flows
   - leaderboard ordering basics
   - sport factory routing / unsupported sport handling
   - fixture-driven totals, score ranking, remaining-distance, and goal-band checks
@@ -78,8 +166,30 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
 - Important testing note:
   - fixture-loading tests must use raw JSON assertions rather than Gson deserialization into `PerformanceResponse`, because `stravaActivityDetails.sport` is typed as abstract `BaseSport`.
 
+### FBC-22 closeout status
+
+- `FBC-91` exists in Jira and explicitly owns the deferred webhook optimization to rebuild from persisted activity rows instead of full Strava refetch.
+- `FBC-22` is now effectively complete as a first usable slice and is ready to move to closed once Jira is updated.
+- The persistent path now serves the main app reads from DB-backed state instead of the retained persistent-mode in-memory cache.
+- `PersistentActivityProcessService` no longer retains `performanceList`; performance-list, history, summary, honour-roll, and ZenBot read paths now reconstruct/read from persisted tables.
+- The remaining closeout work was narrowed to persistent-service unit/parity tests, and `PersistentActivityProcessServiceTest` was added and updated for that purpose.
+- While landing those tests, `PersistentActivityProcessService` gained small protected test seams for DB-backed writes:
+  - `rebuildAthleteState(...)` is now `protected`
+  - `ensureCompetitionAthlete(...)`
+  - `replacePersistentCompetitionState(...)`
+  - `replaceCompetitionHonourRoll(...)`
+- A legacy auth shortcut was also removed: `AuthenticationFilter` no longer trusts `Ngrok-Auth-User-Email` to bootstrap a logged-in session. API/browser requests now need a real authenticated session cookie.
+- `copilot-byok.ps1` now prepends the local Maven bin path `C:\TFS\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin` when present so future Copilot CLI sessions can run `mvn` directly.
+- Deferred follow-up tickets now stand as:
+  - `FBC-91` webhook optimization from persisted activity rows
+  - `FBC-92` broader removal of remaining legacy in-memory summary code
+  - `FBC-93` analysis-only heart-rate-informed equivalent-distance metric
+
 ## Important files
 
+- `copilot-byok.ps1`
+- `CONTEXT.md`
+- `docs\adr\README.md`
 - `src\main\java\com\frankies\bootcamp\service\AiMessageService.java`
 - `src\main\java\com\frankies\bootcamp\servlet\ZenBotServlet.java`
 - `src\main\java\com\frankies\bootcamp\service\ActivityProcessService.java`
@@ -95,12 +205,14 @@ The current work focused on FrankiZen visibility/behavior, audit logging, and ke
 - `src\test\java\com\frankies\bootcamp\model\WeeklyPerformanceTest.java`
 - `src\test\java\com\frankies\bootcamp\model\PerformanceResponseTest.java`
 - `src\test\java\com\frankies\bootcamp\service\ActivityProcessServiceTest.java`
+- `src\test\java\com\frankies\bootcamp\service\PersistentActivityProcessServiceTest.java`
 - `src\test\java\com\frankies\bootcamp\fixture\PerformanceFixtureLoadingTest.java`
 - `src\test\java\com\frankies\bootcamp\sport\SportFactoryTest.java`
 
 ## Known constraints and follow-up notes
 
-- Maven was not available in the shell during the session, so full build/test verification was not run here.
+- Maven was initially not available in the shell during the session, but `copilot-byok.ps1` now adds the local Maven bin path for future sessions.
+- `mvnw.cmd` is present but the Maven wrapper is incomplete in this repo (`.mvn\wrapper\maven-wrapper.properties` missing), so wrapper-based commands currently fail.
 - Existing deployed databases may need manual migration work if the tables already existed before the latest FK/index changes.
 - There is an unsafe file at `src\main\resources\credentials.json` containing a live secret and it should not be committed.
 
@@ -142,13 +254,19 @@ Additional board/backlog decisions made:
 
 ## Best next checks next session
 
+1. If continuing the workflow/tooling setup, add lightweight Jira/Confluence helper scripts that use the env vars from `copilot-byok.ps1` for:
+   - reading a Jira issue
+   - adding a Jira comment
+   - fetching a Confluence page
+   - updating a Confluence page safely
+2. If continuing product/architecture work, use the Confluence page and ADR as the starting point for `FBC-22` / `FBC-32`, and keep `FBC-22` elevated with `FBC-32` as the first implementation slice.
+3. Continue moving toward explicit competition membership / multi-competition boundaries using `FBC-30`, then follow with `FBC-54`, `FBC-37`, and `FBC-38`.
 1. Verify the `page-landing` audit logs exactly once on initial `/app/` load.
 2. Verify `history`, `leaderboard`, `honour-roll`, and `summary` only audit on real user clicks.
 3. Confirm ZenBot visibility is correct in normal browsing and not just incognito.
-4. If needed, plan a real migration path for `zenbot_messages` and `athlete_audit_log` instead of relying on startup DDL.
+4. Plan the first migration/JPA slice around the agreed `competition_athlete` model and the new derived competition tables instead of extending startup DDL.
 5. Resume backlog grooming from the remaining backlog items not yet reprioritized/prompted, starting with architecture/backlog items such as `FBC-60`, `FBC-24`, `FBC-52`, `FBC-26`, `FBC-27`, `FBC-28`, `FBC-29`, `FBC-33`, `FBC-34`, `FBC-44`, and the existing MCP/React migration sequences if more shaping is needed.
 6. Resume `FBC-40` from the current ~68% state, focusing next on:
    - recalculation consistency from realistic flows
    - summary-facing outputs / stats-context style assertions
    - any additional edge-case coverage needed before major persistence refactors
-

@@ -3,7 +3,7 @@ package com.frankies.bootcamp.rest;
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.strava.StravaActivityResponse;
 import com.frankies.bootcamp.model.strava.StravaEvent;
-import com.frankies.bootcamp.service.ActivityProcessService;
+import com.frankies.bootcamp.service.ActivityProcessFacade;
 import com.frankies.bootcamp.service.DBService;
 import com.frankies.bootcamp.service.StravaService;
 import com.frankies.bootcamp.service.StravaSubscriptionCacheService;
@@ -28,7 +28,7 @@ import org.wildfly.security.credential.store.CredentialStoreException;
 public class StravaWebhook {
 
     @Inject
-    private ActivityProcessService activityProcessService;
+    private ActivityProcessFacade activityProcessFacade;
     @Inject
     private StravaService stravaService;
     @Inject
@@ -123,7 +123,7 @@ public class StravaWebhook {
         BootcampAthlete athlete = db.findAthleteByStravaID(athleteId.toString());
         athlete = stravaService.refreshToken(athlete);
         StravaActivityResponse stravaActivityResponse = stravaService.getActivityById(activityId, athlete.getAccessToken(), false);
-        activityProcessService.addActivityEvent(athleteId.toString(), stravaActivityResponse);
+        activityProcessFacade.addActivityEvent(athleteId.toString(), stravaActivityResponse);
         log.info("StravaWebhook, onActivityCreated" + athlete.getFirstname() + " " + activityId);
     }
 
@@ -131,9 +131,9 @@ public class StravaWebhook {
 //      If activity type changes, then remove ad re-add.
         BootcampAthlete athlete = db.findAthleteByStravaID(athleteId.toString());
         if (updates.containsKey("type")){
-            activityProcessService.removeActivityEvent(athleteId.toString(), activityId);
+            activityProcessFacade.removeActivityEvent(athleteId.toString(), activityId);
             StravaActivityResponse stravaActivityResponse = stravaService.getActivityById(activityId, athlete.getAccessToken(), false);
-            activityProcessService.addActivityEvent(athleteId.toString(), stravaActivityResponse);
+            activityProcessFacade.addActivityEvent(athleteId.toString(), stravaActivityResponse);
             log.info("StravaWebhook, onActivityUpdated, type changed " +  athlete.getFirstname() + " " + activityId + " " + updates);
         }
         log.info("StravaWebhook, onActivityUpdated " +  athlete.getFirstname() + " " + activityId + " " + updates);
@@ -141,13 +141,13 @@ public class StravaWebhook {
 
     private void onActivityHidden(Long athleteId, Long activityId, Map<String, String> updates) throws SQLException {
         BootcampAthlete athlete = db.findAthleteByStravaID(athleteId.toString());
-        activityProcessService.removeActivityEvent(athleteId.toString(), activityId);
+        activityProcessFacade.removeActivityEvent(athleteId.toString(), activityId);
         log.info("StravaWebhook, onActivityHidden " +  athlete.getFirstname() + " " + activityId + " " + updates);
     }
 
     private void onActivityDeleted(Long athleteId, Long activityId) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         BootcampAthlete athlete = db.findAthleteByStravaID(athleteId.toString());
-        activityProcessService.removeActivityEvent(athleteId.toString(), activityId);
+        activityProcessFacade.removeActivityEvent(athleteId.toString(), activityId);
         log.info("StravaWebhook, onActivityDeleted " +  athlete.getFirstname() + " " + activityId);
     }
 

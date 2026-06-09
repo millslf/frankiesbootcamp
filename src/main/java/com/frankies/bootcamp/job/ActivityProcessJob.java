@@ -1,19 +1,22 @@
 package com.frankies.bootcamp.job;
 
-import com.frankies.bootcamp.service.ActivityProcessService;
+import com.frankies.bootcamp.service.ActivityProcessFacade;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Asynchronous;
 import jakarta.ejb.Schedule;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 
 @Singleton
 @Startup
 public class ActivityProcessJob {
 
+    private static final Logger LOG = Logger.getLogger(ActivityProcessJob.class);
+
     @Inject
-    ActivityProcessService activityProcessService;
+    ActivityProcessFacade activityProcessFacade;
 
     @PostConstruct
     public void onStartup() {
@@ -25,12 +28,19 @@ public class ActivityProcessJob {
     @Schedule(hour = "0", minute = "1", second = "0",
             timezone = "Australia/Sydney", persistent = true)
     public void runDaily() {
-        activityProcessService.run();
+        runSafely();
     }
 
     @Asynchronous
     public void runNowAsync() {
-        activityProcessService.run();
+        runSafely();
+    }
+
+    private void runSafely() {
+        try {
+            activityProcessFacade.run();
+        } catch (RuntimeException e) {
+            LOG.error("ActivityProcessJob failed", e);
+        }
     }
 }
-

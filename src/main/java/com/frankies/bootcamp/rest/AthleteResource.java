@@ -3,7 +3,7 @@ package com.frankies.bootcamp.rest;
 
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.AuthenticatedUser;
-import com.frankies.bootcamp.service.ActivityProcessService;
+import com.frankies.bootcamp.service.ActivityProcessFacade;
 import com.frankies.bootcamp.service.AuthSessionService;
 import com.frankies.bootcamp.service.DBService;
 import com.google.gson.Gson;
@@ -23,7 +23,7 @@ import java.sql.SQLException;
 @Path("/Athletes")
 public class AthleteResource {
     @Inject
-    private ActivityProcessService activityProcessService;
+    private ActivityProcessFacade activityProcessFacade;
     @Inject
     private DBService db;
     @Inject
@@ -57,10 +57,9 @@ public class AthleteResource {
                 return String.valueOf(HttpServletResponse.SC_UNAUTHORIZED);
             }
             if(forceRecalc != null && forceRecalc) {
-                activityProcessService.prepareSummary();
-                activityProcessService.generateAllSummaryMaps();
+                activityProcessFacade.prepareSummary();
             }
-            return new Gson().toJson(activityProcessService.getPerformanceList());
+            return new Gson().toJson(activityProcessFacade.getPerformanceList());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
             return "Something went wrong, phone a friend!";
@@ -84,7 +83,7 @@ public class AthleteResource {
             if (loggedInAthlete == null) {
                 return HttpServletResponse.SC_UNAUTHORIZED + " Athlete not authorised";
             }
-            return new Gson().toJson(activityProcessService.getAthleteHistory(currentUser.getEmail()));
+            return new Gson().toJson(activityProcessFacade.getAthleteHistory(currentUser.getEmail()));
         } catch (SQLException e) {
             log.error("AthletesResource, allAthleteSummary", e);
             return "Something went wrong, phone a friend!";

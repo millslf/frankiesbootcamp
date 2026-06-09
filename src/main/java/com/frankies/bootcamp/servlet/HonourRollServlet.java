@@ -1,7 +1,7 @@
 package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.constant.BootcampConstants;
-import com.frankies.bootcamp.service.ActivityProcessService;
+import com.frankies.bootcamp.service.ActivityProcessFacade;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,14 +16,14 @@ import java.util.Map;
 @WebServlet(name = "honourRoll", value = "/app/HonourRoll")
 public class HonourRollServlet extends BootcampServlet {
     @Inject
-    private ActivityProcessService activityProcessService;
+    private ActivityProcessFacade activityProcessFacade;
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         DecimalFormat df = new DecimalFormat("#.##");
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
-        HashMap<Integer, HashMap<String, Double>> percOfGoal = activityProcessService.getHonourRollPercentageOfGoal();
-        HashMap<Integer, HashMap<String, Double>> totalDist = activityProcessService.getHonourRollTotalDistance();
-        int numberOfWeeksSinceStart = activityProcessService.getNumberOfWeeksSinceStart();
+        HashMap<Integer, HashMap<String, Double>> percOfGoal = activityProcessFacade.getHonourRollPercentageOfGoal();
+        HashMap<Integer, HashMap<String, Double>> totalDist = activityProcessFacade.getHonourRollTotalDistance();
+        int numberOfWeeksSinceStart = activityProcessFacade.getNumberOfWeeksSinceStart();
 
         out.println("<!DOCTYPE html>");
         out.println("<html lang=\"en\">");

@@ -1,7 +1,5 @@
 package com.frankies.bootcamp.filter;
 
-import com.frankies.bootcamp.model.AuthenticatedUser;
-import com.frankies.bootcamp.service.AuthService;
 import com.frankies.bootcamp.service.AuthSessionService;
 import jakarta.inject.Inject;
 import jakarta.servlet.Filter;
@@ -12,7 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Set;
 
 @WebFilter(urlPatterns = "/*")
@@ -25,8 +22,6 @@ public class AuthenticationFilter implements Filter {
 
     @Inject
     private AuthSessionService authSessionService;
-    @Inject
-    private AuthService authService;
 
     @Override
     public void doFilter(jakarta.servlet.ServletRequest request, jakarta.servlet.ServletResponse response, FilterChain chain)
@@ -34,8 +29,6 @@ public class AuthenticationFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
         String path = req.getRequestURI().substring(req.getContextPath().length());
-
-        bootstrapHeaderSession(req);
 
         if (isPublic(path) || isStatic(path)) {
             chain.doFilter(request, response);
@@ -57,27 +50,6 @@ public class AuthenticationFilter implements Filter {
 
         chain.doFilter(request, response);
     }
-
-    private void bootstrapHeaderSession(HttpServletRequest req) {
-        if (authSessionService.getAuthenticatedUser(req) != null) {
-            return;
-        }
-
-        String email = req.getHeader("Ngrok-Auth-User-Email");
-        if (email == null || email.isBlank()) {
-            return;
-        }
-
-        try {
-            AuthenticatedUser user = authService.resolveAuthenticatedUser(email);
-            if (user == null) {
-                return;
-            }
-            authSessionService.storeAuthenticatedUser(req, user, authService.loadAthleteForUser(user));
-        } catch (SQLException ignored) {
-        }
-    }
-
     private boolean isPublic(String path) {
         return PUBLIC_PATHS.contains(path);
     }
