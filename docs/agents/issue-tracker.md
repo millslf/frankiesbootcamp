@@ -5,17 +5,14 @@ Issues and PRDs for this repo live in Jira. Use the Atlassian Jira CLI workflow 
 ## Repo-specific current status
 
 - Jira project key: `FBC`
-- Current board focus from the handoff files:
-  1. `FBC-47` auth foundation / multiple providers + email/password
-  2. `FBC-40` automated tests protecting current scoring/summary behavior
-  3. `FBC-86` All Sports Equal product philosophy
-  4. `FBC-32` Hibernate + migration/persistence foundation
-  5. `FBC-2` reproducible local development environment
-  6. `FBC-3` containerized build + automated deployment pipeline
-  7. `FBC-4` automated security scanning in CI/CD
-  8. `FBC-36` credential/secret configuration cleanup
-  9. `FBC-53` direct HTTPS + aligned upstream/proxy configuration
-  10. `FBC-6` stricter browser script security / less inline script dependence
+- Current practical board focus from the latest local session and live board:
+  1. `FBC-12` competition-aware onboarding flow
+  2. `FBC-16` competition creation/setup screens and per-competition start configuration
+  3. `FBC-89` competition invitations and join flow
+  4. `FBC-30` allow an athlete to belong to multiple competitions
+  5. `FBC-54` implement global and competition-scoped authorization model
+  6. `FBC-37` allow competition-specific eligible sports while preserving "All Sports Equal" as the default model
+  7. `FBC-38` specify relative distances per competition
 - Current implemented-and-ready-to-close ticket state:
   - `FBC-22` should be treated as effectively complete as a first persistence slice and ready to close in Jira.
   - `FBC-91` owns the deferred webhook optimization to rebuild from persisted activity rows instead of full Strava refetch.
@@ -23,10 +20,14 @@ Issues and PRDs for this repo live in Jira. Use the Atlassian Jira CLI workflow 
   - `FBC-93` owns analysis-only heart-rate-informed equivalent-distance metric work.
 - Current backlog note from the handoff files:
   - `FBC-40` was later considered done by the user, even though older board-order notes still list it near the top.
-  - For persistence direction, the handoff recommends keeping `FBC-22` and `FBC-32` tightly coupled, then moving to `FBC-30`, `FBC-16`, `FBC-54`, `FBC-37`, and `FBC-38`.
+  - For persistence direction, the handoff recommends keeping `FBC-22` and `FBC-32` tightly coupled, but the live board has since moved active implementation focus into multicomp.
   - `FBC-56` is already done and should be treated as completed Strava-link gating/onboarding-state visibility work.
   - `FBC-12` was re-checked in Jira and now means competition-aware onboarding flow, not registration/auth foundation.
   - For onboarding direction, treat `FBC-12` as the explicit onboarding-state and routing layer before `FBC-16`, `FBC-30`, and `FBC-54`.
+  - Invitation-only competition visibility should be treated as `FBC-89` scope: the logged-in athlete should only see competitions they are invited to join unless a later ticket intentionally broadens discovery behavior.
+  - Latest local status: `FBC-12` was reviewed as effectively complete and split to branch `feature/fbc-12-onboarding-flow` at commit `217fbbb`; a separate bugfix branch `bugfix/session-persistence` at commit `546c063` was also pushed.
+  - Latest local status: `FBC-16` is now effectively complete on local branch `feature/fbc-16-competition-setup`, including lifecycle-aware onboarding and historical competition outcome access.
+  - Latest local status: broader competition selection/defaulting behavior beyond that slice should now move into `FBC-30`.
 
 ## Conventions
 

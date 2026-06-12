@@ -8,6 +8,7 @@ import com.frankies.bootcamp.service.AuthService;
 import com.frankies.bootcamp.service.OnboardingStateService;
 import com.frankies.bootcamp.service.StravaService;
 import com.frankies.bootcamp.service.AuthSessionService;
+import com.frankies.bootcamp.service.DBService;
 import jakarta.inject.Inject;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
@@ -20,6 +21,8 @@ import java.sql.SQLException;
 public class BootcampServlet extends HttpServlet {
     @Inject
     private AuthSessionService authSessionService;
+    @Inject
+    private DBService dbService;
     @Inject
     private AuthService authService;
     @Inject
@@ -44,6 +47,7 @@ public class BootcampServlet extends HttpServlet {
 
         try {
             athlete = authService.loadAthleteForUser(authenticatedUser);
+            syncSelectedCompetition(req, athlete);
             OnboardingStatus onboardingStatus = onboardingStateService.resolve(authenticatedUser, athlete);
             applyOnboardingAttributes(req, session, authenticatedUser, athlete, onboardingStatus);
 
@@ -56,6 +60,19 @@ public class BootcampServlet extends HttpServlet {
             if (onboardingStatus.getState() == OnboardingState.COMPETITION_PENDING) {
                 log.info("Competition onboarding required: " + authenticatedUser.getEmail());
                 req.getRequestDispatcher("/app/competition-onboarding.jsp").forward(req, resp);
+                return;
+            }
+
+            if (onboardingStatus.getState() == OnboardingState.COMPETITION_STARTS_SOON) {
+                log.info("Competition starts soon for athlete: " + authenticatedUser.getEmail());
+                req.getRequestDispatcher("/app/competition-starts-soon.jsp").forward(req, resp);
+                return;
+            }
+
+            if (onboardingStatus.getState() == OnboardingState.COMPETITION_HISTORY_ONLY
+                    && authSessionService.getSelectedCompetitionId(req) == null) {
+                log.info("Only past competitions available for athlete: " + authenticatedUser.getEmail());
+                req.getRequestDispatcher("/app/competition-history-only.jsp").forward(req, resp);
                 return;
             }
 
@@ -126,6 +143,23 @@ public class BootcampServlet extends HttpServlet {
         session.setAttribute("athlete", athlete);
         session.setAttribute("athleteEmail", authenticatedUser.getEmail());
         session.setAttribute("athleteName", authenticatedUser.getDisplayName());
+        req.setAttribute("selectedCompetitionId", authSessionService.getSelectedCompetitionId(req));
+    }
+
+    private void syncSelectedCompetition(HttpServletRequest req, BootcampAthlete athlete) {
+        Long selectedCompetitionId = authSessionService.getSelectedCompetitionId(req);
+        if (selectedCompetitionId == null || athlete == null || athlete.getId() == null || athlete.getId().isBlank()) {
+            return;
+        }
+        try {
+            if (!dbService.athleteBelongsToCompetition(athlete.getId(), selectedCompetitionId)) {
+                authSessionService.setSelectedCompetitionId(req, null);
+                return;
+            }
+            req.setAttribute("selectedCompetitionId", selectedCompetitionId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to validate selected competition", e);
+        }
     }
 
 }

@@ -24,7 +24,10 @@ public class AthleteSummaryServlet extends BootcampServlet {
 
         try {
             com.frankies.bootcamp.model.BootcampAthlete loggedInAthlete = (com.frankies.bootcamp.model.BootcampAthlete) request.getAttribute("athlete");
-            summaryContent = activityProcessFacade.getLoggedInAthleteSummary(loggedInAthlete.getId());
+            Long selectedCompetitionId = (Long) request.getAttribute("selectedCompetitionId");
+            summaryContent = selectedCompetitionId != null
+                    ? activityProcessFacade.getLoggedInAthleteSummaryForCompetition(selectedCompetitionId, loggedInAthlete.getId())
+                    : activityProcessFacade.getLoggedInAthleteSummary(loggedInAthlete.getId());
         } catch (IOException | CredentialStoreException | NoSuchAlgorithmException | SQLException e) {
             throw new IOException("Failed to load athlete summary", e);
         }

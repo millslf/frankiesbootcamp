@@ -78,6 +78,21 @@ public class PersistentActivityProcessService {
         regenerateSummaryMaps();
     }
 
+    public void prepareAthleteSummaryForCompetition(BootcampAthlete athlete, long competitionId) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        if (athlete == null || athlete.getId() == null || athlete.getId().isBlank() || athlete.getId().startsWith("local-")) {
+            return;
+        }
+
+        Long competitionAthleteId = dbService.findCompetitionAthleteId(athlete.getId(), competitionId);
+        if (competitionAthleteId == null) {
+            return;
+        }
+
+        rebuildAthleteStateForCompetition(athlete, competitionAthleteId);
+        persistCompetitionHonourRollRows(competitionId);
+        regenerateSummaryMaps();
+    }
+
     protected PerformanceResponse rebuildAthleteState(BootcampAthlete athlete) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         BootcampAthlete refreshedAthlete = stravaService.refreshToken(athlete);
         LOG.info("Busy with athlete: " + refreshedAthlete.getFirstname() + " " + refreshedAthlete.getLastname());
@@ -88,6 +103,14 @@ public class PersistentActivityProcessService {
             performance.setAthlete(refreshedAthlete);
             return performance;
         }
+        return rebuildAthleteStateForCompetition(refreshedAthlete, competitionAthleteId);
+    }
+
+    protected PerformanceResponse rebuildAthleteStateForCompetition(BootcampAthlete athlete,
+                                                                    long competitionAthleteId) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        BootcampAthlete refreshedAthlete = athlete.getAccessToken() == null || athlete.getAccessToken().isBlank()
+                ? athlete
+                : stravaService.refreshToken(athlete);
         List<StravaActivityResponse> activities = stravaService.getAthleteActivitiesForPeriod(getStartTimeStamp(), refreshedAthlete.getAccessToken());
 
         PerformanceResponse performance = new PerformanceResponse();
@@ -190,6 +213,10 @@ public class PersistentActivityProcessService {
         dbService.replaceCompetitionHonourRoll(competitionId, honourRollRows);
     }
 
+    protected List<Long> listActiveCompetitionIds() throws SQLException {
+        return dbService.listActiveCompetitionIds();
+    }
+
     private PersistentWeeklyRow buildWeeklyRow(int weekNumber, WeeklyPerformance weeklyPerformance, long weekEndingTimestamp) {
         LocalDate weekEnd = Instant.ofEpochSecond(weekEndingTimestamp).atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate weekStart = weekEnd.minusDays(6);
@@ -253,11 +280,7 @@ public class PersistentActivityProcessService {
     }
 
     public List<PerformanceResponse> getPerformanceList() {
-        try {
-            return dbService.getPersistentPerformanceList(1L);
-        } catch (SQLException e) {
-            throw new IllegalStateException("Unable to load persistent performance list", e);
-        }
+        throw new IllegalStateException("Athlete competition context is required for persistent performance-list reads");
     }
 
     public Map<Integer, WeeklyPerformance> getAthleteHistory(String athleteId) {
@@ -268,17 +291,33 @@ public class PersistentActivityProcessService {
         }
     }
 
-    public HashMap<Integer, HashMap<String, Double>> getHonourRollTotalDistance() {
+    public Map<Integer, WeeklyPerformance> getAthleteHistoryForCompetition(long competitionId, String athleteId) {
         try {
-            return dbService.getPersistentHonourRollTotalDistance(1L);
+            return dbService.getPersistentAthleteHistory(athleteId, competitionId);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Unable to load persistent athlete history for competition", e);
+        }
+    }
+
+    public HashMap<Integer, HashMap<String, Double>> getHonourRollTotalDistance() {
+        throw new IllegalStateException("Athlete competition context is required for persistent honour-roll reads");
+    }
+
+    public HashMap<Integer, HashMap<String, Double>> getHonourRollTotalDistanceForCompetition(long competitionId) {
+        try {
+            return dbService.getPersistentHonourRollTotalDistance(competitionId);
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to load persistent honour roll distance results", e);
         }
     }
 
     public HashMap<Integer, HashMap<String, Double>> getHonourRollPercentageOfGoal() {
+        throw new IllegalStateException("Athlete competition context is required for persistent honour-roll reads");
+    }
+
+    public HashMap<Integer, HashMap<String, Double>> getHonourRollPercentageOfGoalForCompetition(long competitionId) {
         try {
-            return dbService.getPersistentHonourRollPercentageOfGoal(1L);
+            return dbService.getPersistentHonourRollPercentageOfGoal(competitionId);
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to load persistent honour roll goal results", e);
         }
@@ -308,7 +347,34 @@ public class PersistentActivityProcessService {
                 "Original weekly goal: " + df.format(snapshot.originalWeeklyGoal()) + "km\n\n" +
                 (currentWeek == null ? "" : currentWeek.toString()) +
                 "OVERALL SCORE COMPETITION:\n" +
-                getScoreSummary(getSortedSummaries().get(BootcampConstants.currentYearlyScoreSummary));
+                getScoreSummary(getSortedSummariesForCompetition(getCurrentActiveCompForAthlete(athleteId)).get(BootcampConstants.currentYearlyScoreSummary));
+    }
+
+    public String getLoggedInAthleteSummaryForCompetition(long competitionId, String athleteId)
+            throws IOException, CredentialStoreException, NoSuchAlgorithmException, SQLException {
+        DBService.PersistentAthleteSummarySnapshot snapshot = dbService.getPersistentAthleteSummarySnapshot(athleteId, competitionId);
+        if (snapshot == null) {
+            return "";
+        }
+
+        Map<Integer, WeeklyPerformance> history = dbService.getPersistentAthleteHistory(athleteId, competitionId);
+        WeeklyPerformance currentWeek = history.get(getNumberOfWeeksSinceStart());
+
+        StringBuilder sports = new StringBuilder();
+        if (currentWeek != null && currentWeek.getSports() != null) {
+            for (Map.Entry<String, Double> entry : currentWeek.getSports().entrySet()) {
+                sports.append(entry.getKey()).append(" ").append(df.format(entry.getValue())).append("km\n");
+            }
+        }
+
+        return "Liewe " + snapshot.athleteFirstName() + ",\n\n" +
+                "Distance this challenge: " + df.format(snapshot.distanceToDate()) + "km\n" +
+                "Total points: " + df.format(snapshot.scoreToDate()) + "\n" +
+                "Sports: \n" + sports +
+                "Original weekly goal: " + df.format(snapshot.originalWeeklyGoal()) + "km\n\n" +
+                (currentWeek == null ? "" : currentWeek.toString()) +
+                "OVERALL SCORE COMPETITION:\n" +
+                getScoreSummary(getSortedSummariesForCompetition(competitionId).get(BootcampConstants.currentYearlyScoreSummary));
     }
 
     private String getScoreSummary(HashMap<String, Double> currentWeekSummary) {
@@ -328,11 +394,35 @@ public class PersistentActivityProcessService {
     }
 
     public Map<String, HashMap<String, Double>> getSortedSummaries() {
+        throw new IllegalStateException("Athlete competition context is required for persistent leaderboard reads");
+    }
+
+    public Map<String, HashMap<String, Double>> getSortedSummariesForCompetition(long competitionId) {
         try {
-            return dbService.getPersistentLeaderboardSummaries(1L);
+            return dbService.getPersistentLeaderboardSummaries(competitionId);
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to load persistent leaderboard summaries", e);
         }
+    }
+
+    public long getCurrentActiveCompForAthlete(String athleteId) {
+        try {
+            return resolveCompetitionId(athleteId);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Unable to resolve active competition for athlete " + athleteId, e);
+        }
+    }
+
+    protected long resolveCompetitionId(String athleteId) throws SQLException {
+        if (athleteId == null || athleteId.isBlank()) {
+            throw new IllegalStateException("Athlete competition context is required for persistent scoped reads");
+        }
+
+        Long competitionId = dbService.findActiveCompetitionId(athleteId);
+        if (competitionId == null) {
+            throw new IllegalStateException("No active competition membership found for athlete " + athleteId);
+        }
+        return competitionId;
     }
 
     public String getZenBotStatsContext(String athleteId) {
@@ -388,17 +478,26 @@ public class PersistentActivityProcessService {
     }
 
     private void regenerateSummaryMaps() {
-        this.honourRollTotalDistance = getHonourRollTotalDistance();
-        this.honourRollPercentageOfGoal = getHonourRollPercentageOfGoal();
+        this.honourRollTotalDistance = new HashMap<>();
+        this.honourRollPercentageOfGoal = new HashMap<>();
     }
 
 
     private void persistHonourRollRows() throws SQLException {
+        for (Long competitionId : listActiveCompetitionIds()) {
+            persistCompetitionHonourRollRows(competitionId);
+        }
+    }
+
+    private void persistCompetitionHonourRollRows(long competitionId) throws SQLException {
         Map<Integer, PersistentHonourRollRow> honourRollRows = new LinkedHashMap<>();
-        HashMap<Integer, HashMap<String, Double>> distanceMap = calculatePersistentHonourRollMap(1L, true);
-        HashMap<Integer, HashMap<String, Double>> percentMap = calculatePersistentHonourRollMap(1L, false);
+        HashMap<Integer, HashMap<String, Double>> distanceMap = calculatePersistentHonourRollMap(competitionId, true);
+        HashMap<Integer, HashMap<String, Double>> percentMap = calculatePersistentHonourRollMap(competitionId, false);
 
         for (Map.Entry<Integer, HashMap<String, Double>> distanceEntry : distanceMap.entrySet()) {
+            if (distanceEntry.getValue().isEmpty()) {
+                continue;
+            }
             Map.Entry<String, Double> distanceWinner = distanceEntry.getValue().entrySet().iterator().next();
             Map.Entry<String, Double> percentWinner = percentMap.getOrDefault(distanceEntry.getKey(), new HashMap<>()).entrySet().stream().findFirst()
                     .orElse(Map.entry("", 0.0));
@@ -411,7 +510,7 @@ public class PersistentActivityProcessService {
             ));
         }
 
-        replaceCompetitionHonourRoll(1L, honourRollRows);
+        replaceCompetitionHonourRoll(competitionId, honourRollRows);
     }
 
     protected HashMap<Integer, HashMap<String, Double>> calculatePersistentHonourRollMap(long competitionId, boolean distance) throws SQLException {

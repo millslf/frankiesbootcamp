@@ -1,0 +1,122 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="com.frankies.bootcamp.model.CompetitionSetupView" %>
+<%@ page import="com.frankies.bootcamp.model.CompetitionSummaryView" %>
+<%@ page import="java.time.Instant" %>
+<%@ page import="java.time.ZoneId" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+<%
+    CompetitionSetupView setupView = (CompetitionSetupView) request.getAttribute("competitionSetupView");
+    String pageContextPath = request.getContextPath();
+    String error = (String) request.getAttribute("competitionSetupError");
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <%@ include file="/WEB-INF/jspf/head-common.jspf" %>
+    <title>Competition setup</title>
+</head>
+<body class="bg-light">
+<header class="d-flex align-items-center justify-content-between text-white px-3 py-2 shadow-sm"
+        style="min-height:56px; background-color: #0d6efd;">
+    <a href="<%=pageContextPath%>/" class="text-white text-decoration-none d-flex align-items-center gap-2">
+        <span aria-hidden="true">&#x1F3CB;&#xFE0F;</span>
+        <span>Frankies Bootcamp!</span>
+    </a>
+</header>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <div class="text-center mb-4">
+                <h1 class="h3 mb-2">Competition setup</h1>
+                <p class="text-muted mb-0">Create a competition for your group or join one that already exists.</p>
+            </div>
+
+            <% if (error != null && !error.isBlank()) { %>
+            <div class="alert alert-danger" role="alert"><%= error %></div>
+            <% } %>
+
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body p-4">
+                            <h2 class="h5 mb-3">Create a competition</h2>
+                            <form method="post" action="<%=pageContextPath%>/app/competition-setup">
+                                <input type="hidden" name="action" value="create">
+
+                                <div class="mb-3">
+                                    <label class="form-label" for="competitionName">Competition name</label>
+                                    <input class="form-control" id="competitionName" name="competitionName" required maxlength="255"
+                                           value="Frankies Bootcamp - <%= setupView == null ? "New Competition" : setupView.getAthleteDisplayName() %>">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label" for="timezone">Timezone</label>
+                                    <input class="form-control" id="timezone" name="timezone" value="Australia/Sydney" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label" for="startDate">Start date</label>
+                                    <input class="form-control" id="startDate" name="startDate" type="date" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label" for="endDate">End date</label>
+                                    <input class="form-control" id="endDate" name="endDate" type="date">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label" for="startingGoal">Default distance</label>
+                                    <input class="form-control" id="startingGoal" name="startingGoal" type="number" min="0" step="0.1"
+                                           value="<%= setupView == null || setupView.getSuggestedStartingGoal() == null ? "20" : setupView.getSuggestedStartingGoal() %>">
+                                </div>
+
+                                <button class="btn btn-primary" type="submit">Create competition</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body p-4">
+                            <h2 class="h5 mb-3">Join an existing competition</h2>
+                            <form method="post" action="<%=pageContextPath%>/app/competition-setup">
+                                <input type="hidden" name="action" value="join">
+
+                                <div class="mb-3">
+                                    <label class="form-label" for="competitionId">Available competitions</label>
+                                    <select class="form-select" id="competitionId" name="competitionId" required>
+                                        <option value="">Select a competition</option>
+                                        <% if (setupView != null) {
+                                            for (CompetitionSummaryView competition : setupView.getActiveCompetitions()) {
+                                                String startLabel = Instant.ofEpochSecond(competition.getStartTimestamp())
+                                                        .atZone(ZoneId.of(competition.getTimezone()))
+                                                        .format(formatter);
+                                        %>
+                                        <option value="<%= competition.getId() %>"><%= competition.getName() %> - starts <%= startLabel %></option>
+                                        <%  }
+                                           } %>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label" for="joinStartingGoal">Starting goal</label>
+                                    <input class="form-control" id="joinStartingGoal" name="joinStartingGoal" type="number" min="0" step="0.1"
+                                           value="<%= setupView == null || setupView.getSuggestedStartingGoal() == null ? "20" : setupView.getSuggestedStartingGoal() %>">
+                                </div>
+
+                                <button class="btn btn-outline-primary" type="submit">Join competition</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

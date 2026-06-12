@@ -12,7 +12,46 @@ New way of working
 
 ## Current state
 
-The current work focused on FrankiZen visibility/behavior, audit logging, and keeping the existing JSP dashboard stable.
+The latest completed work focused on `FBC-16`: competition setup/join, lifecycle-aware onboarding, competition-scoped reads, and historical competition outcome access. Broader competition-selection UX beyond that slice should now move into `FBC-30`.
+
+### FBC-16 completion status
+
+- `FBC-16` is now effectively wrapped on the local branch `feature/fbc-16-competition-setup`.
+- Completed in this slice:
+  - create competition flow from authenticated onboarding
+  - join existing competition flow
+  - per-competition starting-goal capture
+  - competition start date and end date capture
+  - active-competition date-window rules:
+    - before start: competition-starts-soon screen
+    - during window: normal active competition behavior
+    - after end: no longer current active competition for default reads
+  - removal of unsafe persistent read fallback to unrelated competition `1`
+  - competition-scoped leaderboard and honour-roll reads for persistent mode
+  - past-competitions-only onboarding state and screen
+  - historical competition outcome opening from the past-competitions screen
+  - session-backed selected historical competition context
+  - historical reads now prefer persisted derived state and only backfill if no DB snapshot exists for that athlete + competition
+- Important boundary agreed with the user:
+  - this session intentionally stopped short of a general competition chooser/switcher model across the dashboard shell
+  - that broader competition-selection/defaulting behavior should move into `FBC-30`
+
+### FBC-30 handoff boundary
+
+- `FBC-30` should now own the next layer of multi-competition UX and selection behavior, including:
+  - selecting between competitions from the normal dashboard experience
+  - defaulting to the current active competition when there is only one active option
+  - deciding the UX when there is more than one simultaneously active competition
+  - making selected competition context explicit and user-visible, not just implicit/session-backed from the history-only page
+  - cleaning up any remaining mixed assumptions between "current active competition" and "explicitly selected competition"
+
+### Current historical outcome behavior
+
+- Historical outcome access is intentionally persistence-first:
+  - when a past competition is selected, the app first checks persisted DB-derived state for that athlete + competition
+  - if found, it trusts that historical result as the outcome
+  - only if no persisted snapshot exists does it backfill the selected historical competition from Strava data
+- This was chosen specifically to avoid unnecessary rebuilds of already-finished competitions.
 
 ### FBC-22 / FBC-32 architecture interrogation outcome
 
@@ -264,6 +303,40 @@ Additional board/backlog decisions made:
   - `FBC-12` should now sit before `FBC-16`, `FBC-30`, and `FBC-54` as the onboarding-state/routing layer those tickets build on.
 
 ## Best next checks next session
+
+### Latest local status update
+
+- The live board is now practically focused on multicomp rather than the older auth-first ordering above.
+- Current in-progress working order from the board is:
+  1. `FBC-12` competition-aware onboarding flow
+  2. `FBC-16` competition creation/setup screens and per-competition start configuration
+  3. `FBC-30` allow an athlete to belong to multiple competitions
+  4. `FBC-54` implement global and competition-scoped authorization model
+  5. `FBC-37` competition-specific eligible sports
+  6. `FBC-38` specify relative distances per competition
+- `FBC-12` was reviewed locally and judged effectively done as the onboarding-state/routing slice.
+- That `FBC-12` work was split onto branch `feature/fbc-12-onboarding-flow` with commit `217fbbb`.
+- `FBC-16` is now implemented locally on branch `feature/fbc-16-competition-setup`.
+- Delivered `FBC-16` slice:
+  - real competition setup page at `/app/competition-setup`
+  - create competition flow with name, timezone, start date, and per-competition starting goal
+  - join existing competition flow with per-competition starting goal
+  - competition onboarding page now routes users into the setup flow instead of a placeholder dead end
+  - new DB methods for listing active competitions, creating a competition with the first admin member, and joining a competition
+  - focused unit coverage for the competition setup service
+- The unrelated session-lifetime fix was split onto branch `bugfix/session-persistence` with commit `546c063`.
+- Both branches were pushed, but PRs were not created from the Copilot session because no PR-creation tool was available in the environment.
+- Compare URLs prepared for manual PR creation:
+  - `https://github.com/millslf/frankiesbootcamp/compare/main...bugfix/session-persistence?expand=1`
+  - `https://github.com/millslf/frankiesbootcamp/compare/main...feature/fbc-12-onboarding-flow?expand=1`
+- `.github\copilot-instructions.md` still has uncommitted local changes and was intentionally left out of both branch commits.
+
+### How to restart next session
+
+- Start by asking the agent to read `.github\copilot-instructions.md` and get up to date.
+- That should lead it into `SESSION_HANDOFF.md`, `BACKLOG_GROOMING_HANDOFF.md`, and `CONTEXT.md`.
+- Then tell it the current focus is multicomp and that `FBC-12` has a pushed branch/commit ready for PR review.
+- Tell it `FBC-16` work now exists locally on `feature/fbc-16-competition-setup` and should be reviewed/committed next.
 
 1. If continuing the workflow/tooling setup, add lightweight Jira/Confluence helper scripts that use the env vars from `copilot-byok.ps1` for:
    - reading a Jira issue
