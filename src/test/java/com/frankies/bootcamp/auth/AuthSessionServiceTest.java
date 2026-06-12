@@ -3,6 +3,7 @@ package com.frankies.bootcamp.auth;
 import com.frankies.bootcamp.model.AuthenticatedUser;
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.service.AuthSessionService;
+import com.frankies.bootcamp.servlet.JoinServlet;
 import com.frankies.bootcamp.servlet.LoginServlet;
 import jakarta.servlet.ServletConnection;
 import jakarta.servlet.ServletContext;
@@ -51,6 +52,7 @@ class AuthSessionServiceTest {
         assertSame(athlete, request.session.getAttribute("athlete"));
         assertEquals("athlete@example.com", request.session.getAttribute("athleteEmail"));
         assertEquals("Athlete Example", request.session.getAttribute("athleteName"));
+        assertEquals(60 * 60 * 24 * 30, request.session.maxInactiveInterval);
     }
 
     @Test
@@ -79,7 +81,7 @@ class AuthSessionServiceTest {
 
         servlet.handleGet(request, response);
 
-        assertEquals("/bootcamp/auth/external/login", response.redirectedTo);
+        assertEquals("/bootcamp/auth/external/login?prompt=login", response.redirectedTo);
     }
 
     @Test
@@ -91,10 +93,27 @@ class AuthSessionServiceTest {
 
         servlet.handleGet(request, response);
 
-        assertEquals("/bootcamp/auth/external/login?error=external+failure", response.redirectedTo);
+        assertEquals("/bootcamp/auth/external/login?prompt=login&error=external+failure", response.redirectedTo);
+    }
+
+    @Test
+    void joinServletRedirectsStraightToExternalLoginWithPrompt() throws Exception {
+        TestableJoinServlet servlet = new TestableJoinServlet();
+        FakeHttpServletRequest request = new FakeHttpServletRequest("/bootcamp", new FakeHttpSession());
+        FakeHttpServletResponse response = new FakeHttpServletResponse();
+
+        servlet.handleGet(request, response);
+
+        assertEquals("/bootcamp/auth/external/login?prompt=login", response.redirectedTo);
     }
 
     private static final class TestableLoginServlet extends LoginServlet {
+        void handleGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+            super.doGet(request, response);
+        }
+    }
+
+    private static final class TestableJoinServlet extends JoinServlet {
         void handleGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
             super.doGet(request, response);
         }
@@ -353,6 +372,7 @@ class AuthSessionServiceTest {
     private static final class FakeHttpSession implements HttpSession, Serializable {
         private final Map<String, Object> attributes = new HashMap<>();
         private boolean invalidated;
+        private int maxInactiveInterval;
 
         @Override
         public long getCreationTime() { return 0; }
@@ -363,9 +383,9 @@ class AuthSessionServiceTest {
         @Override
         public ServletContext getServletContext() { return null; }
         @Override
-        public void setMaxInactiveInterval(int interval) {}
+        public void setMaxInactiveInterval(int interval) { this.maxInactiveInterval = interval; }
         @Override
-        public int getMaxInactiveInterval() { return 0; }
+        public int getMaxInactiveInterval() { return maxInactiveInterval; }
         @Override
         public Object getAttribute(String name) { return attributes.get(name); }
         public Object getValue(String name) { return getAttribute(name); }
