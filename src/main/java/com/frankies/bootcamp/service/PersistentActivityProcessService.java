@@ -57,6 +57,9 @@ public class PersistentActivityProcessService {
             if (athlete.getId() == null || athlete.getId().isBlank() || athlete.getId().startsWith("local-")) {
                 continue;
             }
+            if (!hasActiveCompetitionMembership(athlete.getId())) {
+                continue;
+            }
             rebuildAthleteState(athlete);
         }
         persistHonourRollRows();
@@ -67,6 +70,9 @@ public class PersistentActivityProcessService {
         if (athlete == null || athlete.getId() == null || athlete.getId().isBlank() || athlete.getId().startsWith("local-")) {
             return;
         }
+        if (!hasActiveCompetitionMembership(athlete.getId())) {
+            return;
+        }
         rebuildAthleteState(athlete);
         persistHonourRollRows();
         regenerateSummaryMaps();
@@ -75,7 +81,13 @@ public class PersistentActivityProcessService {
     protected PerformanceResponse rebuildAthleteState(BootcampAthlete athlete) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         BootcampAthlete refreshedAthlete = stravaService.refreshToken(athlete);
         LOG.info("Busy with athlete: " + refreshedAthlete.getFirstname() + " " + refreshedAthlete.getLastname());
-        long competitionAthleteId = ensureCompetitionAthlete(refreshedAthlete);
+        Long competitionAthleteId = getActiveCompetitionAthleteId(refreshedAthlete);
+        if (competitionAthleteId == null) {
+            LOG.info("Skipping persistent rebuild for athlete without active competition membership: " + refreshedAthlete.getId());
+            PerformanceResponse performance = new PerformanceResponse();
+            performance.setAthlete(refreshedAthlete);
+            return performance;
+        }
         List<StravaActivityResponse> activities = stravaService.getAthleteActivitiesForPeriod(getStartTimeStamp(), refreshedAthlete.getAccessToken());
 
         PerformanceResponse performance = new PerformanceResponse();
@@ -157,8 +169,12 @@ public class PersistentActivityProcessService {
         return performance;
     }
 
-    protected long ensureCompetitionAthlete(BootcampAthlete athlete) throws SQLException {
-        return dbService.ensureCompetitionAthlete(athlete.getId(), athlete.getGoal());
+    protected Long getActiveCompetitionAthleteId(BootcampAthlete athlete) throws SQLException {
+        return dbService.findActiveCompetitionAthleteId(athlete.getId());
+    }
+
+    protected boolean hasActiveCompetitionMembership(String athleteId) throws SQLException {
+        return dbService.hasActiveCompetitionMembership(athleteId);
     }
 
     protected void replacePersistentCompetitionState(long competitionAthleteId,

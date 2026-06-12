@@ -679,10 +679,41 @@ public class DBService {
         throw new SQLException("Unable to find competition_athlete for athlete " + athleteId);
     }
 
+    public Long findActiveCompetitionAthleteId(String athleteId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT id FROM competition_athlete WHERE athlete_id = ? AND status = 'active' ORDER BY id ASC LIMIT 1"
+                )
+        ) {
+            statement.setString(1, athleteId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getLong("id");
+                }
+            }
+        }
+        return null;
+    }
+
     private boolean isFirstCompetitionAthlete(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM competition_athlete WHERE competition_id = 1")) {
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next() && resultSet.getInt(1) == 0;
+            }
+        }
+    }
+
+    public boolean hasActiveCompetitionMembership(String athleteId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT 1 FROM competition_athlete WHERE athlete_id = ? AND status = 'active' LIMIT 1"
+                )
+        ) {
+            statement.setString(1, athleteId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
             }
         }
     }

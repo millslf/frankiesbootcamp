@@ -2,7 +2,10 @@ package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.AuthenticatedUser;
+import com.frankies.bootcamp.model.OnboardingState;
+import com.frankies.bootcamp.model.OnboardingStatus;
 import com.frankies.bootcamp.service.AuthService;
+import com.frankies.bootcamp.service.OnboardingStateService;
 import com.frankies.bootcamp.service.StravaService;
 import com.frankies.bootcamp.service.AuthSessionService;
 import jakarta.inject.Inject;
@@ -20,6 +23,8 @@ public class BootcampServlet extends HttpServlet {
     @Inject
     private AuthService authService;
     @Inject
+    private OnboardingStateService onboardingStateService;
+    @Inject
     private StravaService stravaService;
 
     private static final Logger log = Logger.getLogger(BootcampServlet.class);
@@ -29,39 +34,38 @@ public class BootcampServlet extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = req.getSession(true);
-        BootcampAthlete athlete = (BootcampAthlete) session.getAttribute("athlete");
         AuthenticatedUser authenticatedUser = authSessionService.getAuthenticatedUser(req);
+        BootcampAthlete athlete = null;
 
-        if (athlete == null) {
-            if (authenticatedUser == null || authenticatedUser.getEmail() == null || authenticatedUser.getEmail().isBlank()) {
-                unauthorized(resp, "Login required");
+        if (authenticatedUser == null || authenticatedUser.getEmail() == null || authenticatedUser.getEmail().isBlank()) {
+            unauthorized(resp, "Login required");
+            return;
+        }
+
+        try {
+            athlete = authService.loadAthleteForUser(authenticatedUser);
+            OnboardingStatus onboardingStatus = onboardingStateService.resolve(authenticatedUser, athlete);
+            applyOnboardingAttributes(req, session, authenticatedUser, athlete, onboardingStatus);
+
+            if (onboardingStatus.getState() == OnboardingState.STRAVA_PENDING) {
+                log.info("Strava link required: " + authenticatedUser.getEmail());
+                forwardToStravaOnboarding(req, resp, authenticatedUser, onboardingStatus);
                 return;
             }
-            try {
-                athlete = authService.loadAthleteForUser(authenticatedUser);
-                if (athlete == null || isStravaPending(athlete)) {
-                    log.info("Strava link required: " + authenticatedUser.getEmail());
-                    // Use StravaService to provide server-controlled config
-                    String clientId = stravaService.getClientId();
-                    String callback = stravaService.buildCallbackUrl(req);
 
-                    req.setAttribute("stravaClientId", clientId);
-                    req.setAttribute("stravaCallback", callback);
-                    req.setAttribute("stravaOnboardingUser", authenticatedUser);
-                    req.getRequestDispatcher("/app/strava-onboarding.jsp").forward(req, resp);
-                    return;
-                }
+            if (onboardingStatus.getState() == OnboardingState.COMPETITION_PENDING) {
+                log.info("Competition onboarding required: " + authenticatedUser.getEmail());
+                req.getRequestDispatcher("/app/competition-onboarding.jsp").forward(req, resp);
+                return;
+            }
 
-                // Cache in session for future requests
-                session.setAttribute("athlete", athlete);
-                session.setAttribute("athleteEmail", authenticatedUser.getEmail());
-                session.setAttribute("athleteName", authenticatedUser.getDisplayName());
+            if (athlete != null) {
                 log.info("Athlete authorised: " + buildDisplayName(athlete, authenticatedUser.getEmail()));
-            } catch (SQLException e) {
-                log.error("Error looking up athlete by email", e);
-                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                return;
             }
+        } catch (SQLException e) {
+            log.error("Error resolving onboarding state", e);
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
 
         // Expose on the request for convenience
@@ -97,8 +101,31 @@ public class BootcampServlet extends HttpServlet {
         }
     }
 
-    private boolean isStravaPending(BootcampAthlete athlete) {
-        return athlete.getId() == null || athlete.getId().isBlank() || athlete.getId().startsWith("local-");
+    private void forwardToStravaOnboarding(HttpServletRequest req,
+                                           HttpServletResponse resp,
+                                           AuthenticatedUser authenticatedUser,
+                                           OnboardingStatus onboardingStatus) throws ServletException, IOException {
+        String clientId = stravaService.getClientId();
+        String callback = stravaService.buildCallbackUrl(req);
+
+        req.setAttribute("stravaClientId", clientId);
+        req.setAttribute("stravaCallback", callback);
+        req.setAttribute("stravaOnboardingUser", authenticatedUser);
+        req.setAttribute("onboardingStatus", onboardingStatus);
+        req.getRequestDispatcher("/app/strava-onboarding.jsp").forward(req, resp);
+    }
+
+    private void applyOnboardingAttributes(HttpServletRequest req,
+                                           HttpSession session,
+                                           AuthenticatedUser authenticatedUser,
+                                           BootcampAthlete athlete,
+                                           OnboardingStatus onboardingStatus) {
+        req.setAttribute("onboardingStatus", onboardingStatus);
+        req.setAttribute("onboardingState", onboardingStatus.getState());
+
+        session.setAttribute("athlete", athlete);
+        session.setAttribute("athleteEmail", authenticatedUser.getEmail());
+        session.setAttribute("athleteName", authenticatedUser.getDisplayName());
     }
 
 }
