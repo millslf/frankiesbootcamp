@@ -22,6 +22,7 @@ public class Auth0LoginServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String state = randomToken();
         req.getSession(true).setAttribute("auth0State", state);
+        String prompt = req.getParameter("prompt");
 
         String authorizeUrl = "https://" + config.getDomain() + "/authorize"
                 + "?response_type=code"
@@ -29,6 +30,10 @@ public class Auth0LoginServlet extends HttpServlet {
                 + "&redirect_uri=" + url(config.getBaseUrl() + req.getContextPath() + "/auth/external/callback")
                 + "&scope=" + url("openid profile email")
                 + "&state=" + url(state);
+
+        if (prompt != null && !prompt.isBlank()) {
+            authorizeUrl += "&prompt=" + url(prompt);
+        }
 
         resp.sendRedirect(authorizeUrl);
     }

@@ -265,8 +265,15 @@ class PersistentActivityProcessServiceTest {
         }
 
         @Override
-        protected long ensureCompetitionAthlete(BootcampAthlete athlete) {
-            return fakeDbService.ensureCompetitionAthlete(athlete.getId(), athlete.getGoal());
+        protected Long getActiveCompetitionAthleteId(BootcampAthlete athlete) {
+            return fakeDbService.hasActiveCompetitionMembership(athlete.getId())
+                    ? fakeDbService.ensureCompetitionAthlete(athlete.getId(), athlete.getGoal())
+                    : null;
+        }
+
+        @Override
+        protected boolean hasActiveCompetitionMembership(String athleteId) {
+            return fakeDbService.hasActiveCompetitionMembership(athleteId);
         }
 
         @Override
@@ -416,6 +423,10 @@ class PersistentActivityProcessServiceTest {
         public long ensureCompetitionAthlete(String athleteId, Double startingGoal) {
             athleteIdsByCompetitionAthleteId.put(1L, athleteId);
             return 1L;
+        }
+
+        public boolean hasActiveCompetitionMembership(String athleteId) {
+            return athletesByStravaId.containsKey(athleteId);
         }
 
         public void replacePersistentCompetitionState(long competitionAthleteId,

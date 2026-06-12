@@ -11,10 +11,10 @@ import java.io.IOException;
 public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String destination = req.getContextPath() + "/auth/external/login";
+        String destination = req.getContextPath() + "/auth/external/login?prompt=login";
         String error = req.getParameter("error");
         if (error != null && !error.isBlank()) {
-            destination += "?error=" + java.net.URLEncoder.encode(error, java.nio.charset.StandardCharsets.UTF_8);
+            destination += "&error=" + java.net.URLEncoder.encode(error, java.nio.charset.StandardCharsets.UTF_8);
         }
         resp.sendRedirect(destination);
     }

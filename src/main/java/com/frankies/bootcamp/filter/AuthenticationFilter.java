@@ -16,7 +16,7 @@ import java.util.Set;
 public class AuthenticationFilter implements Filter {
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/", "/index.jsp", "/privacy", "/privacy.jsp", "/terms", "/terms.jsp", "/scoring", "/scoring.jsp",
-            "/login", "/logout", "/error.jsp", "/api/strava/webhook",
+            "/login", "/logout", "/join", "/join.jsp", "/error.jsp", "/api/strava/webhook",
             "/auth/external/login", "/auth/external/callback", "/app/whoami.jsp"
     );
 
