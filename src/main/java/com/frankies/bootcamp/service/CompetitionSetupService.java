@@ -21,7 +21,7 @@ public class CompetitionSetupService {
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("Australia/Sydney");
 
     interface CompetitionRepository {
-        List<CompetitionSummaryView> listActiveCompetitions() throws SQLException;
+        List<CompetitionSummaryView> listJoinableCompetitions(String athleteId) throws SQLException;
 
         long createCompetitionWithAdmin(String name, String timezone, long startTimestamp, Long endTimestamp, String athleteId, double startingGoal) throws SQLException;
 
@@ -40,8 +40,8 @@ public class CompetitionSetupService {
     public CompetitionSetupService(DBService dbService, ActivityProcessFacade activityProcessFacade) {
         this.competitionRepository = new CompetitionRepository() {
             @Override
-            public List<CompetitionSummaryView> listActiveCompetitions() throws SQLException {
-                return dbService.listActiveCompetitions();
+            public List<CompetitionSummaryView> listJoinableCompetitions(String athleteId) throws SQLException {
+                return dbService.listJoinableCompetitions(athleteId);
             }
 
             @Override
@@ -70,7 +70,7 @@ public class CompetitionSetupService {
                 athlete.getId(),
                 buildDisplayName(athlete),
                 athlete.getGoal(),
-                competitionRepository.listActiveCompetitions()
+                competitionRepository.listJoinableCompetitions(athlete.getId())
         );
     }
 

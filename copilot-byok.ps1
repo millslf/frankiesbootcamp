@@ -5,7 +5,9 @@
 # Editable non-secret defaults
 $defaultCopilotProviderType = "openai"
 $defaultCopilotProviderBaseUrl = "https://api.openai.com/v1"
-$defaultCopilotModel = "gpt-5.4"
+$defaultCopilotProviderModelId = "gpt-5.4"
+$defaultCopilotProviderWireModel = "gpt-5.5"
+$defaultCopilotProviderWireApi = "responses"
 $defaultMavenBinPath = "C:\TFS\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin"
 $defaultAtlassianBaseUrl = "https://millses.atlassian.net"
 $defaultAtlassianEmail = "millslf@gmail.com"
@@ -48,7 +50,10 @@ function Set-SessionValue {
 
 $env:COPILOT_PROVIDER_TYPE = $defaultCopilotProviderType
 $env:COPILOT_PROVIDER_BASE_URL = $defaultCopilotProviderBaseUrl
-$env:COPILOT_MODEL = $defaultCopilotModel
+$env:COPILOT_PROVIDER_MODEL_ID = $defaultCopilotProviderModelId
+$env:COPILOT_PROVIDER_WIRE_MODEL = $defaultCopilotProviderWireModel
+$env:COPILOT_PROVIDER_WIRE_API = $defaultCopilotProviderWireApi
+Remove-Item Env:COPILOT_MODEL -ErrorAction SilentlyContinue
 if (Test-Path $defaultMavenBinPath) {
     $env:Path = "$defaultMavenBinPath;$env:Path"
     Write-Host "Maven added to PATH for this terminal session: $defaultMavenBinPath"
@@ -62,7 +67,9 @@ Set-SessionValue -Name "COPILOT_PROVIDER_API_KEY" -Value $plainKey
 
 Write-Host "Copilot CLI BYOK environment configured for this terminal session."
 Write-Host "Provider: $env:COPILOT_PROVIDER_TYPE"
-Write-Host "Model: $env:COPILOT_MODEL"
+Write-Host "Model ID: $env:COPILOT_PROVIDER_MODEL_ID"
+Write-Host "Wire model: $env:COPILOT_PROVIDER_WIRE_MODEL"
+Write-Host "Wire API: $env:COPILOT_PROVIDER_WIRE_API"
 
 $configureAtlassian = Read-Host "Configure Jira/Confluence credentials for this session? (y/N)"
 

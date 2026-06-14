@@ -6,6 +6,7 @@ public class OnboardingStatus {
     private final boolean stravaLinked;
     private final boolean hasCompetitionMembership;
     private final CompetitionSummaryView activeCompetition;
+    private final java.util.List<CompetitionSummaryView> activeCompetitions;
     private final java.util.List<CompetitionSummaryView> pastCompetitions;
 
     public OnboardingStatus(OnboardingState state,
@@ -13,12 +14,14 @@ public class OnboardingStatus {
                             boolean stravaLinked,
                             boolean hasCompetitionMembership,
                             CompetitionSummaryView activeCompetition,
+                            java.util.List<CompetitionSummaryView> activeCompetitions,
                             java.util.List<CompetitionSummaryView> pastCompetitions) {
         this.state = state;
         this.appUserReady = appUserReady;
         this.stravaLinked = stravaLinked;
         this.hasCompetitionMembership = hasCompetitionMembership;
         this.activeCompetition = activeCompetition;
+        this.activeCompetitions = activeCompetitions;
         this.pastCompetitions = pastCompetitions;
     }
 
@@ -40,6 +43,10 @@ public class OnboardingStatus {
 
     public CompetitionSummaryView getActiveCompetition() {
         return activeCompetition;
+    }
+
+    public java.util.List<CompetitionSummaryView> getActiveCompetitions() {
+        return activeCompetitions;
     }
 
     public java.util.List<CompetitionSummaryView> getPastCompetitions() {

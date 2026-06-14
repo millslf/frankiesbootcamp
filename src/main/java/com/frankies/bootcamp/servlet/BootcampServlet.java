@@ -69,6 +69,13 @@ public class BootcampServlet extends HttpServlet {
                 return;
             }
 
+            if (onboardingStatus.getState() == OnboardingState.COMPETITION_SELECTION_REQUIRED
+                    && authSessionService.getSelectedCompetitionId(req) == null) {
+                log.info("Competition selection required for athlete: " + authenticatedUser.getEmail());
+                req.getRequestDispatcher("/app/competition-selection.jsp").forward(req, resp);
+                return;
+            }
+
             if (onboardingStatus.getState() == OnboardingState.COMPETITION_HISTORY_ONLY
                     && authSessionService.getSelectedCompetitionId(req) == null) {
                 log.info("Only past competitions available for athlete: " + authenticatedUser.getEmail());
@@ -143,7 +150,24 @@ public class BootcampServlet extends HttpServlet {
         session.setAttribute("athlete", athlete);
         session.setAttribute("athleteEmail", authenticatedUser.getEmail());
         session.setAttribute("athleteName", authenticatedUser.getDisplayName());
-        req.setAttribute("selectedCompetitionId", authSessionService.getSelectedCompetitionId(req));
+        Long storedCompetitionId = authSessionService.getSelectedCompetitionId(req);
+        Long selectedCompetitionId = defaultSelectedCompetitionId(storedCompetitionId, onboardingStatus);
+        if (storedCompetitionId == null && selectedCompetitionId != null) {
+            authSessionService.setSelectedCompetitionId(req, selectedCompetitionId);
+        }
+        req.setAttribute("activeCompetitions", onboardingStatus.getActiveCompetitions());
+        req.setAttribute("pastCompetitions", onboardingStatus.getPastCompetitions());
+        req.setAttribute("selectedCompetitionId", selectedCompetitionId);
+    }
+
+    static Long defaultSelectedCompetitionId(Long storedCompetitionId, OnboardingStatus onboardingStatus) {
+        if (storedCompetitionId != null || onboardingStatus == null) {
+            return storedCompetitionId;
+        }
+        if (onboardingStatus.getActiveCompetitions().size() == 1) {
+            return onboardingStatus.getActiveCompetitions().get(0).getId();
+        }
+        return null;
     }
 
     private void syncSelectedCompetition(HttpServletRequest req, BootcampAthlete athlete) {

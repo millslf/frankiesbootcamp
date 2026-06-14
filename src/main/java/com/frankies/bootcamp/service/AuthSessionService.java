@@ -63,4 +63,8 @@ public class AuthSessionService {
         }
         session.setAttribute(SELECTED_COMPETITION_ID_SESSION_KEY, competitionId);
     }
+
+    public boolean hasSelectedCompetition(HttpServletRequest request) {
+        return getSelectedCompetitionId(request) != null;
+    }
 }
