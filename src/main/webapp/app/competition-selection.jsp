@@ -9,8 +9,14 @@
 <%
     AuthenticatedUser onboardingUser = (AuthenticatedUser) session.getAttribute("authUser");
     OnboardingStatus onboardingStatus = (OnboardingStatus) request.getAttribute("onboardingStatus");
-    List<CompetitionSummaryView> activeCompetitions = onboardingStatus == null ? List.of() : onboardingStatus.getActiveCompetitions();
-    List<CompetitionSummaryView> pastCompetitions = onboardingStatus == null ? List.of() : onboardingStatus.getPastCompetitions();
+    Object selectionActiveCompetitionsAttr = request.getAttribute("activeCompetitions");
+    Object selectionPastCompetitionsAttr = request.getAttribute("pastCompetitions");
+    List<CompetitionSummaryView> selectionActiveCompetitions = onboardingStatus == null
+            ? (selectionActiveCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) selectionActiveCompetitionsAttr : List.of())
+            : onboardingStatus.getActiveCompetitions();
+    List<CompetitionSummaryView> selectionPastCompetitions = onboardingStatus == null
+            ? (selectionPastCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) selectionPastCompetitionsAttr : List.of())
+            : onboardingStatus.getPastCompetitions();
     String displayName = (onboardingUser == null || onboardingUser.getDisplayName() == null || onboardingUser.getDisplayName().isBlank())
             ? "there"
             : onboardingUser.getDisplayName();
@@ -23,33 +29,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <%@ include file="/WEB-INF/jspf/head-common.jspf" %>
-    <title>Select competition</title>
+    <title>Manage competitions</title>
 </head>
 <body class="bg-light">
-<header class="d-flex align-items-center justify-content-between text-white px-3 py-2 shadow-sm"
-        style="min-height:56px; background-color: #0d6efd;">
-    <a href="<%=pageContextPath%>/" class="text-white text-decoration-none d-flex align-items-center gap-2">
-        <span aria-hidden="true">&#x1F3CB;&#xFE0F;</span>
-        <span>Frankies Bootcamp!</span>
-    </a>
-</header>
+<%@ include file="/WEB-INF/jspf/header.jspf" %>
 
-<div class="container py-5">
+<div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-9">
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4 p-md-5">
                     <div class="text-center mb-4">
                         <div class="display-5 text-primary mb-3"><i class="bi bi-list-check"></i></div>
-                        <h1 class="h3 mb-3">Choose your competition, <%= displayName %></h1>
+                        <h1 class="h3 mb-3">Manage your competitions, <%= displayName %></h1>
                         <p class="text-muted mb-0">
-                            Pick which competition context you want to view now.
+                            Pick which competition context you want to view now. Current competitions affect your active dashboard; past competitions show historical outcomes.
                         </p>
                     </div>
 
                     <h2 class="h5 mt-4">Current competitions</h2>
+                    <% if (selectionActiveCompetitions.isEmpty()) { %>
+                    <div class="alert alert-info">You do not have any current active competitions.</div>
+                    <% } else { %>
                     <ul class="list-group mb-4">
-                        <% for (CompetitionSummaryView competition : activeCompetitions) {
+                        <% for (CompetitionSummaryView competition : selectionActiveCompetitions) {
                             String startLabel = Instant.ofEpochSecond(competition.getStartTimestamp()).atZone(ZoneId.of(competition.getTimezone())).format(formatter);
                             String endLabel = competition.getEndTimestamp() == null ? "No end date" : Instant.ofEpochSecond(competition.getEndTimestamp()).atZone(ZoneId.of(competition.getTimezone())).format(formatter);
                         %>
@@ -62,11 +65,12 @@
                         </li>
                         <% } %>
                     </ul>
+                    <% } %>
 
-                    <% if (!pastCompetitions.isEmpty()) { %>
+                    <% if (!selectionPastCompetitions.isEmpty()) { %>
                     <h2 class="h5 mt-4">Past competitions</h2>
                     <ul class="list-group mb-4">
-                        <% for (CompetitionSummaryView competition : pastCompetitions) {
+                        <% for (CompetitionSummaryView competition : selectionPastCompetitions) {
                             String startLabel = Instant.ofEpochSecond(competition.getStartTimestamp()).atZone(ZoneId.of(competition.getTimezone())).format(formatter);
                             String endLabel = competition.getEndTimestamp() == null ? "No end date" : Instant.ofEpochSecond(competition.getEndTimestamp()).atZone(ZoneId.of(competition.getTimezone())).format(formatter);
                         %>
@@ -82,8 +86,7 @@
                     <% } %>
 
                     <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mt-4">
-                        <a class="btn btn-outline-secondary btn-lg" href="<%=pageContextPath%>/logout">Sign out</a>
-                        <a class="btn btn-primary btn-lg" href="<%=pageContextPath%>/app/competition-setup">Manage competitions</a>
+                        <a class="btn btn-outline-secondary btn-lg" href="<%=pageContextPath%>/app/">Back to dashboard</a>
                     </div>
                 </div>
             </div>

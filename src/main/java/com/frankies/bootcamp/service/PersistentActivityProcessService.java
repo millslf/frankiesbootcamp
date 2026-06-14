@@ -62,7 +62,7 @@ public class PersistentActivityProcessService {
             if (!hasActiveCompetitionMembership(athlete.getId())) {
                 continue;
             }
-            rebuildAthleteState(athlete);
+            rebuildCurrentCompetitionStates(athlete);
         }
         persistHonourRollRows();
         regenerateSummaryMaps();
@@ -75,7 +75,7 @@ public class PersistentActivityProcessService {
         if (!hasActiveCompetitionMembership(athlete.getId())) {
             return;
         }
-        rebuildAthleteState(athlete);
+        rebuildCurrentCompetitionStates(athlete);
         persistHonourRollRows();
         regenerateSummaryMaps();
     }
@@ -122,6 +122,23 @@ public class PersistentActivityProcessService {
             return performance;
         }
         return rebuildAthleteStateForCompetition(refreshedAthlete, competitionAthleteId);
+    }
+
+    protected void rebuildCurrentCompetitionStates(BootcampAthlete athlete) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        BootcampAthlete refreshedAthlete = stravaService.refreshToken(athlete);
+        List<Long> competitionAthleteIds = listCurrentCompetitionAthleteIds(refreshedAthlete.getId());
+        if (competitionAthleteIds.isEmpty()) {
+            LOG.info("Skipping persistent rebuild for athlete without active competition membership: " + refreshedAthlete.getId());
+            return;
+        }
+        LOG.info("Busy with athlete: " + refreshedAthlete.getFirstname() + " " + refreshedAthlete.getLastname());
+        for (Long competitionAthleteId : competitionAthleteIds) {
+            rebuildAthleteStateForCompetition(refreshedAthlete, competitionAthleteId);
+        }
+    }
+
+    protected List<Long> listCurrentCompetitionAthleteIds(String athleteId) throws SQLException {
+        return dbService.listCurrentCompetitionAthleteIds(athleteId);
     }
 
     protected PerformanceResponse rebuildAthleteStateForCompetition(BootcampAthlete athlete,

@@ -56,7 +56,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
         }
         CompetitionSummaryView selectedCompetition = findSelectedCompetition(request, selectedCompetitionId);
         boolean selectedCompetitionIsCurrent = selectedCompetitionId == null || isCurrentCompetition(request, selectedCompetitionId);
-        if (history.isEmpty()) {
+        if (history.isEmpty() || selectedActiveCompetitionHistoryIsStale(history, selectedCompetition, selectedCompetitionIsCurrent)) {
             try {
                 if (selectedCompetitionId == null) {
                     activityProcessFacade.prepareAthleteSummary(loggedInAthlete);
@@ -234,6 +234,25 @@ public class AthleteHistoryServlet extends BootcampServlet {
         return competition != null
                 && competition.getEndTimestamp() != null
                 && competition.getEndTimestamp() < Instant.now().getEpochSecond() - COMPLETED_COMPETITION_REBUILD_FREEZE_SECONDS;
+    }
+
+    private static boolean selectedActiveCompetitionHistoryIsStale(Map<Integer, WeeklyPerformance> history,
+                                                                   CompetitionSummaryView selectedCompetition,
+                                                                   boolean selectedCompetitionIsCurrent) {
+        if (!selectedCompetitionIsCurrent || selectedCompetition == null || history.isEmpty()) {
+            return false;
+        }
+        int latestPersistedWeek = history.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
+        return latestPersistedWeek < expectedWeekCount(selectedCompetition);
+    }
+
+    private static int expectedWeekCount(CompetitionSummaryView competition) {
+        long effectiveEndMillis = competition.getEndTimestamp() == null
+                ? System.currentTimeMillis()
+                : Math.min(System.currentTimeMillis(), competition.getEndTimestamp() * 1000);
+        int weeks = (int) Math.ceil((double) (effectiveEndMillis - (competition.getStartTimestamp() * 1000)) /
+                (com.frankies.bootcamp.constant.BootcampConstants.WEEK_IN_SECONDS * 1000));
+        return Math.max(1, weeks);
     }
 
     private static double totalDistance(Map<Integer, WeeklyPerformance> history) {

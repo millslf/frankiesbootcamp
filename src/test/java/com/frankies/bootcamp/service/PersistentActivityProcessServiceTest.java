@@ -111,6 +111,27 @@ class PersistentActivityProcessServiceTest {
     }
 
     @Test
+    void prepareAthleteSummaryRebuildsEveryCurrentCompetitionMembership() throws Exception {
+        BootcampAthlete athlete = createAthlete("athlete-multi", "Multi", "Comp", 20.0);
+        FakeDBService db = new FakeDBService(List.of(athlete));
+        db.athleteIdsByCompetitionAthleteId.put(1L, athlete.getId());
+        db.athleteIdsByCompetitionAthleteId.put(2L, athlete.getId());
+        db.competitionConfigsByCompetitionAthleteId.put(1L, new DBService.CompetitionAthleteConfig(101L, 20.0, BootcampConstants.START_TIMESTAMP, null, "Australia/Sydney"));
+        db.competitionConfigsByCompetitionAthleteId.put(2L, new DBService.CompetitionAthleteConfig(102L, 12.0, BootcampConstants.START_TIMESTAMP, null, "Australia/Sydney"));
+        PersistentActivityProcessService service = createService(db, List.of(
+                runActivity(2001L, 5.0, BootcampConstants.START_TIMESTAMP + 1000L)
+        ), 1);
+
+        service.prepareAthleteSummary(athlete);
+
+        assertEquals(2, db.replacedCompetitionStates.size());
+        assertEquals(1L, db.replacedCompetitionStates.get(0).competitionAthleteId());
+        assertEquals(2L, db.replacedCompetitionStates.get(1).competitionAthleteId());
+        assertEquals(20.0, db.replacedCompetitionStates.get(0).weeklyRows().get(0).weekGoal(), 0.0001);
+        assertEquals(12.0, db.replacedCompetitionStates.get(1).weeklyRows().get(0).weekGoal(), 0.0001);
+    }
+
+    @Test
     void rebuildForSingleWeekCompetitionPersistsCurrentWeekWhenNoActivitiesExist() throws Exception {
         BootcampAthlete athlete = createAthlete("athlete-empty", "New", "Starter", 20.0);
         FakeDBService db = new FakeDBService(List.of(athlete));
@@ -344,6 +365,11 @@ class PersistentActivityProcessServiceTest {
         }
 
         @Override
+        protected List<Long> listCurrentCompetitionAthleteIds(String athleteId) {
+            return fakeDbService.listCurrentCompetitionAthleteIds(athleteId);
+        }
+
+        @Override
         protected DBService.CompetitionAthleteConfig getCompetitionAthleteConfig(long competitionAthleteId) {
             return fakeDbService.getCompetitionAthleteConfig(competitionAthleteId);
         }
@@ -530,6 +556,20 @@ class PersistentActivityProcessServiceTest {
 
         public boolean hasActiveCompetitionMembership(String athleteId) {
             return athletesByStravaId.containsKey(athleteId);
+        }
+
+        public List<Long> listCurrentCompetitionAthleteIds(String athleteId) {
+            List<Long> ids = athleteIdsByCompetitionAthleteId.entrySet().stream()
+                    .filter(entry -> entry.getValue().equals(athleteId))
+                    .map(Map.Entry::getKey)
+                    .sorted()
+                    .toList();
+            if (!ids.isEmpty()) {
+                return ids;
+            }
+            return hasActiveCompetitionMembership(athleteId)
+                    ? List.of(ensureCompetitionAthlete(athleteId, athletesByStravaId.get(athleteId).getGoal()))
+                    : List.of();
         }
 
         public DBService.CompetitionAthleteConfig getCompetitionAthleteConfig(long competitionAthleteId) {

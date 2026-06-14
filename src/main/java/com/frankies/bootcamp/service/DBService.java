@@ -735,6 +735,33 @@ public class DBService {
         return competitionIds;
     }
 
+    public List<Long> listCurrentCompetitionAthleteIds(String athleteId) throws SQLException {
+        List<Long> competitionAthleteIds = new ArrayList<>();
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT ca.id " +
+                                "FROM competition_athlete ca " +
+                                "JOIN competitions c ON c.id = ca.competition_id " +
+                                "WHERE ca.athlete_id = ? AND ca.status = 'active' AND c.status = 'active' " +
+                                "AND c.start_timestamp <= ? " +
+                                "AND (c.end_timestamp IS NULL OR c.end_timestamp >= ?) " +
+                                "ORDER BY c.start_timestamp ASC, ca.id ASC"
+                )
+        ) {
+            long now = Instant.now().getEpochSecond();
+            statement.setString(1, athleteId);
+            statement.setLong(2, now);
+            statement.setLong(3, now);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    competitionAthleteIds.add(resultSet.getLong("id"));
+                }
+            }
+        }
+        return competitionAthleteIds;
+    }
+
     public List<BootcampAthlete> listCompetitionAthletes(long competitionId) throws SQLException {
         List<BootcampAthlete> athletes = new ArrayList<>();
         try (
