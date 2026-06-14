@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpSession;
 @ApplicationScoped
 public class AuthSessionService {
     public static final String AUTH_USER_SESSION_KEY = "authUser";
+    public static final String SELECTED_COMPETITION_ID_SESSION_KEY = "selectedCompetitionId";
     private static final int DEFAULT_SESSION_TIMEOUT_SECONDS = 60 * 60 * 24 * 30;
 
     public AuthenticatedUser getAuthenticatedUser(HttpServletRequest request) {
@@ -37,5 +38,29 @@ public class AuthSessionService {
         if (session != null) {
             session.invalidate();
         }
+    }
+
+    public Long getSelectedCompetitionId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        Object selectedCompetitionId = session.getAttribute(SELECTED_COMPETITION_ID_SESSION_KEY);
+        if (selectedCompetitionId instanceof Long competitionId) {
+            return competitionId;
+        }
+        if (selectedCompetitionId instanceof String competitionIdText && !competitionIdText.isBlank()) {
+            return Long.parseLong(competitionIdText);
+        }
+        return null;
+    }
+
+    public void setSelectedCompetitionId(HttpServletRequest request, Long competitionId) {
+        HttpSession session = request.getSession(true);
+        if (competitionId == null) {
+            session.removeAttribute(SELECTED_COMPETITION_ID_SESSION_KEY);
+            return;
+        }
+        session.setAttribute(SELECTED_COMPETITION_ID_SESSION_KEY, competitionId);
     }
 }

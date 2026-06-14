@@ -256,10 +256,48 @@ Not yet shaped in this grooming pass:
 
 ## Suggested resume point next session
 
+### Latest board reality update
+
+- The live board has moved ahead of the older ordering in this file.
+- Treat the current practical multicomp sequence as:
+  1. `FBC-12`
+  2. `FBC-16`
+  3. `FBC-89`
+  4. `FBC-30`
+  5. `FBC-54`
+  6. `FBC-37`
+  7. `FBC-38`
+- `FBC-12` now appears effectively complete as the onboarding-state/routing slice.
+- Local branch/commit prepared for that work:
+  - `feature/fbc-12-onboarding-flow`
+  - `217fbbb`
+- `FBC-16` is now actively implemented locally on branch `feature/fbc-16-competition-setup`.
+- Current `FBC-16` slice covers:
+  - create competition screen and post-auth setup route
+  - explicit join-existing-competition flow
+  - per-competition starting goal capture
+  - competition start date/timezone capture for new competitions
+- `FBC-16` should now be treated as effectively wrapped locally with additional delivered scope:
+  - end-date support and lifecycle-aware active-competition rules
+  - competition-starts-soon onboarding state
+  - past-competitions-only onboarding state
+  - historical competition outcome opening from the past-competitions screen
+  - persistence-first historical viewing with one-time backfill only when DB-derived state is missing
+- Invitation-only competition visibility should be treated as follow-up work in `FBC-89`, not assumed as part of the base `FBC-16` join/setup slice.
+- Broader competition selection/defaulting behavior should now move to `FBC-30`, not remain in `FBC-16`.
+- Current preferred `FBC-89` direction:
+  - the competition-selection/join experience should only show competitions where the logged-in athlete has an invite
+  - invitation rules should be defined before broadening competition discovery behavior
+- Separate local bugfix branch/commit prepared for the session lifetime fix:
+  - `bugfix/session-persistence`
+  - `546c063`
+- Both branches were pushed.
+- PRs still need to be created manually or from an environment with PR-creation capability.
+
 Resume backlog grooming from the remaining backlog, starting with either:
 
 1. `FBC-60` if the next conversation should focus on hosting/platform/Azure direction, or
-2. the newly added admin/invitation tickets (`FBC-89`, `FBC-90`, `FBC-14`), or
+2. `FBC-89` first, then the remaining admin tickets (`FBC-90`, `FBC-14`), or
 3. the smaller remaining backlog items (`FBC-46`, `FBC-26`, `FBC-27`, `FBC-28`, `FBC-29`, `FBC-33`, `FBC-34`, `FBC-52`, `FBC-24`) to finish making the board fully prompt-ready.
 
 If backlog grooming is paused in favor of testing work, resume `FBC-40` from the current ~68% state before major persistence refactors.

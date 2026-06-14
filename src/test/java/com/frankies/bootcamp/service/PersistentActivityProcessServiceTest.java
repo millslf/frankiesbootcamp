@@ -293,13 +293,18 @@ class PersistentActivityProcessServiceTest {
         }
 
         @Override
+        protected List<Long> listActiveCompetitionIds() {
+            return fakeDbService.listActiveCompetitionIds();
+        }
+
+        @Override
         protected HashMap<Integer, HashMap<String, Double>> calculatePersistentHonourRollMap(long competitionId, boolean distance) {
             return fakeDbService.calculatePersistentHonourRollMap(competitionId, distance);
         }
 
         @Override
         public Map<String, HashMap<String, Double>> getSortedSummaries() {
-            return fakeDbService.getPersistentLeaderboardSummaries(1L);
+            return fakeDbService.getPersistentLeaderboardSummaries(fakeDbService.findActiveCompetitionId("athlete-1") == null ? 1L : fakeDbService.findActiveCompetitionId("athlete-1"));
         }
 
         @Override
@@ -346,17 +351,17 @@ class PersistentActivityProcessServiceTest {
 
         @Override
         public List<PerformanceResponse> getPerformanceList() {
-            return fakeDbService.getPersistentPerformanceList(1L);
+            return fakeDbService.getPersistentPerformanceList(fakeDbService.findActiveCompetitionId("athlete-1") == null ? 1L : fakeDbService.findActiveCompetitionId("athlete-1"));
         }
 
         @Override
         public HashMap<Integer, HashMap<String, Double>> getHonourRollTotalDistance() {
-            return fakeDbService.getPersistentHonourRollTotalDistance(1L);
+            return fakeDbService.getPersistentHonourRollTotalDistance(fakeDbService.findActiveCompetitionId("athlete-1") == null ? 1L : fakeDbService.findActiveCompetitionId("athlete-1"));
         }
 
         @Override
         public HashMap<Integer, HashMap<String, Double>> getHonourRollPercentageOfGoal() {
-            return fakeDbService.getPersistentHonourRollPercentageOfGoal(1L);
+            return fakeDbService.getPersistentHonourRollPercentageOfGoal(fakeDbService.findActiveCompetitionId("athlete-1") == null ? 1L : fakeDbService.findActiveCompetitionId("athlete-1"));
         }
 
         @Override
@@ -402,6 +407,7 @@ class PersistentActivityProcessServiceTest {
         private final Map<String, Map<Integer, WeeklyPerformance>> historyByAthlete = new HashMap<>();
         private final Map<String, DBService.PersistentAthleteSummarySnapshot> summarySnapshots = new HashMap<>();
         private final Map<Long, String> athleteIdsByCompetitionAthleteId = new HashMap<>();
+        private final Map<String, Long> activeCompetitionIdsByAthleteId = new HashMap<>();
         private int findAthleteByStravaIdCalls;
 
         private FakeDBService(List<BootcampAthlete> allAthletes) {
@@ -422,7 +428,16 @@ class PersistentActivityProcessServiceTest {
 
         public long ensureCompetitionAthlete(String athleteId, Double startingGoal) {
             athleteIdsByCompetitionAthleteId.put(1L, athleteId);
+            activeCompetitionIdsByAthleteId.put(athleteId, 1L);
             return 1L;
+        }
+
+        public Long findActiveCompetitionId(String athleteId) {
+            return activeCompetitionIdsByAthleteId.get(athleteId);
+        }
+
+        public List<Long> listActiveCompetitionIds() {
+            return List.of(1L);
         }
 
         public boolean hasActiveCompetitionMembership(String athleteId) {

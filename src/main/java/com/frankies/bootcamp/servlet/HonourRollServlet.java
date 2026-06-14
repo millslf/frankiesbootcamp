@@ -21,8 +21,15 @@ public class HonourRollServlet extends BootcampServlet {
         DecimalFormat df = new DecimalFormat("#.##");
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
-        HashMap<Integer, HashMap<String, Double>> percOfGoal = activityProcessFacade.getHonourRollPercentageOfGoal();
-        HashMap<Integer, HashMap<String, Double>> totalDist = activityProcessFacade.getHonourRollTotalDistance();
+        com.frankies.bootcamp.model.BootcampAthlete loggedInAthlete = (com.frankies.bootcamp.model.BootcampAthlete) request.getAttribute("athlete");
+        String athleteId = loggedInAthlete == null ? null : loggedInAthlete.getId();
+        Long selectedCompetitionId = (Long) request.getAttribute("selectedCompetitionId");
+        HashMap<Integer, HashMap<String, Double>> percOfGoal = selectedCompetitionId != null
+                ? activityProcessFacade.getHonourRollPercentageOfGoalForCompetition(selectedCompetitionId)
+                : activityProcessFacade.getHonourRollPercentageOfGoal(athleteId);
+        HashMap<Integer, HashMap<String, Double>> totalDist = selectedCompetitionId != null
+                ? activityProcessFacade.getHonourRollTotalDistanceForCompetition(selectedCompetitionId)
+                : activityProcessFacade.getHonourRollTotalDistance(athleteId);
         int numberOfWeeksSinceStart = activityProcessFacade.getNumberOfWeeksSinceStart();
 
         out.println("<!DOCTYPE html>");
@@ -52,10 +59,15 @@ public class HonourRollServlet extends BootcampServlet {
         out.println("  </thead>");
         out.println("  <tbody>");
         for (int i = 1; i < numberOfWeeksSinceStart; i++) {
+            HashMap<String, Double> totalDistanceWeek = totalDist.get(i);
+            HashMap<String, Double> totalPercentWeek = percOfGoal.get(i);
+            if (totalDistanceWeek == null || totalDistanceWeek.isEmpty() || totalPercentWeek == null || totalPercentWeek.isEmpty()) {
+                continue;
+            }
             out.println("<tr>");
             out.println("<td>Week " + i + "</td>");
-            Map.Entry<String, Double> totalDistance = totalDist.get(i).entrySet().iterator().next();
-            Map.Entry<String, Double> totalPercent = percOfGoal.get(i).entrySet().iterator().next();
+            Map.Entry<String, Double> totalDistance = totalDistanceWeek.entrySet().iterator().next();
+            Map.Entry<String, Double> totalPercent = totalPercentWeek.entrySet().iterator().next();
             out.println("<td>" + totalDistance.getKey() + " " + df.format(totalDistance.getValue()) + " km</td>");
             out.println("<td>" + totalPercent.getKey() + " " + df.format(totalPercent.getValue() * 100) + "%</td>");
             out.println("</tr>");

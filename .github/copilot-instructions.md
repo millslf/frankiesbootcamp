@@ -2,10 +2,33 @@
 
 ## Session context files
 
+- Start new repo sessions by running `copilot-byok.ps1` from the repo root when local Copilot BYOK, Jira, Confluence, or Maven setup is needed.
 - Read `SESSION_HANDOFF.md` first for current implementation status, recent decisions, and active constraints.
 - Use `BACKLOG_GROOMING_HANDOFF.md` for ticket order, prompt shaping, and near-term sequencing.
 - Use `CONTEXT.md` for shared product and architecture vocabulary.
+- Read `AGENTS.md` and `docs\agents\*.md` when work touches issue tracking, triage flow, or domain-doc consumption rules.
 - When a change affects long-term structure or project direction, add or update a short ADR under `docs\adr\` using the format in `docs\adr\README.md`.
+
+## Default working style
+
+- Keep answers about 50% shorter than default. Be direct and practical.
+- Prefer clear recommendations over long option lists.
+- Work one ticket at a time unless explicitly asked for a broader plan.
+- For each ticket, give the user:
+  1. a refined goal
+  2. a pasteable ticket prompt
+  3. suggested ordering/dependencies
+  4. key risks and scope boundaries
+- Flag tickets that should be renamed, split, or moved in order.
+- If a ticket changed in Jira or the handoff files since the last local prompt, re-check the current ticket meaning before implementing.
+
+## Agent and tracker docs
+
+- `AGENTS.md` is the short entrypoint for repo-specific skill configuration.
+- `docs\agents\issue-tracker.md` defines the Jira-based tracker workflow and current local tracker notes.
+- `docs\agents\triage-labels.md` defines the label vocabulary used by triage-style skills.
+- `docs\agents\domain.md` tells skills how to consume `CONTEXT.md` and ADRs.
+- When implementation or backlog discussions change tracker reality, update the relevant tracker docs along with `SESSION_HANDOFF.md` and `BACKLOG_GROOMING_HANDOFF.md`.
 
 ## Build, test, and lint commands
 
@@ -62,3 +85,15 @@
 
 - `copilot-byok.ps1` bootstraps local Copilot BYOK and Atlassian-related environment variables.
 - `SESSION_HANDOFF.md`, `BACKLOG_GROOMING_HANDOFF.md`, and `CONTEXT.md` are part of the intended working pattern for this repo and should be kept in sync with major changes.
+- `AGENTS.md` and `docs\agents\*.md` hold the Matt Pocock skill configuration for this repo and should stay aligned with the actual Jira workflow, triage labels, and domain-doc layout.
+
+## Startup shortcut
+
+For a fresh session in this repo, the expected order is:
+
+1. Run `copilot-byok.ps1` if local env/bootstrap is needed.
+2. Read `SESSION_HANDOFF.md`.
+3. Read `BACKLOG_GROOMING_HANDOFF.md`.
+4. Read `CONTEXT.md`.
+5. Read `.github\copilot-instructions.md`.
+6. Read `AGENTS.md` plus relevant `docs\agents\*.md` files when tracker/skill behavior matters.

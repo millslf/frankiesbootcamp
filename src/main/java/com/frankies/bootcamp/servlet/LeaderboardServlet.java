@@ -22,7 +22,11 @@ public class LeaderboardServlet extends BootcampServlet {
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
 
-        Map<String, HashMap<String, Double>> sortedSummaries = activityProcessFacade.getSortedSummaries();
+        com.frankies.bootcamp.model.BootcampAthlete loggedInAthlete = (com.frankies.bootcamp.model.BootcampAthlete) request.getAttribute("athlete");
+        Long selectedCompetitionId = (Long) request.getAttribute("selectedCompetitionId");
+        Map<String, HashMap<String, Double>> sortedSummaries = selectedCompetitionId != null
+                ? activityProcessFacade.getSortedSummariesForCompetition(selectedCompetitionId)
+                : activityProcessFacade.getSortedSummaries(loggedInAthlete == null ? null : loggedInAthlete.getId());
 
         out.println("<html><head>");
         out.println("</head><body>");

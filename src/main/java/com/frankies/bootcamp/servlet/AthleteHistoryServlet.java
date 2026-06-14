@@ -35,7 +35,10 @@ public class AthleteHistoryServlet extends BootcampServlet {
         com.frankies.bootcamp.model.BootcampAthlete loggedInAthlete = (com.frankies.bootcamp.model.BootcampAthlete) request.getAttribute("athlete");
         String athleteName = loggedInAthlete.getFirstname();
         String authenticatedUserMail = (String) request.getAttribute("athleteEmail");
-        history = activityProcessFacade.getAthleteHistory(loggedInAthlete.getId());
+        Long selectedCompetitionId = (Long) request.getAttribute("selectedCompetitionId");
+        history = selectedCompetitionId != null
+                ? activityProcessFacade.getAthleteHistoryForCompetition(selectedCompetitionId, loggedInAthlete.getId())
+                : activityProcessFacade.getAthleteHistory(loggedInAthlete.getId());
         if (history == null) {
             history = new HashMap<>();
         }
@@ -66,10 +69,13 @@ public class AthleteHistoryServlet extends BootcampServlet {
 
             Integer leaderboardRank = null;
             try {
-                Map<String, HashMap<String, Double>> sortedSummaries = activityProcessFacade.getSortedSummaries();
+                Map<String, HashMap<String, Double>> sortedSummaries = selectedCompetitionId != null
+                        ? activityProcessFacade.getSortedSummariesForCompetition(selectedCompetitionId)
+                        : activityProcessFacade.getSortedSummaries(loggedInAthlete.getId());
                 int rank = 1;
-                for (String email : sortedSummaries.keySet()) {
-                    if (email.equalsIgnoreCase(authenticatedUserMail)) {
+                Map<String, Double> scoreSummary = sortedSummaries.get(com.frankies.bootcamp.constant.BootcampConstants.currentYearlyScoreSummary);
+                for (String athleteLabel : scoreSummary.keySet()) {
+                    if (athleteLabel.equalsIgnoreCase(authenticatedUserMail) || athleteLabel.equalsIgnoreCase(athleteName)) {
                         leaderboardRank = rank;
                         break;
                     }

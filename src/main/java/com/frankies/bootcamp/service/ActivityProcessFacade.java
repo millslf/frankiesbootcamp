@@ -50,6 +50,14 @@ public class ActivityProcessFacade {
         inMemoryActivityProcessService.prepareAthleteSummary(athlete);
     }
 
+    public void prepareAthleteSummaryForCompetition(BootcampAthlete athlete, long competitionId) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        if (getMode() == ActivityProcessingMode.PERSISTENT) {
+            persistentActivityProcessService.prepareAthleteSummaryForCompetition(athlete, competitionId);
+            return;
+        }
+        inMemoryActivityProcessService.prepareAthleteSummary(athlete);
+    }
+
     public List<PerformanceResponse> getPerformanceList() {
         return getMode() == ActivityProcessingMode.PERSISTENT
                 ? persistentActivityProcessService.getPerformanceList()
@@ -62,9 +70,27 @@ public class ActivityProcessFacade {
                 : inMemoryActivityProcessService.getAthleteHistory(athleteId);
     }
 
+    public Map<Integer, WeeklyPerformance> getAthleteHistoryForCompetition(long competitionId, String athleteId) {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getAthleteHistoryForCompetition(competitionId, athleteId)
+                : inMemoryActivityProcessService.getAthleteHistory(athleteId);
+    }
+
     public HashMap<Integer, HashMap<String, Double>> getHonourRollTotalDistance() {
         return getMode() == ActivityProcessingMode.PERSISTENT
                 ? persistentActivityProcessService.getHonourRollTotalDistance()
+                : inMemoryActivityProcessService.getHonourRollTotalDistance();
+    }
+
+    public HashMap<Integer, HashMap<String, Double>> getHonourRollTotalDistance(String athleteId) {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getHonourRollTotalDistanceForCompetition(getCurrentActiveCompForAthlete(athleteId))
+                : inMemoryActivityProcessService.getHonourRollTotalDistance();
+    }
+
+    public HashMap<Integer, HashMap<String, Double>> getHonourRollTotalDistanceForCompetition(long competitionId) {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getHonourRollTotalDistanceForCompetition(competitionId)
                 : inMemoryActivityProcessService.getHonourRollTotalDistance();
     }
 
@@ -74,10 +100,29 @@ public class ActivityProcessFacade {
                 : inMemoryActivityProcessService.getHonourRollPercentageOfGoal();
     }
 
+    public HashMap<Integer, HashMap<String, Double>> getHonourRollPercentageOfGoal(String athleteId) {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getHonourRollPercentageOfGoalForCompetition(getCurrentActiveCompForAthlete(athleteId))
+                : inMemoryActivityProcessService.getHonourRollPercentageOfGoal();
+    }
+
+    public HashMap<Integer, HashMap<String, Double>> getHonourRollPercentageOfGoalForCompetition(long competitionId) {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getHonourRollPercentageOfGoalForCompetition(competitionId)
+                : inMemoryActivityProcessService.getHonourRollPercentageOfGoal();
+    }
+
     public String getLoggedInAthleteSummary(String athleteId)
             throws IOException, CredentialStoreException, NoSuchAlgorithmException, SQLException {
         return getMode() == ActivityProcessingMode.PERSISTENT
                 ? persistentActivityProcessService.getLoggedInAthleteSummary(athleteId)
+                : inMemoryActivityProcessService.getLoggedInAthleteSummary(athleteId);
+    }
+
+    public String getLoggedInAthleteSummaryForCompetition(long competitionId, String athleteId)
+            throws IOException, CredentialStoreException, NoSuchAlgorithmException, SQLException {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getLoggedInAthleteSummaryForCompetition(competitionId, athleteId)
                 : inMemoryActivityProcessService.getLoggedInAthleteSummary(athleteId);
     }
 
@@ -91,6 +136,24 @@ public class ActivityProcessFacade {
         return getMode() == ActivityProcessingMode.PERSISTENT
                 ? persistentActivityProcessService.getSortedSummaries()
                 : inMemoryActivityProcessService.getSortedSummaries();
+    }
+
+    public Map<String, HashMap<String, Double>> getSortedSummaries(String athleteId) {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getSortedSummariesForCompetition(getCurrentActiveCompForAthlete(athleteId))
+                : inMemoryActivityProcessService.getSortedSummaries();
+    }
+
+    public Map<String, HashMap<String, Double>> getSortedSummariesForCompetition(long competitionId) {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getSortedSummariesForCompetition(competitionId)
+                : inMemoryActivityProcessService.getSortedSummaries();
+    }
+
+    public long getCurrentActiveCompForAthlete(String athleteId) {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getCurrentActiveCompForAthlete(athleteId)
+                : 1L;
     }
 
     public String getZenBotStatsContext(String athleteId) {
