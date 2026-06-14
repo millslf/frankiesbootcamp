@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -134,6 +135,9 @@ public class PersistentActivityProcessService {
         double startingGoal = competitionConfig.startingGoal();
         Set<Integer> sickWeeks = getCompetitionSickWeeks(competitionAthleteId);
         List<StravaActivityResponse> activities = stravaService.getAthleteActivitiesForPeriod(startTimestamp, endTimestamp, refreshedAthlete.getAccessToken());
+        activities = activities.stream()
+                .sorted(Comparator.comparing(activity -> Instant.parse(activity.getStart_date())))
+                .toList();
 
         PerformanceResponse performance = new PerformanceResponse();
         performance.setAthlete(refreshedAthlete);

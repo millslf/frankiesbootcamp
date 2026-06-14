@@ -89,6 +89,28 @@ class PersistentActivityProcessServiceTest {
     }
 
     @Test
+    void rebuildSortsStravaActivitiesBeforeAssigningWeeks() throws Exception {
+        BootcampAthlete athlete = createAthlete("athlete-unsorted", "Sort", "Runner", 20.0);
+        long start = BootcampConstants.START_TIMESTAMP;
+        List<StravaActivityResponse> newestFirstActivities = List.of(
+                runActivity(1002L, 7.0, start + BootcampConstants.WEEK_IN_SECONDS + 1000L),
+                runActivity(1001L, 5.0, start + 1000L)
+        );
+
+        FakeDBService db = new FakeDBService(List.of(athlete));
+        PersistentActivityProcessService service = createService(db, newestFirstActivities, 2);
+
+        service.rebuildAthleteStateForCompetition(athlete, 1L);
+
+        FakeDBService.ReplacedCompetitionState replaced = db.replacedCompetitionStates.get(0);
+        assertEquals(2, replaced.weeklyRows().size());
+        assertEquals(5.0, replaced.weeklyRows().get(0).totalDistance(), 0.0001);
+        assertEquals(7.0, replaced.weeklyRows().get(1).totalDistance(), 0.0001);
+        assertEquals(1, replaced.activityRows().get(0).weekNumber());
+        assertEquals(2, replaced.activityRows().get(1).weekNumber());
+    }
+
+    @Test
     void rebuildForSingleWeekCompetitionPersistsCurrentWeekWhenNoActivitiesExist() throws Exception {
         BootcampAthlete athlete = createAthlete("athlete-empty", "New", "Starter", 20.0);
         FakeDBService db = new FakeDBService(List.of(athlete));
