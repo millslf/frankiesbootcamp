@@ -19,13 +19,7 @@
     <title>Competition setup</title>
 </head>
 <body class="bg-light">
-<header class="d-flex align-items-center justify-content-between text-white px-3 py-2 shadow-sm"
-        style="min-height:56px; background-color: #0d6efd;">
-    <a href="<%=pageContextPath%>/" class="text-white text-decoration-none d-flex align-items-center gap-2">
-        <span aria-hidden="true">&#x1F3CB;&#xFE0F;</span>
-        <span>Frankies Bootcamp!</span>
-    </a>
-</header>
+<%@ include file="/WEB-INF/jspf/header.jspf" %>
 
 <div class="container py-5">
     <div class="row justify-content-center">

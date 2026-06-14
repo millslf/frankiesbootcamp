@@ -21,14 +21,15 @@ class CompetitionSetupServiceTest {
     private final RecordingAthleteRefresh athleteRefresh = new RecordingAthleteRefresh();
 
     @Test
-    void loadViewReturnsSuggestedGoalAndCompetitions() throws Exception {
+    void loadViewReturnsSuggestedGoalAndJoinableCompetitions() throws Exception {
         FakeCompetitionDbService dbService = new FakeCompetitionDbService();
-        dbService.activeCompetitions.add(new CompetitionSummaryView(2L, "Autumn Challenge", "Australia/Sydney", BootcampConstants.START_TIMESTAMP, null, "active"));
+        dbService.joinableCompetitions.add(new CompetitionSummaryView(2L, "Autumn Challenge", "Australia/Sydney", BootcampConstants.START_TIMESTAMP, null, "active"));
 
         CompetitionSetupService service = new CompetitionSetupService(dbService, athleteRefresh);
         CompetitionSetupView view = service.loadView(athlete("athlete-1", 22.5));
 
         assertEquals("athlete-1", view.getAthleteId());
+        assertEquals("athlete-1", dbService.listJoinableCompetitionsAthleteId);
         assertEquals(22.5, view.getSuggestedStartingGoal(), 0.0001);
         assertEquals(1, view.getActiveCompetitions().size());
     }
@@ -100,7 +101,8 @@ class CompetitionSetupServiceTest {
     }
 
     private static final class FakeCompetitionDbService implements CompetitionSetupService.CompetitionRepository {
-        private final List<CompetitionSummaryView> activeCompetitions = new ArrayList<>();
+        private final List<CompetitionSummaryView> joinableCompetitions = new ArrayList<>();
+        private String listJoinableCompetitionsAthleteId;
         private String createdCompetitionName;
         private String createdCompetitionTimezone;
         private long createdCompetitionStartTimestamp;
@@ -112,8 +114,9 @@ class CompetitionSetupServiceTest {
         private double joinGoal;
 
         @Override
-        public List<CompetitionSummaryView> listActiveCompetitions() {
-            return activeCompetitions;
+        public List<CompetitionSummaryView> listJoinableCompetitions(String athleteId) {
+            this.listJoinableCompetitionsAthleteId = athleteId;
+            return joinableCompetitions;
         }
 
         @Override

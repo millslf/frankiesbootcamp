@@ -30,6 +30,8 @@ The explicit relationship between an athlete/user and a competition. Membership 
 
 In the current preferred persistence shape for `FBC-22`, this relationship is likely to be named `competition_athlete` in storage because it is clearer in this codebase than the more abstract term membership.
 
+Membership lifecycle rules such as leaving a competition, removing yourself from a competition, rejoining, preserving historical stats, and protecting the last competition admin are not decided by `FBC-30`; they belong with the invitation/join lifecycle work in `FBC-89` and the authorization rules in `FBC-54`.
+
 ### Competition roles
 
 Roles that apply inside a competition, such as member, admin, or owner. The model should leave room for these roles even when a ticket is not implementing the full authorization rules.

@@ -21,9 +21,11 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -127,6 +129,18 @@ public class DBService {
                             "original_duration_total DOUBLE NULL, " +
                             "UNIQUE KEY uq_comp_weekly_sport (competition_weekly_stats_id, sport_type), " +
                             "CONSTRAINT fk_comp_weekly_sport_stats_week FOREIGN KEY (competition_weekly_stats_id) REFERENCES competition_weekly_stats(id) ON DELETE CASCADE" +
+                            ")"
+            );
+
+            statement.execute(
+                    "CREATE TABLE IF NOT EXISTS competition_athlete_sick_week (" +
+                            "competition_athlete_id BIGINT NOT NULL, " +
+                            "week_number INT NOT NULL, " +
+                            "marked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                            "marked_by_user_id VARCHAR(50) NULL, " +
+                            "note TEXT NULL, " +
+                            "PRIMARY KEY (competition_athlete_id, week_number), " +
+                            "CONSTRAINT fk_comp_athlete_sick_week_athlete FOREIGN KEY (competition_athlete_id) REFERENCES competition_athlete(id) ON DELETE CASCADE" +
                             ")"
             );
 
@@ -673,6 +687,38 @@ public class DBService {
         return competitions;
     }
 
+    public List<CompetitionSummaryView> listJoinableCompetitions(String athleteId) throws SQLException {
+        List<CompetitionSummaryView> competitions = new ArrayList<>();
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT c.id, c.name, c.timezone, c.start_timestamp, c.end_timestamp, c.status " +
+                                "FROM competitions c " +
+                                "WHERE c.status = 'active' " +
+                                "AND NOT EXISTS (" +
+                                "  SELECT 1 FROM competition_athlete ca " +
+                                "  WHERE ca.competition_id = c.id AND ca.athlete_id = ? AND ca.status = 'active'" +
+                                ") " +
+                                "ORDER BY c.start_timestamp ASC, c.id ASC"
+                )
+        ) {
+            statement.setString(1, athleteId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    competitions.add(new CompetitionSummaryView(
+                            resultSet.getLong("id"),
+                            resultSet.getString("name"),
+                            resultSet.getString("timezone"),
+                            resultSet.getLong("start_timestamp"),
+                            getNullableLong(resultSet, "end_timestamp"),
+                            resultSet.getString("status")
+                    ));
+                }
+            }
+        }
+        return competitions;
+    }
+
     public List<Long> listActiveCompetitionIds() throws SQLException {
         List<Long> competitionIds = new ArrayList<>();
         try (
@@ -687,6 +733,44 @@ public class DBService {
             }
         }
         return competitionIds;
+    }
+
+    public List<BootcampAthlete> listCompetitionAthletes(long competitionId) throws SQLException {
+        List<BootcampAthlete> athletes = new ArrayList<>();
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT a.* FROM competition_athlete ca " +
+                                "JOIN athletes a ON a.id = ca.athlete_id " +
+                                "WHERE ca.competition_id = ? AND ca.status = 'active' " +
+                                "ORDER BY a.firstname ASC, a.lastname ASC"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            setAthlete(athletes, statement);
+        }
+        return athletes;
+    }
+
+    public boolean competitionHasIncompletePersistentState(long competitionId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT 1 " +
+                                "FROM competition_athlete ca " +
+                                "WHERE ca.competition_id = ? AND ca.status = 'active' " +
+                                        "AND (" +
+                                        "  NOT EXISTS (SELECT 1 FROM competition_summary cs WHERE cs.competition_athlete_id = ca.id) " +
+                                        "  OR NOT EXISTS (SELECT 1 FROM competition_weekly_stats cws WHERE cws.competition_athlete_id = ca.id)" +
+                                        ") " +
+                                "LIMIT 1"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
     }
 
     public long createCompetitionWithAdmin(String name,
@@ -868,6 +952,39 @@ public class DBService {
         }
     }
 
+    public List<CompetitionSummaryView> listCurrentActiveCompetitions(String athleteId) throws SQLException {
+        List<CompetitionSummaryView> competitions = new ArrayList<>();
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT c.id, c.name, c.timezone, c.start_timestamp, c.end_timestamp, c.status " +
+                                "FROM competition_athlete ca " +
+                                "JOIN competitions c ON c.id = ca.competition_id " +
+                                "WHERE ca.athlete_id = ? AND ca.status = 'active' AND c.status = 'active' " +
+                                "AND c.start_timestamp <= ? AND (c.end_timestamp IS NULL OR c.end_timestamp >= ?) " +
+                                "ORDER BY c.start_timestamp DESC, ca.id DESC"
+                )
+        ) {
+            long now = Instant.now().getEpochSecond();
+            statement.setString(1, athleteId);
+            statement.setLong(2, now);
+            statement.setLong(3, now);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    competitions.add(new CompetitionSummaryView(
+                            resultSet.getLong("id"),
+                            resultSet.getString("name"),
+                            resultSet.getString("timezone"),
+                            resultSet.getLong("start_timestamp"),
+                            getNullableLong(resultSet, "end_timestamp"),
+                            resultSet.getString("status")
+                    ));
+                }
+            }
+        }
+        return competitions;
+    }
+
     public CompetitionSummaryView findUpcomingCompetition(String athleteId) throws SQLException {
         try (
                 Connection connection = ds.getConnection();
@@ -958,6 +1075,92 @@ public class DBService {
             }
         }
         return null;
+    }
+
+    public CompetitionAthleteConfig getCompetitionAthleteConfig(long competitionAthleteId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT ca.competition_id, ca.starting_goal, c.start_timestamp, c.end_timestamp, c.timezone " +
+                                "FROM competition_athlete ca " +
+                                "JOIN competitions c ON c.id = ca.competition_id " +
+                                "WHERE ca.id = ?"
+                )
+        ) {
+            statement.setLong(1, competitionAthleteId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return new CompetitionAthleteConfig(
+                            resultSet.getLong("competition_id"),
+                            resultSet.getDouble("starting_goal"),
+                            resultSet.getLong("start_timestamp"),
+                            getNullableLong(resultSet, "end_timestamp"),
+                            resultSet.getString("timezone")
+                    );
+                }
+            }
+        }
+        throw new SQLException("Unable to find competition_athlete config " + competitionAthleteId);
+    }
+
+    public Set<Integer> listCompetitionSickWeeks(long competitionAthleteId) throws SQLException {
+        Set<Integer> sickWeeks = new HashSet<>();
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT week_number FROM competition_athlete_sick_week WHERE competition_athlete_id = ?"
+                )
+        ) {
+            statement.setLong(1, competitionAthleteId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    sickWeeks.add(resultSet.getInt("week_number"));
+                }
+            }
+        }
+        return sickWeeks;
+    }
+
+    public void setCompetitionSickWeek(long competitionId,
+                                       String athleteId,
+                                       int weekNumber,
+                                       boolean sick,
+                                       String markedByUserId) throws SQLException {
+        if (weekNumber < 1) {
+            throw new SQLException("Week number must be greater than zero");
+        }
+        if (sick) {
+            try (
+                    Connection connection = ds.getConnection();
+                    PreparedStatement statement = connection.prepareStatement(
+                            "INSERT INTO competition_athlete_sick_week (competition_athlete_id, week_number, marked_by_user_id) " +
+                                    "SELECT ca.id, ?, ? FROM competition_athlete ca " +
+                                    "WHERE ca.competition_id = ? AND ca.athlete_id = ? AND ca.status = 'active' " +
+                                    "ON DUPLICATE KEY UPDATE marked_at = CURRENT_TIMESTAMP, marked_by_user_id = VALUES(marked_by_user_id)"
+                    )
+            ) {
+                statement.setInt(1, weekNumber);
+                statement.setString(2, markedByUserId);
+                statement.setLong(3, competitionId);
+                statement.setString(4, athleteId);
+                statement.executeUpdate();
+            }
+            return;
+        }
+
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE casw FROM competition_athlete_sick_week casw " +
+                                "JOIN competition_athlete ca ON ca.id = casw.competition_athlete_id " +
+                                "WHERE ca.competition_id = ? AND ca.athlete_id = ? AND casw.week_number = ?"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            statement.setString(2, athleteId);
+            statement.setInt(3, weekNumber);
+            statement.executeUpdate();
+        }
     }
 
     public void replacePersistentCompetitionState(long competitionAthleteId,
@@ -1274,6 +1477,15 @@ public class DBService {
             double distanceToDate,
             double scoreToDate,
             double originalWeeklyGoal
+    ) {
+    }
+
+    public record CompetitionAthleteConfig(
+            long competitionId,
+            double startingGoal,
+            long startTimestamp,
+            Long endTimestamp,
+            String timezone
     ) {
     }
 

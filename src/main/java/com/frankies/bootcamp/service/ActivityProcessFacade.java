@@ -58,6 +58,14 @@ public class ActivityProcessFacade {
         inMemoryActivityProcessService.prepareAthleteSummary(athlete);
     }
 
+    public void prepareCompetitionSummary(long competitionId) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        if (getMode() == ActivityProcessingMode.PERSISTENT) {
+            persistentActivityProcessService.prepareCompetitionSummary(competitionId);
+            return;
+        }
+        inMemoryActivityProcessService.prepareSummary();
+    }
+
     public List<PerformanceResponse> getPerformanceList() {
         return getMode() == ActivityProcessingMode.PERSISTENT
                 ? persistentActivityProcessService.getPerformanceList()

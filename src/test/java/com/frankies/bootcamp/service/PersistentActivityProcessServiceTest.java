@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.wildfly.security.credential.store.CredentialStoreException;
 
@@ -60,6 +61,45 @@ class PersistentActivityProcessServiceTest {
         assertTrue(replaced.summarySportRows().containsKey("Run"));
         assertEquals(2, replaced.summarySportRows().get("Run").activityCount());
         assertEquals(10.0, replaced.summarySportRows().get("Run").calculatedDistanceTotal(), 0.0001);
+    }
+
+    @Test
+    void rebuildForCompetitionUsesCompetitionGoalAndPeriod() throws Exception {
+        BootcampAthlete athlete = createAthlete("athlete-comp", "Frankie", "Bootcamp", 20.0);
+        long start = BootcampConstants.START_TIMESTAMP;
+        long end = start + (2L * BootcampConstants.WEEK_IN_SECONDS);
+        List<StravaActivityResponse> activities = List.of(
+                runActivity(901L, 5.0, start + 1000L),
+                runActivity(902L, 25.0, start + (3L * BootcampConstants.WEEK_IN_SECONDS))
+        );
+
+        FakeDBService db = new FakeDBService(List.of(athlete));
+        db.competitionConfigsByCompetitionAthleteId.put(1L, new DBService.CompetitionAthleteConfig(7L, 36.0, start, end, "Australia/Sydney"));
+        PersistentActivityProcessService service = createService(db, activities, 24);
+
+        service.rebuildAthleteStateForCompetition(athlete, 1L);
+
+        FakeDBService.ReplacedCompetitionState replaced = db.replacedCompetitionStates.get(0);
+        assertEquals(2, replaced.weeklyRows().size());
+        assertEquals(1, replaced.activityRows().size());
+        assertEquals(901L, replaced.activityRows().get(0).stravaActivityId());
+        assertEquals(36.0, replaced.weeklyRows().get(0).weekGoal(), 0.0001);
+        assertEquals(36.0, replaced.summaryRow().originalWeeklyGoal(), 0.0001);
+        assertEquals(2, replaced.summaryRow().currentWeek());
+    }
+
+    @Test
+    void rebuildForSingleWeekCompetitionPersistsCurrentWeekWhenNoActivitiesExist() throws Exception {
+        BootcampAthlete athlete = createAthlete("athlete-empty", "New", "Starter", 20.0);
+        FakeDBService db = new FakeDBService(List.of(athlete));
+        PersistentActivityProcessService service = createService(db, List.of(), 1);
+
+        service.rebuildAthleteStateForCompetition(athlete, 1L);
+
+        FakeDBService.ReplacedCompetitionState replaced = db.replacedCompetitionStates.get(0);
+        assertEquals(1, replaced.weeklyRows().size());
+        assertEquals(1, replaced.summaryRow().currentWeek());
+        assertEquals(20.0, replaced.weeklyRows().get(0).weekGoal(), 0.0001);
     }
 
     @Test
@@ -265,6 +305,11 @@ class PersistentActivityProcessServiceTest {
         }
 
         @Override
+        public int getNumberOfWeeksSinceStart(long startTimestamp, Long endTimestamp) {
+            return endTimestamp == null ? weeksSinceStart : super.getNumberOfWeeksSinceStart(startTimestamp, endTimestamp);
+        }
+
+        @Override
         protected Long getActiveCompetitionAthleteId(BootcampAthlete athlete) {
             return fakeDbService.hasActiveCompetitionMembership(athlete.getId())
                     ? fakeDbService.ensureCompetitionAthlete(athlete.getId(), athlete.getGoal())
@@ -274,6 +319,16 @@ class PersistentActivityProcessServiceTest {
         @Override
         protected boolean hasActiveCompetitionMembership(String athleteId) {
             return fakeDbService.hasActiveCompetitionMembership(athleteId);
+        }
+
+        @Override
+        protected DBService.CompetitionAthleteConfig getCompetitionAthleteConfig(long competitionAthleteId) {
+            return fakeDbService.getCompetitionAthleteConfig(competitionAthleteId);
+        }
+
+        @Override
+        protected Set<Integer> getCompetitionSickWeeks(long competitionAthleteId) {
+            return fakeDbService.listCompetitionSickWeeks(competitionAthleteId);
         }
 
         @Override
@@ -395,6 +450,11 @@ class PersistentActivityProcessServiceTest {
         public List<StravaActivityResponse> getAthleteActivitiesForPeriod(long after, String accessToken) {
             return activities;
         }
+
+        @Override
+        public List<StravaActivityResponse> getAthleteActivitiesForPeriod(long after, Long before, String accessToken) {
+            return activities;
+        }
     }
 
     private static class FakeDBService {
@@ -408,6 +468,8 @@ class PersistentActivityProcessServiceTest {
         private final Map<String, DBService.PersistentAthleteSummarySnapshot> summarySnapshots = new HashMap<>();
         private final Map<Long, String> athleteIdsByCompetitionAthleteId = new HashMap<>();
         private final Map<String, Long> activeCompetitionIdsByAthleteId = new HashMap<>();
+        private final Map<Long, DBService.CompetitionAthleteConfig> competitionConfigsByCompetitionAthleteId = new HashMap<>();
+        private final Map<Long, Set<Integer>> sickWeeksByCompetitionAthleteId = new HashMap<>();
         private int findAthleteByStravaIdCalls;
 
         private FakeDBService(List<BootcampAthlete> allAthletes) {
@@ -429,6 +491,10 @@ class PersistentActivityProcessServiceTest {
         public long ensureCompetitionAthlete(String athleteId, Double startingGoal) {
             athleteIdsByCompetitionAthleteId.put(1L, athleteId);
             activeCompetitionIdsByAthleteId.put(athleteId, 1L);
+            competitionConfigsByCompetitionAthleteId.putIfAbsent(
+                    1L,
+                    new DBService.CompetitionAthleteConfig(1L, startingGoal == null ? 0.0 : startingGoal, BootcampConstants.START_TIMESTAMP, null, "Australia/Sydney")
+            );
             return 1L;
         }
 
@@ -442,6 +508,17 @@ class PersistentActivityProcessServiceTest {
 
         public boolean hasActiveCompetitionMembership(String athleteId) {
             return athletesByStravaId.containsKey(athleteId);
+        }
+
+        public DBService.CompetitionAthleteConfig getCompetitionAthleteConfig(long competitionAthleteId) {
+            return competitionConfigsByCompetitionAthleteId.getOrDefault(
+                    competitionAthleteId,
+                    new DBService.CompetitionAthleteConfig(1L, 20.0, BootcampConstants.START_TIMESTAMP, null, "Australia/Sydney")
+            );
+        }
+
+        public Set<Integer> listCompetitionSickWeeks(long competitionAthleteId) {
+            return sickWeeksByCompetitionAthleteId.getOrDefault(competitionAthleteId, Set.of());
         }
 
         public void replacePersistentCompetitionState(long competitionAthleteId,

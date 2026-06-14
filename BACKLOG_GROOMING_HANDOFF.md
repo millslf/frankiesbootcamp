@@ -60,6 +60,11 @@ A "dev ready" top-of-board order was established to prioritize:
   - history, summary, ZenBot stats context, and full performance-list reads are now DB-backed as well
   - the retained persistent-mode `performanceList` cache has been removed from `PersistentActivityProcessService`
   - `FBC-91`, `FBC-92`, and `FBC-93` now hold the deferred follow-up work, so `FBC-22` should be treated as ready to close as the first persistence slice
+- Current delivery status for `FBC-30`:
+  - `FBC-30` is functionally complete on `feature/fbc-30-competition-selection` and ready for PR review.
+  - Delivered scope includes active competition chooser/defaulting, past competition switching, explicit selected competition context, competition-scoped sick weeks, bounded/background historical rebuilds, and historical competition recap messaging.
+  - Join/create competition discovery is hidden from the in-app menu until `FBC-89` implements invitation-aware join/create behavior.
+  - Leaving/removing yourself from a competition is intentionally deferred to `FBC-89` for membership lifecycle and `FBC-54` for authorization rules.
 
 ## Agreed current board order
 
@@ -79,7 +84,7 @@ A "dev ready" top-of-board order was established to prioritize:
 14. `FBC-56` Strava link button should only appear when the user is authenticated and ready to link Strava, and should no longer act as an enrolment shortcut. (Done)
 15. `FBC-54` Implement global and competition-scoped authorization model.
 16. `FBC-16` Set up screens to create competition if athlete is not part of any competitions, set up start week, and set up start goal per competition.
-17. `FBC-30` Allow an athlete to belong to multiple competitions.
+17. `FBC-30` Allow an athlete to belong to multiple competitions. (Implemented; ready for PR review.)
 18. `FBC-37` Allow competition-specific eligible sports while preserving "All Sports Equal" as the default model.
 19. `FBC-38` Specify relative distances per competition.
 20. `FBC-22` Replace in-memory activity summary with persisted normalized activities and derived stats. (Implemented first slice; close after Jira/admin cleanup.)
@@ -229,6 +234,7 @@ Resume with:
 ## New placeholder tickets added
 
 - `FBC-89` Competition invitations and join flow
+  - Also owns the member lifecycle that `FBC-30` intentionally did not decide: leaving/removing yourself from a competition, rejoining/reinvites, last-admin protection, and what happens to historical leaderboard/stat rows after a membership change.
 - `FBC-90` Global admin console / admin operations
 - `FBC-14` Competition admin console
 
@@ -285,6 +291,35 @@ Not yet shaped in this grooming pass:
   - persistence-first historical viewing with one-time backfill only when DB-derived state is missing
 - Invitation-only competition visibility should be treated as follow-up work in `FBC-89`, not assumed as part of the base `FBC-16` join/setup slice.
 - Broader competition selection/defaulting behavior should now move to `FBC-30`, not remain in `FBC-16`.
+- Current preferred `FBC-30` direction after later discussion:
+  - add an explicit competition-selection model for athletes with more than one competition membership
+  - default the dashboard to the athlete's current active competition when there is exactly one current active competition
+  - define the UX when there is more than one simultaneously active competition instead of silently picking one
+  - allow switching competition context from the normal dashboard shell, not only from the past-competitions screen
+  - keep historical selected competition context and current active competition context distinct in code and UX
+  - make sure any selection/defaulting behavior applies cleanly across leaderboard, honour roll, history, summary, and future ZenBot stats context
+ - Current local `FBC-30` implementation status:
+   - branch created: `feature/fbc-30-competition-selection`
+   - implementation is now complete enough to wrap locally:
+     - multi-active competition detection
+     - `COMPETITION_SELECTION_REQUIRED` onboarding state
+     - chooser screen for multiple active competitions
+     - dashboard-shell competition switching links in the off-canvas/header
+     - past competitions listed in the dashboard shell and chooser for historical outcome switching
+     - one current active competition defaults into selected competition context automatically
+     - explicit historical competition selection is preserved instead of being overwritten by the active default
+- Current preferred `FBC-91` direction after later discussion:
+  - stop rebuilding a whole athlete from Strava on webhook create/update/delete in persistent mode
+  - make webhook mutation logic update activity/derived state per linked competition instead of refetching all athlete activity data
+  - replace any remaining hardcoded `competition_id = 1` webhook-era persistence helpers with competition-aware helpers
+  - persist per-athlete watermarks for:
+    - latest fully imported activity start time
+    - last full reconciliation time
+  - startup/restart behavior should fetch incrementally from Strava using the last imported activity-start watermark with a small overlap window
+  - webhook events remain the source of truth for edits/deletes of older activities
+  - add a slower periodic reconciliation so each athlete gets a full linked-competition refresh about every 3 to 4 days
+  - reconciliation must update all linked competitions for that athlete, not only the current active one
+  - if practical, store the per-athlete watermark state close to athlete persistence so restart logic does not depend on in-memory caches
 - Current preferred `FBC-89` direction:
   - the competition-selection/join experience should only show competitions where the logged-in athlete has an invite
   - invitation rules should be defined before broadening competition discovery behavior
@@ -293,6 +328,7 @@ Not yet shaped in this grooming pass:
   - `546c063`
 - Both branches were pushed.
 - PRs still need to be created manually or from an environment with PR-creation capability.
+ - Latest local branch after `FBC-16` closeout is now `feature/fbc-30-competition-selection` for in-progress multi-competition selection work.
 
 Resume backlog grooming from the remaining backlog, starting with either:
 

@@ -15,6 +15,8 @@ public class OnboardingStateService {
     public interface CompetitionMembershipLookup {
         boolean hasActiveCompetitionMembership(String athleteId) throws SQLException;
 
+        java.util.List<CompetitionSummaryView> listCurrentActiveCompetitions(String athleteId) throws SQLException;
+
         CompetitionSummaryView findUpcomingCompetition(String athleteId) throws SQLException;
 
         java.util.List<CompetitionSummaryView> listPastCompetitions(String athleteId) throws SQLException;
@@ -28,6 +30,11 @@ public class OnboardingStateService {
             @Override
             public boolean hasActiveCompetitionMembership(String athleteId) throws SQLException {
                 return dbService.hasActiveCompetitionMembership(athleteId);
+            }
+
+            @Override
+            public java.util.List<CompetitionSummaryView> listCurrentActiveCompetitions(String athleteId) throws SQLException {
+                return dbService.listCurrentActiveCompetitions(athleteId);
             }
 
             @Override
@@ -53,14 +60,18 @@ public class OnboardingStateService {
         boolean appUserReady = user != null && user.getUserId() != null && !user.getUserId().isBlank();
         boolean stravaLinked = athlete != null && athlete.getId() != null && !athlete.getId().isBlank() && !athlete.getId().startsWith("local-");
         boolean hasCompetitionMembership = stravaLinked && competitionMembershipLookup.hasActiveCompetitionMembership(athlete.getId());
+        java.util.List<CompetitionSummaryView> activeCompetitions = stravaLinked ? competitionMembershipLookup.listCurrentActiveCompetitions(athlete.getId()) : java.util.List.of();
         CompetitionSummaryView upcomingCompetition = stravaLinked ? competitionMembershipLookup.findUpcomingCompetition(athlete.getId()) : null;
         java.util.List<CompetitionSummaryView> pastCompetitions = stravaLinked ? competitionMembershipLookup.listPastCompetitions(athlete.getId()) : java.util.List.of();
+        CompetitionSummaryView selectedStatusCompetition = activeCompetitions.isEmpty() ? upcomingCompetition : activeCompetitions.get(0);
 
         OnboardingState state;
         if (!appUserReady) {
             state = OnboardingState.AUTHENTICATED;
         } else if (!stravaLinked) {
             state = OnboardingState.STRAVA_PENDING;
+        } else if (activeCompetitions.size() > 1) {
+            state = OnboardingState.COMPETITION_SELECTION_REQUIRED;
         } else if (hasCompetitionMembership) {
             state = OnboardingState.READY;
         } else if (upcomingCompetition != null) {
@@ -71,6 +82,6 @@ public class OnboardingStateService {
             state = OnboardingState.COMPETITION_PENDING;
         }
 
-        return new OnboardingStatus(state, appUserReady, stravaLinked, hasCompetitionMembership, upcomingCompetition, pastCompetitions);
+        return new OnboardingStatus(state, appUserReady, stravaLinked, hasCompetitionMembership, selectedStatusCompetition, activeCompetitions, pastCompetitions);
     }
 }

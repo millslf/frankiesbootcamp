@@ -66,6 +66,51 @@ public class AiMessageService {
         }
     }
 
+    public String getCompetitionRecapMessage(String name,
+                                             String competitionName,
+                                             int weeksCompleted,
+                                             double totalDistance,
+                                             double totalScore,
+                                             Integer finalRank,
+                                             String favouriteSports) {
+        if (service == null) {
+            String rankText = finalRank == null ? "" : " and finished #" + finalRank;
+            return "Nice work, " + name + " — you completed " + String.format("%.2f", totalDistance)
+                    + " km across " + weeksCompleted + " weeks" + rankText + ". Historical glory still counts.";
+        }
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append(String.format(
+                "Generate a short, funny, and inspiring recap for athlete %s looking back at a completed bootcamp competition", name));
+        if (competitionName != null && !competitionName.isBlank()) {
+            prompt.append(String.format(" named %s", competitionName));
+        }
+        prompt.append(". ");
+        prompt.append(String.format("They completed %.2f km across %d weeks and scored %.2f total points. ",
+                totalDistance, weeksCompleted, totalScore));
+        if (finalRank != null) {
+            prompt.append(String.format("Their final leaderboard rank was #%d. ", finalRank));
+        }
+        if (favouriteSports != null && !favouriteSports.isEmpty()) {
+            prompt.append(String.format("Their main sports were: %s. ", favouriteSports));
+        }
+        prompt.append("Make it about the whole competition, not the current week. Keep it under 2 short sentences.");
+
+        ChatMessage systemMsg = new ChatMessage("system", "You are a witty and motivational sports coach.");
+        ChatMessage userMsg = new ChatMessage("user", prompt.toString());
+        ChatCompletionRequest req = ChatCompletionRequest.builder()
+                .model("gpt-4")
+                .messages(List.of(systemMsg, userMsg))
+                .maxTokens(80)
+                .temperature(0.8)
+                .build();
+        try {
+            return service.createChatCompletion(req).getChoices().get(0).getMessage().getContent();
+        } catch (Exception e) {
+            return getFallbackMessage(e);
+        }
+    }
+
     public String getZenBotReply(String question, String athleteName, int conversationTurn, String statsContext) {
         if (service == null) {
             return "Even without cosmic Wi-Fi, a small walk can answer many questions.";
@@ -305,4 +350,3 @@ public class AiMessageService {
         return statsContext.trim();
     }
 }
-
