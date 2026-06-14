@@ -12,7 +12,7 @@ New way of working
 
 ## Current state
 
-The latest completed work finished `FBC-16` and then completed `FBC-30` on `feature/fbc-30-competition-selection`. The repo now supports explicit multi-competition selection, historical competition browsing, competition-scoped sick weeks, and bounded/backgrounded historical rebuilds.
+The latest completed work finished `FBC-16` and then completed and browser-tested `FBC-30` on `feature/fbc-30-competition-selection`. PR #16 is open and the user is moving `FBC-30` to code review. The repo now supports explicit multi-competition selection, historical competition browsing, competition-scoped sick weeks, and bounded/backgrounded historical rebuilds.
 
 ### FBC-16 completion status
 
@@ -96,7 +96,7 @@ The latest completed work finished `FBC-16` and then completed `FBC-30` on `feat
 
 ### FBC-30 closeout / follow-up boundary
 
-- Treat `FBC-30` as functionally complete and ready for PR review.
+- Treat `FBC-30` as functionally complete, browser-tested by the user, and in code review via PR #16.
 - Follow-up candidates intentionally left outside this ticket:
   - `FBC-89`: invitation-only competition discovery/join flow, re-exposing join/create affordances, and member self-leave/removal lifecycle
   - `FBC-54`: formal global and competition-scoped authorization; current sick-week controls are still self-service only
@@ -112,6 +112,13 @@ The latest completed work finished `FBC-16` and then completed `FBC-30` on `feat
   - completed competitions older than 14 days do not rebuild again after the persisted state is complete
   - Strava fetches for bounded competitions now use both `after=start_timestamp` and `before=end_timestamp`
 - This was chosen specifically to avoid unnecessary rebuilds of already-finished competitions while still allowing recreated old competitions to backfill once.
+
+### Latest validation
+
+- User browser-tested the deployed `FBC-30` flow after the sick-week rebuild ordering fix and confirmed it works.
+- Full local package build passed after the fix:
+  - `mvn package`
+  - 58 tests passed
 
 ### FBC-22 / FBC-32 architecture interrogation outcome
 
