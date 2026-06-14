@@ -61,7 +61,7 @@ A "dev ready" top-of-board order was established to prioritize:
   - the retained persistent-mode `performanceList` cache has been removed from `PersistentActivityProcessService`
   - `FBC-91`, `FBC-92`, and `FBC-93` now hold the deferred follow-up work, so `FBC-22` should be treated as ready to close as the first persistence slice
 - Current delivery status for `FBC-30`:
-  - `FBC-30` is functionally complete on `feature/fbc-30-competition-selection` and ready for PR review.
+  - `FBC-30` is functionally complete and browser-tested on `feature/fbc-30-competition-selection`; PR #16 is open and the user is moving the ticket to code review.
   - Delivered scope includes active competition chooser/defaulting, past competition switching, explicit selected competition context, competition-scoped sick weeks, bounded/background historical rebuilds, and historical competition recap messaging.
   - Join/create competition discovery is hidden from the in-app menu until `FBC-89` implements invitation-aware join/create behavior.
   - Leaving/removing yourself from a competition is intentionally deferred to `FBC-89` for membership lifecycle and `FBC-54` for authorization rules.
@@ -84,7 +84,7 @@ A "dev ready" top-of-board order was established to prioritize:
 14. `FBC-56` Strava link button should only appear when the user is authenticated and ready to link Strava, and should no longer act as an enrolment shortcut. (Done)
 15. `FBC-54` Implement global and competition-scoped authorization model.
 16. `FBC-16` Set up screens to create competition if athlete is not part of any competitions, set up start week, and set up start goal per competition.
-17. `FBC-30` Allow an athlete to belong to multiple competitions. (Implemented; ready for PR review.)
+17. `FBC-30` Allow an athlete to belong to multiple competitions. (Implemented; PR #16 in code review.)
 18. `FBC-37` Allow competition-specific eligible sports while preserving "All Sports Equal" as the default model.
 19. `FBC-38` Specify relative distances per competition.
 20. `FBC-22` Replace in-memory activity summary with persisted normalized activities and derived stats. (Implemented first slice; close after Jira/admin cleanup.)

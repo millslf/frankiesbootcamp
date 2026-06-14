@@ -32,7 +32,7 @@ Issues and PRDs for this repo live in Jira. Use the Atlassian Jira CLI workflow 
   - Invitation-only competition visibility should be treated as `FBC-89` scope: the logged-in athlete should only see competitions they are invited to join unless a later ticket intentionally broadens discovery behavior.
   - Latest local status: `FBC-12` was reviewed as effectively complete and split to branch `feature/fbc-12-onboarding-flow` at commit `217fbbb`; a separate bugfix branch `bugfix/session-persistence` at commit `546c063` was also pushed.
   - Latest local status: `FBC-16` is now effectively complete on local branch `feature/fbc-16-competition-setup`, including lifecycle-aware onboarding and historical competition outcome access.
-  - Latest local status: `FBC-30` is functionally complete and ready for PR review on branch `feature/fbc-30-competition-selection`.
+  - Latest local status: `FBC-30` is functionally complete and browser-tested on branch `feature/fbc-30-competition-selection`; PR #16 is open and the user is moving the ticket to code review.
     - local implementation includes:
       - multi-active competition detection
       - a required chooser state when multiple active competitions exist
