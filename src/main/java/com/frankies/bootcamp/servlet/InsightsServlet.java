@@ -227,6 +227,7 @@ public class InsightsServlet extends BootcampServlet {
         out.println("modalElement.querySelectorAll('.athlete-profile-modal-body').forEach(function(candidate){if(candidate.getAttribute('data-athlete-profile-body')===athleteId){body=candidate;}});");
         out.println("if(!body) return;");
         out.println("body.classList.remove('d-none');");
+        out.println("bindProfileForms(body);");
         out.println("loadGeneratedBlurbs(body);");
         out.println("var title=document.getElementById('athleteProfileModalTitle');");
         out.println("if(title) title.textContent=athleteName + ' profile';");
@@ -248,11 +249,29 @@ public class InsightsServlet extends BootcampServlet {
         out.println("if(request.status>=200 && request.status<300){try{text=JSON.parse(request.responseText).text || text;}catch(e){}}");
         out.println("if(textTarget) textTarget.textContent=text;");
         out.println("if(textarea){textarea.value=text;textarea.disabled=false;}");
-        out.println("if(submit) submit.disabled=false;");
+        out.println("if(textarea){var form=textarea.closest('form[data-profile-form]');if(form){form.dataset.initial='';updateProfileButton(form);}}");
+        out.println("if(submit && !textarea) submit.disabled=false;");
         out.println("};");
         out.println("request.send();");
         out.println("});");
         out.println("}");
+        out.println("function bindProfileForms(root){");
+        out.println("(root || document).querySelectorAll('form[data-profile-form]').forEach(function(form){");
+        out.println("if(form.dataset.bound==='true') return;");
+        out.println("form.dataset.bound='true';");
+        out.println("var textarea=form.querySelector('textarea[name=\"summaryText\"]');");
+        out.println("if(textarea && form.dataset.initial===undefined){form.dataset.initial=textarea.value;}");
+        out.println("if(textarea){textarea.addEventListener('input',function(){updateProfileButton(form);});}");
+        out.println("updateProfileButton(form);");
+        out.println("});");
+        out.println("}");
+        out.println("function updateProfileButton(form){");
+        out.println("var textarea=form.querySelector('textarea[name=\"summaryText\"]');");
+        out.println("var submit=form.querySelector('button[type=\"submit\"]');");
+        out.println("if(!textarea || !submit) return;");
+        out.println("submit.disabled=textarea.disabled || textarea.value===(form.dataset.initial || '');");
+        out.println("}");
+        out.println("bindProfileForms(document);");
         out.println("loadGeneratedBlurbs(document);");
         out.println("})();");
         out.println("</script>");
@@ -293,12 +312,12 @@ public class InsightsServlet extends BootcampServlet {
         out.println("<span class='badge " + badgeClass + "'>" + badgeText + "</span>");
         out.println("</div>");
         if (ownProfile) {
-            out.println("<form method='post' action='" + escapeAttribute(profileSummaryAction) + "'>");
+            out.println("<form method='post' action='" + escapeAttribute(profileSummaryAction) + "' data-profile-form>");
             out.println("<input type='hidden' name='athleteId' value='" + escapeAttribute(profile.athleteId()) + "'>");
             out.println("<textarea name='summaryText' class='form-control' rows='4' maxlength='600'" + (verified ? "" : " disabled") + ">"
                     + escape(verified ? blurb.text() : "Generating profile summary...") + "</textarea>");
             out.println("<div class='form-text'>Only accepted profiles are saved globally. Clear this box and save to go back to generated profiles.</div>");
-            out.println("<button type='submit' class='btn btn-sm btn-primary mt-2'" + (verified ? "" : " disabled") + ">Accept and save</button>");
+            out.println("<button type='submit' class='btn btn-sm btn-primary mt-2' disabled>" + (verified ? "Save changes" : "Accept and save") + "</button>");
             out.println("</form>");
         } else {
             out.println("<p class='mb-0' data-ai-blurb-text>" + escape(verified ? blurb.text() : "Generating profile summary...") + "</p>");
