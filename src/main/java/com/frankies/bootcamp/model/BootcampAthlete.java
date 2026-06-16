@@ -23,6 +23,8 @@ public class BootcampAthlete {
 
     private transient String email;
 
+    private String sex;
+
     private Double goal;
 
     private String[] sickWeeks;
@@ -105,6 +107,14 @@ public class BootcampAthlete {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getSex() {
+        return sex;
+    }
+
+    public void setSex(String sex) {
+        this.sex = sex;
     }
 
     public Double getGoal() {

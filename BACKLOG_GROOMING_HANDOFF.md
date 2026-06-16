@@ -65,6 +65,34 @@ A "dev ready" top-of-board order was established to prioritize:
   - Delivered scope includes active competition chooser/defaulting, past competition switching, explicit selected competition context, competition-scoped sick weeks, bounded/background historical rebuilds, and historical competition recap messaging.
   - Join/create competition discovery is hidden from the in-app menu until `FBC-89` implements invitation-aware join/create behavior.
   - Leaving/removing yourself from a competition is intentionally deferred to `FBC-89` for membership lifecycle and `FBC-54` for authorization rules.
+- Current local follow-up branch:
+  - `feature/fbc-insights-tab` was created from the FBC-30 feature branch after the multi-active competition stale rebuild fix was committed and pushed to PR #16 as `4b3462c`.
+  - This branch is uncommitted local work for a read-only dashboard Insights tab, not yet assigned to a Jira ticket in this handoff. PR should target `feature/fbc-30-competition-selection`, because this is stacked on PR #16.
+  - Implemented local scope:
+    - final dashboard tab `/app/Insights`
+    - athlete profile modal for any athlete in the selected competition
+    - compact dropdown for choosing another athlete profile
+    - global Profile card on athlete profiles, with accepted blurbs persisted as verified and unaccepted generated text lazily regenerated after render
+    - clearing the Profile box and saving deletes the verified profile, returning that athlete to generated/unverified mode
+    - generated current Performance summary at the bottom of the profile modal
+    - Strava-link-time storage of `athletes.sex`, used for AI pronouns when present; otherwise prompts stay generic and do not guess gender from names
+    - position-over-time graph showing overall leaderboard rank history
+    - current/latest completed week is shown on the left; history runs rightward back to Week 1
+    - tied leaderboard scores share the same rank rather than inventing order
+    - sport-specific standings and week-by-week winner summaries from existing derived data
+  - Privacy/product rules agreed during this branch:
+    - public athlete-level km values should remain private
+    - new Insights surfaces must not expose athlete km totals
+    - Profile blurbs should be timeless/personal and not tied to current competition standings
+    - Performance summaries may use public rank/points/current-week context but must not include private athlete km values
+    - Honour Roll distance values should also be hidden; show distance leader name only
+    - active competitions should exclude the current partial week from Insights to avoid early-week noise
+  - Persistent summary regression fixed locally:
+    - `getLoggedInAthleteSummary(...)` and `getLoggedInAthleteSummaryForCompetition(...)` now use cumulative sport totals from `competition_summary_sport_stats`, restoring old `PerformanceResponse.toString()` behavior.
+  - Current validation:
+    - targeted service tests are green, including `CompetitionInsightsServiceTest` and `PersistentActivityProcessServiceTest`
+    - full `mvn package` is green after the latest graph/UI/profile-summary/Strava-sex tweaks
+  - This probably deserves its own Jira ticket if it is kept separate from FBC-30 rather than folded into the PR.
 
 ## Agreed current board order
 
@@ -234,7 +262,32 @@ Resume with:
 ## New placeholder tickets added
 
 - `FBC-89` Competition invitations and join flow
-  - Also owns the member lifecycle that `FBC-30` intentionally did not decide: leaving/removing yourself from a competition, rejoining/reinvites, last-admin protection, and what happens to historical leaderboard/stat rows after a membership change.
+  - Next intended ticket after `FBC-30`.
+  - Implement invitation-first competition joining:
+    - admins invite people to a competition by email
+    - existing FB users see dashboard invite notifications/CTAs
+    - non-users receive invite links that survive signup/login, Strava linking, and competition acceptance
+    - accepting creates or reactivates the `competition_athlete` row and captures/confirms competition starting goal
+    - declining hides the invite and marks it declined
+    - expired/invalid/already-used tokens show safe errors
+  - Include simple bulk invite:
+    - paste comma, newline, or semicolon-separated emails
+    - normalize case, trim whitespace, validate, dedupe, and show per-email errors
+    - skip/report already-invited or already-joined people
+    - create one invitation row per valid invitee
+  - Include existing athlete/user search on the invite form:
+    - search by name or email
+    - show enough context to identify the person
+    - selecting an existing athlete adds them to the pending invite list
+    - tie invitations to `invited_user_id` where possible
+    - exclude athletes already active in the selected competition
+  - Also owns the member lifecycle that `FBC-30` intentionally did not decide:
+    - whether athletes can leave/remove themselves from active, future, or completed competitions
+    - rejoin/reinvite behavior after decline, expiry, prior removal, or prior membership
+    - last-admin protection
+    - whether historical leaderboard/stat rows are preserved, hidden, or excluded after membership changes
+  - Use current `competition_athlete.role = 'admin'` as the temporary permission gate; formal authorization remains `FBC-54`.
+  - Keep out of scope for this ticket: CSV/contact import, fancy email templates, batch scheduling, public competition discovery, and full admin console redesign.
 - `FBC-90` Global admin console / admin operations
 - `FBC-14` Competition admin console
 

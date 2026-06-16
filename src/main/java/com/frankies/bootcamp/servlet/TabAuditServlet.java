@@ -13,7 +13,7 @@ import java.util.Set;
 
 @WebServlet(name = "tabAudit", value = "/app/TabAudit")
 public class TabAuditServlet extends BootcampServlet {
-    private static final Set<String> ALLOWED_TABS = Set.of("landing", "history", "leaderboard", "honour-roll", "summary");
+    private static final Set<String> ALLOWED_TABS = Set.of("landing", "history", "leaderboard", "honour-roll", "summary", "insights");
 
     @Inject
     private DBService dbService;

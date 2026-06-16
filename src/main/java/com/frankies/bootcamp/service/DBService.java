@@ -2,6 +2,7 @@ package com.frankies.bootcamp.service;
 
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.AuthenticatedUser;
+import com.frankies.bootcamp.model.AthleteProfileBlurb;
 import com.frankies.bootcamp.model.EmailAccess;
 import com.frankies.bootcamp.model.PerformanceResponse;
 import com.frankies.bootcamp.model.WeeklyPerformance;
@@ -38,6 +39,7 @@ public class DBService {
             ensureAthleteAuditLogTable();
             ensureAuthTables();
             ensureCompetitionPersistenceTables();
+            ensureAthleteProfileBlurbTable();
         } catch (NamingException e) {
             throw new RuntimeException("Failed to initialize DataSource", e);
         } catch (SQLException e) {
@@ -225,6 +227,24 @@ public class DBService {
         }
     }
 
+    private void ensureAthleteProfileBlurbTable() throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                Statement statement = connection.createStatement()
+        ) {
+            statement.execute(
+                    "CREATE TABLE IF NOT EXISTS athlete_profile_blurb (" +
+                            "athlete_id VARCHAR(50) NOT NULL PRIMARY KEY, " +
+                            "summary_text TEXT NOT NULL, " +
+                            "verified BOOLEAN NOT NULL DEFAULT TRUE, " +
+                            "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                            "verified_at TIMESTAMP NULL, " +
+                            "CONSTRAINT fk_athlete_profile_blurb_athlete FOREIGN KEY (athlete_id) REFERENCES athletes(id)" +
+                            ")"
+            );
+        }
+    }
+
     private void ensureAthleteAuditLogTable() throws SQLException {
         try (
                 Connection connection = ds.getConnection();
@@ -251,6 +271,7 @@ public class DBService {
                 Statement statement = connection.createStatement()
         ) {
             ensureAthleteUserIdColumn(connection, statement);
+            ensureAthleteSexColumn(connection, statement);
             ensureNullableAppUserAthleteLink(connection, statement);
 
             statement.execute(
@@ -296,6 +317,12 @@ public class DBService {
 
         if (!indexExists(connection, "athletes", "idx_athletes_user_id")) {
             statement.execute("CREATE INDEX idx_athletes_user_id ON athletes(user_id)");
+        }
+    }
+
+    private void ensureAthleteSexColumn(Connection connection, Statement statement) throws SQLException {
+        if (!columnExists(connection, "athletes", "sex")) {
+            statement.execute("ALTER TABLE athletes ADD COLUMN sex VARCHAR(10) NULL");
         }
     }
 
@@ -420,6 +447,7 @@ public class DBService {
                 athlete.setLastname(resultSet.getString("lastname"));
                 athlete.setFirstname(resultSet.getString("firstname"));
                 athlete.setEmail(resultSet.getString("email"));
+                athlete.setSex(resultSet.getString("sex"));
                 athlete.setGoal(resultSet.getDouble("start_goal"));
                 athlete.setSickWeeks(resultSet.getString("sick_week"));
                 user.add(athlete);
@@ -432,10 +460,10 @@ public class DBService {
         try (
                 Connection connection = ds.getConnection();
                 PreparedStatement statement = connection.prepareStatement("insert into athletes " +
-                        "(access_token, refresh_token, expires_at, token_type, expires_in, lastname, firstname, id, user_id, email, start_goal)" +
-                        "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                        "(access_token, refresh_token, expires_at, token_type, expires_in, lastname, firstname, id, user_id, email, sex, start_goal)" +
+                        "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                         "ON DUPLICATE KEY UPDATE " +
-                        "access_token=?, refresh_token=?, expires_at=?, token_type=?, expires_in=?, lastname=?, firstname=?, user_id=COALESCE(VALUES(user_id), user_id), email=COALESCE(VALUES(email), email), start_goal=COALESCE(VALUES(start_goal), start_goal)")
+                        "access_token=?, refresh_token=?, expires_at=?, token_type=?, expires_in=?, lastname=?, firstname=?, user_id=COALESCE(VALUES(user_id), user_id), email=COALESCE(VALUES(email), email), sex=COALESCE(VALUES(sex), sex), start_goal=COALESCE(VALUES(start_goal), start_goal)")
         ) {
             statement.setString(1, athlete.getAccessToken());
             statement.setString(2, athlete.getRefreshToken());
@@ -447,21 +475,30 @@ public class DBService {
             statement.setString(8, athlete.getId());
             statement.setString(9, athlete.getUserId());
             statement.setString(10, athlete.getEmail());
+            statement.setString(11, normaliseSex(athlete.getSex()));
             if (athlete.getGoal() == null) {
-                statement.setNull(11, java.sql.Types.DOUBLE);
+                statement.setNull(12, java.sql.Types.DOUBLE);
             } else {
-                statement.setDouble(11, athlete.getGoal());
+                statement.setDouble(12, athlete.getGoal());
             }
-            statement.setString(12, athlete.getAccessToken());
-            statement.setString(13, athlete.getRefreshToken());
-            statement.setLong(14, athlete.getExpiresAt());
-            statement.setString(15, athlete.getTokenType());
-            statement.setInt(16, athlete.getExpiresIn());
-            statement.setString(17, athlete.getLastname());
-            statement.setString(18, athlete.getFirstname());
+            statement.setString(13, athlete.getAccessToken());
+            statement.setString(14, athlete.getRefreshToken());
+            statement.setLong(15, athlete.getExpiresAt());
+            statement.setString(16, athlete.getTokenType());
+            statement.setInt(17, athlete.getExpiresIn());
+            statement.setString(18, athlete.getLastname());
+            statement.setString(19, athlete.getFirstname());
 
             statement.execute();
         }
+    }
+
+    private String normaliseSex(String sex) {
+        if (sex == null || sex.isBlank()) {
+            return null;
+        }
+        String value = sex.trim().toUpperCase();
+        return ("M".equals(value) || "F".equals(value)) ? value : null;
     }
 
     public void linkAthleteToUser(String athleteId, String userId) throws SQLException {
@@ -647,6 +684,55 @@ public class DBService {
             statement.setString(5, prompt == null ? "" : prompt);
             statement.setString(6, reply == null ? "" : reply);
             statement.execute();
+        }
+    }
+
+    public AthleteProfileBlurb getVerifiedAthleteProfileBlurb(String athleteId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT athlete_id, summary_text, verified FROM athlete_profile_blurb WHERE athlete_id = ? AND verified = TRUE"
+                )
+        ) {
+            statement.setString(1, athleteId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return null;
+                }
+                return new AthleteProfileBlurb(
+                        resultSet.getString("athlete_id"),
+                        resultSet.getString("summary_text"),
+                        resultSet.getBoolean("verified")
+                );
+            }
+        }
+    }
+
+    public void saveVerifiedAthleteProfileBlurb(String athleteId, String summaryText) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO athlete_profile_blurb (athlete_id, summary_text, verified, verified_at) " +
+                                "VALUES (?, ?, TRUE, CURRENT_TIMESTAMP) " +
+                                "ON DUPLICATE KEY UPDATE summary_text = ?, verified = TRUE, verified_at = CURRENT_TIMESTAMP"
+                )
+        ) {
+            statement.setString(1, athleteId);
+            statement.setString(2, summaryText);
+            statement.setString(3, summaryText);
+            statement.execute();
+        }
+    }
+
+    public void deleteAthleteProfileBlurb(String athleteId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM athlete_profile_blurb WHERE athlete_id = ?"
+                )
+        ) {
+            statement.setString(1, athleteId);
+            statement.executeUpdate();
         }
     }
 
@@ -1451,6 +1537,38 @@ public class DBService {
         }
 
         return null;
+    }
+
+    public Map<String, Double> getPersistentSummarySportTotals(String athleteId) throws SQLException {
+        Long competitionId = findActiveCompetitionId(athleteId);
+        if (competitionId == null) {
+            return new LinkedHashMap<>();
+        }
+        return getPersistentSummarySportTotals(athleteId, competitionId);
+    }
+
+    public Map<String, Double> getPersistentSummarySportTotals(String athleteId, long competitionId) throws SQLException {
+        Map<String, Double> sportTotals = new LinkedHashMap<>();
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT css.sport_type, css.calculated_distance_total " +
+                                "FROM competition_summary_sport_stats css " +
+                                "JOIN competition_summary cs ON cs.id = css.competition_summary_id " +
+                                "JOIN competition_athlete ca ON ca.id = cs.competition_athlete_id " +
+                                "WHERE ca.competition_id = ? AND ca.athlete_id = ? " +
+                                "ORDER BY css.calculated_distance_total DESC, css.sport_type ASC"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            statement.setString(2, athleteId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    sportTotals.put(resultSet.getString("sport_type"), resultSet.getDouble("calculated_distance_total"));
+                }
+            }
+        }
+        return sportTotals;
     }
 
     public List<PerformanceResponse> getPersistentPerformanceList(long competitionId) throws SQLException {

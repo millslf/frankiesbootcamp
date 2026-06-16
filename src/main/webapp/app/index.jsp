@@ -45,6 +45,8 @@
         </button>
         <button class="tab-button" onclick="openTab(event, 'Tab4Content', 'summary')"><i class="bi bi-list-ol header-icon"></i>Summary
         </button>
+        <button class="tab-button" onclick="openTab(event, 'Tab8Content', 'insights')"><i class="bi bi-lightbulb-fill header-icon"></i>Insights
+        </button>
     </div>
 </div>
 
@@ -70,6 +72,9 @@
         </div>
         <div id="Tab7Content" class="tab-content">
             <%@ include file="/WEB-INF/jspf/privacy-content.jspf" %>
+        </div>
+        <div id="Tab8Content" class="tab-content">
+            <jsp:include page="/app/Insights"/>
         </div>
     </div>
 </div>

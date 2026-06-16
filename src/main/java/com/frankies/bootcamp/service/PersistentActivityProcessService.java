@@ -346,6 +346,14 @@ public class PersistentActivityProcessService {
         throw new IllegalStateException("Athlete competition context is required for persistent performance-list reads");
     }
 
+    public List<PerformanceResponse> getPerformanceListForCompetition(long competitionId) {
+        try {
+            return dbService.getPersistentPerformanceList(competitionId);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Unable to load persistent performance list", e);
+        }
+    }
+
     public Map<Integer, WeeklyPerformance> getAthleteHistory(String athleteId) {
         try {
             return dbService.getPersistentAthleteHistory(athleteId);
@@ -388,17 +396,18 @@ public class PersistentActivityProcessService {
 
     public String getLoggedInAthleteSummary(String athleteId)
             throws IOException, CredentialStoreException, NoSuchAlgorithmException, SQLException {
-        DBService.PersistentAthleteSummarySnapshot snapshot = dbService.getPersistentAthleteSummarySnapshot(athleteId);
+        DBService.PersistentAthleteSummarySnapshot snapshot = loadPersistentAthleteSummarySnapshot(athleteId);
         if (snapshot == null) {
             return "";
         }
 
-        Map<Integer, WeeklyPerformance> history = dbService.getPersistentAthleteHistory(athleteId);
+        Map<Integer, WeeklyPerformance> history = loadPersistentAthleteHistory(athleteId);
         WeeklyPerformance currentWeek = history.get(latestPersistedWeek(history));
 
         StringBuilder sports = new StringBuilder();
-        if (currentWeek != null && currentWeek.getSports() != null) {
-            for (Map.Entry<String, Double> entry : currentWeek.getSports().entrySet()) {
+        Map<String, Double> sportTotals = loadPersistentSummarySportTotals(athleteId);
+        if (sportTotals != null) {
+            for (Map.Entry<String, Double> entry : sportTotals.entrySet()) {
                 sports.append(entry.getKey()).append(" ").append(df.format(entry.getValue())).append("km\n");
             }
         }
@@ -415,18 +424,19 @@ public class PersistentActivityProcessService {
 
     public String getLoggedInAthleteSummaryForCompetition(long competitionId, String athleteId)
             throws IOException, CredentialStoreException, NoSuchAlgorithmException, SQLException {
-        DBService.PersistentAthleteSummarySnapshot snapshot = dbService.getPersistentAthleteSummarySnapshot(athleteId, competitionId);
+        DBService.PersistentAthleteSummarySnapshot snapshot = loadPersistentAthleteSummarySnapshot(athleteId, competitionId);
         if (snapshot == null) {
             return "";
         }
 
-        Map<Integer, WeeklyPerformance> history = dbService.getPersistentAthleteHistory(athleteId, competitionId);
+        Map<Integer, WeeklyPerformance> history = loadPersistentAthleteHistory(athleteId, competitionId);
         WeeklyPerformance currentWeek = history.get(latestPersistedWeek(history));
 
         StringBuilder sports = new StringBuilder();
-        if (currentWeek != null && currentWeek.getSports() != null) {
-            for (Map.Entry<String, Double> entry : currentWeek.getSports().entrySet()) {
-                sports.append(entry.getKey()).append(" ").append(df.format(entry.getValue())).append("km\n");
+        Map<String, Double> sportTotals = loadPersistentSummarySportTotals(athleteId, competitionId);
+        if (sportTotals != null) {
+            for (Map.Entry<String, Double> entry : sportTotals.entrySet()) {
+                sports.append("\t").append(entry.getKey()).append(" ").append(df.format(entry.getValue())).append("km\n");
             }
         }
 
@@ -449,6 +459,30 @@ public class PersistentActivityProcessService {
             sb.append(entry.getKey()).append(": ").append(df.format(entry.getValue())).append("\n");
         }
         return sb.toString();
+    }
+
+    protected DBService.PersistentAthleteSummarySnapshot loadPersistentAthleteSummarySnapshot(String athleteId) throws SQLException {
+        return dbService.getPersistentAthleteSummarySnapshot(athleteId);
+    }
+
+    protected DBService.PersistentAthleteSummarySnapshot loadPersistentAthleteSummarySnapshot(String athleteId, long competitionId) throws SQLException {
+        return dbService.getPersistentAthleteSummarySnapshot(athleteId, competitionId);
+    }
+
+    protected Map<Integer, WeeklyPerformance> loadPersistentAthleteHistory(String athleteId) throws SQLException {
+        return dbService.getPersistentAthleteHistory(athleteId);
+    }
+
+    protected Map<Integer, WeeklyPerformance> loadPersistentAthleteHistory(String athleteId, long competitionId) throws SQLException {
+        return dbService.getPersistentAthleteHistory(athleteId, competitionId);
+    }
+
+    protected Map<String, Double> loadPersistentSummarySportTotals(String athleteId) throws SQLException {
+        return dbService.getPersistentSummarySportTotals(athleteId);
+    }
+
+    protected Map<String, Double> loadPersistentSummarySportTotals(String athleteId, long competitionId) throws SQLException {
+        return dbService.getPersistentSummarySportTotals(athleteId, competitionId);
     }
 
     private int latestPersistedWeek(Map<Integer, WeeklyPerformance> history) {

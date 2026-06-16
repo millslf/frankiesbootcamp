@@ -111,6 +111,73 @@ public class AiMessageService {
         }
     }
 
+    public String generateAthleteProfileBlurb(String name, String profileContext) {
+        String displayName = normaliseAthleteName(name);
+        if (service == null) {
+            return displayName + " appears to be a committed bootcamp athlete with a suspiciously healthy relationship with moving around. " +
+                    "Probably serious about progress, but not above pretending a recovery walk is a strategic masterstroke.";
+        }
+
+        String prompt = "Write a short athlete profile blurb for " + displayName + ". " +
+                "Tone: mostly serious, warm, and very slightly funny. " +
+                "It should sound like a human personal profile summary that could be accepted permanently, not a leaderboard report or competition update. " +
+                "Do not mention ranks, points, weeks, exact distances, private kilometres, prompts, or that you are an AI. " +
+                "Do not guess gender from the name. Use they/them pronouns, or avoid pronouns, unless explicit pronouns are supplied. " +
+                "Use only broad public context if useful: " + safeStatsContext(profileContext) + ". " +
+                "You may invent harmless, obviously light-hearted personality colour, but do not invent sensitive personal facts. " +
+                "Keep it to 2 sentences, under 55 words.";
+
+        ChatMessage systemMsg = new ChatMessage("system",
+                "You write concise athlete profile blurbs for a friendly activity challenge app.");
+        ChatMessage userMsg = new ChatMessage("user", prompt);
+        ChatCompletionRequest req = ChatCompletionRequest.builder()
+                .model("gpt-4")
+                .messages(List.of(systemMsg, userMsg))
+                .maxTokens(80)
+                .temperature(0.9)
+                .build();
+        try {
+            return service.createChatCompletion(req).getChoices().get(0).getMessage().getContent();
+        } catch (Exception e) {
+            log.warn("Could not generate athlete profile blurb", e);
+            return displayName + " appears to be a committed bootcamp athlete with a suspiciously healthy relationship with moving around. " +
+                    "Probably serious about progress, but not above pretending a recovery walk is a strategic masterstroke.";
+        }
+    }
+
+    public String generateAthletePerformanceSummary(String name, String profileContext) {
+        String displayName = normaliseAthleteName(name);
+        if (service == null) {
+            return displayName + " is putting together a solid bootcamp campaign, with enough points on the board to look intentional. " +
+                    "The stats suggest effort, consistency, and at least one moment where the couch probably felt betrayed.";
+        }
+
+        String prompt = "Write a short performance summary for athlete " + displayName + ". " +
+                "Tone: mostly serious, warm, and very slightly funny. " +
+                "This is a current competition performance note, not a permanent personal profile. " +
+                "Do not mention exact distances, private kilometres, prompts, or that you are an AI. " +
+                "Do not guess gender from the name. Use they/them pronouns, or avoid pronouns, unless explicit pronouns are supplied. " +
+                "Use this public points/rank context: " + safeStatsContext(profileContext) + ". " +
+                "Keep it to 2 sentences, under 55 words.";
+
+        ChatMessage systemMsg = new ChatMessage("system",
+                "You write concise athlete performance summaries for a friendly activity challenge app.");
+        ChatMessage userMsg = new ChatMessage("user", prompt);
+        ChatCompletionRequest req = ChatCompletionRequest.builder()
+                .model("gpt-4")
+                .messages(List.of(systemMsg, userMsg))
+                .maxTokens(80)
+                .temperature(0.8)
+                .build();
+        try {
+            return service.createChatCompletion(req).getChoices().get(0).getMessage().getContent();
+        } catch (Exception e) {
+            log.warn("Could not generate athlete performance summary", e);
+            return displayName + " is putting together a solid bootcamp campaign, with enough points on the board to look intentional. " +
+                    "The stats suggest effort, consistency, and at least one moment where the couch probably felt betrayed.";
+        }
+    }
+
     public String getZenBotReply(String question, String athleteName, int conversationTurn, String statsContext) {
         if (service == null) {
             return "Even without cosmic Wi-Fi, a small walk can answer many questions.";
