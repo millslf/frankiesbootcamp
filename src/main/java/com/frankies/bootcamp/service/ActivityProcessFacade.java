@@ -72,6 +72,12 @@ public class ActivityProcessFacade {
                 : inMemoryActivityProcessService.getPerformanceList();
     }
 
+    public List<PerformanceResponse> getPerformanceListForCompetition(long competitionId) {
+        return getMode() == ActivityProcessingMode.PERSISTENT
+                ? persistentActivityProcessService.getPerformanceListForCompetition(competitionId)
+                : inMemoryActivityProcessService.getPerformanceList();
+    }
+
     public Map<Integer, WeeklyPerformance> getAthleteHistory(String athleteId) {
         return getMode() == ActivityProcessingMode.PERSISTENT
                 ? persistentActivityProcessService.getAthleteHistory(athleteId)

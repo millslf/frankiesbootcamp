@@ -258,6 +258,10 @@ class PersistentActivityProcessServiceTest {
         week.setPersistedSportTotals("Run", 2, 12.0, 12.0, null);
         db.historyByAthlete.put("athlete-1", Map.of(4, week));
         db.summarySnapshots.put("athlete-1", new DBService.PersistentAthleteSummarySnapshot("Alex", 48.0, 3.2, 20.0));
+        db.summarySportTotalsByAthlete.put("athlete-1", new LinkedHashMap<>(Map.of(
+                "Run", 30.0,
+                "Ride", 18.0
+        )));
 
         HashMap<String, Double> scoreSummary = new LinkedHashMap<>();
         scoreSummary.put("Alex", 3.2);
@@ -269,7 +273,8 @@ class PersistentActivityProcessServiceTest {
 
         assertTrue(summary.contains("Distance this challenge: 48"));
         assertTrue(summary.contains("Goal this week: 30"));
-        assertTrue(summary.contains("Run"));
+        assertTrue(summary.contains("Run 30km"));
+        assertTrue(summary.contains("Ride 18km"));
     }
 
     @Test
@@ -360,6 +365,12 @@ class PersistentActivityProcessServiceTest {
         }
 
         @Override
+        public long getCurrentActiveCompForAthlete(String athleteId) {
+            Long competitionId = fakeDbService.findActiveCompetitionId(athleteId);
+            return competitionId == null ? 1L : competitionId;
+        }
+
+        @Override
         protected boolean hasActiveCompetitionMembership(String athleteId) {
             return fakeDbService.hasActiveCompetitionMembership(athleteId);
         }
@@ -386,7 +397,7 @@ class PersistentActivityProcessServiceTest {
                                                          PersistentSummaryRow summaryRow,
                                                          Map<String, PersistentSummarySportRow> summarySportRows) {
             fakeDbService.replacePersistentCompetitionState(competitionAthleteId, activityRows, weeklyRows, summaryRow, summarySportRows);
-            fakeDbService.materializeAthleteState(competitionAthleteId, weeklyRows, summaryRow);
+            fakeDbService.materializeAthleteState(competitionAthleteId, weeklyRows, summaryRow, summarySportRows);
         }
 
         @Override
@@ -411,32 +422,43 @@ class PersistentActivityProcessServiceTest {
         }
 
         @Override
+        public Map<String, HashMap<String, Double>> getSortedSummariesForCompetition(long competitionId) {
+            return fakeDbService.getPersistentLeaderboardSummaries(competitionId);
+        }
+
+        @Override
         public Map<Integer, WeeklyPerformance> getAthleteHistory(String athleteId) {
             return fakeDbService.getPersistentAthleteHistory(athleteId);
         }
 
         @Override
-        public String getLoggedInAthleteSummary(String athleteId) {
-            DBService.PersistentAthleteSummarySnapshot snapshot = fakeDbService.getPersistentAthleteSummarySnapshot(athleteId);
-            if (snapshot == null) {
-                return "";
-            }
+        protected DBService.PersistentAthleteSummarySnapshot loadPersistentAthleteSummarySnapshot(String athleteId) {
+            return fakeDbService.getPersistentAthleteSummarySnapshot(athleteId);
+        }
 
-            WeeklyPerformance currentWeek = fakeDbService.getPersistentAthleteHistory(athleteId).get(getNumberOfWeeksSinceStart());
-            StringBuilder sports = new StringBuilder();
-            if (currentWeek != null && currentWeek.getSports() != null) {
-                for (Map.Entry<String, Double> entry : currentWeek.getSports().entrySet()) {
-                    sports.append(entry.getKey()).append(" ").append(entry.getValue() % 1 == 0 ? String.valueOf(entry.getValue().intValue()) : String.valueOf(entry.getValue())).append("km\n");
-                }
-            }
+        @Override
+        protected DBService.PersistentAthleteSummarySnapshot loadPersistentAthleteSummarySnapshot(String athleteId, long competitionId) {
+            return fakeDbService.getPersistentAthleteSummarySnapshot(athleteId);
+        }
 
-            return "Liewe " + snapshot.athleteFirstName() + ",\n\n" +
-                    "Distance this challenge: " + (snapshot.distanceToDate() % 1 == 0 ? (int) snapshot.distanceToDate() : snapshot.distanceToDate()) + "km\n" +
-                    "Total points: " + snapshot.scoreToDate() + "\n" +
-                    "Sports: \n" + sports +
-                    "Original weekly goal: " + (snapshot.originalWeeklyGoal() % 1 == 0 ? (int) snapshot.originalWeeklyGoal() : snapshot.originalWeeklyGoal()) + "km\n\n" +
-                    (currentWeek == null ? "" : currentWeek.toString()) +
-                    "OVERALL SCORE COMPETITION:\n";
+        @Override
+        protected Map<Integer, WeeklyPerformance> loadPersistentAthleteHistory(String athleteId) {
+            return fakeDbService.getPersistentAthleteHistory(athleteId);
+        }
+
+        @Override
+        protected Map<Integer, WeeklyPerformance> loadPersistentAthleteHistory(String athleteId, long competitionId) {
+            return fakeDbService.getPersistentAthleteHistory(athleteId);
+        }
+
+        @Override
+        protected Map<String, Double> loadPersistentSummarySportTotals(String athleteId) {
+            return fakeDbService.getPersistentSummarySportTotals(athleteId);
+        }
+
+        @Override
+        protected Map<String, Double> loadPersistentSummarySportTotals(String athleteId, long competitionId) {
+            return fakeDbService.getPersistentSummarySportTotals(athleteId);
         }
 
         @Override
@@ -514,6 +536,7 @@ class PersistentActivityProcessServiceTest {
         private final HashMap<Integer, HashMap<String, Double>> honourRollPercent = new HashMap<>();
         private final Map<String, Map<Integer, WeeklyPerformance>> historyByAthlete = new HashMap<>();
         private final Map<String, DBService.PersistentAthleteSummarySnapshot> summarySnapshots = new HashMap<>();
+        private final Map<String, Map<String, Double>> summarySportTotalsByAthlete = new HashMap<>();
         private final Map<Long, String> athleteIdsByCompetitionAthleteId = new HashMap<>();
         private final Map<String, Long> activeCompetitionIdsByAthleteId = new HashMap<>();
         private final Map<Long, DBService.CompetitionAthleteConfig> competitionConfigsByCompetitionAthleteId = new HashMap<>();
@@ -632,6 +655,10 @@ class PersistentActivityProcessServiceTest {
             return summarySnapshots.get(athleteId);
         }
 
+        public Map<String, Double> getPersistentSummarySportTotals(String athleteId) {
+            return summarySportTotalsByAthlete.getOrDefault(athleteId, Map.of());
+        }
+
         public List<PerformanceResponse> getPersistentPerformanceList(long competitionId) {
             List<PerformanceResponse> performances = new ArrayList<>();
             for (Map.Entry<String, DBService.PersistentAthleteSummarySnapshot> entry : summarySnapshots.entrySet()) {
@@ -659,7 +686,8 @@ class PersistentActivityProcessServiceTest {
 
         private void materializeAthleteState(long competitionAthleteId,
                                              List<PersistentActivityProcessService.PersistentWeeklyRow> weeklyRows,
-                                             PersistentActivityProcessService.PersistentSummaryRow summaryRow) {
+                                             PersistentActivityProcessService.PersistentSummaryRow summaryRow,
+                                             Map<String, PersistentActivityProcessService.PersistentSummarySportRow> summarySportRows) {
             String athleteId = athleteIdsByCompetitionAthleteId.get(competitionAthleteId);
             if (athleteId == null) {
                 return;
@@ -683,6 +711,11 @@ class PersistentActivityProcessServiceTest {
                     summaryRow.scoreToDate(),
                     athlete != null && athlete.getGoal() != null ? athlete.getGoal() : summaryRow.originalWeeklyGoal()
             ));
+            Map<String, Double> sportTotals = new LinkedHashMap<>();
+            for (PersistentActivityProcessService.PersistentSummarySportRow sportRow : summarySportRows.values()) {
+                sportTotals.put(sportRow.sportType(), sportRow.calculatedDistanceTotal());
+            }
+            summarySportTotalsByAthlete.put(athleteId, sportTotals);
         }
 
         private record ReplacedCompetitionState(long competitionAthleteId,

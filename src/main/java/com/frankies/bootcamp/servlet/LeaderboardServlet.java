@@ -1,7 +1,10 @@
 package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.constant.BootcampConstants;
+import com.frankies.bootcamp.model.BootcampAthlete;
+import com.frankies.bootcamp.model.PerformanceResponse;
 import com.frankies.bootcamp.service.ActivityProcessFacade;
+import com.frankies.bootcamp.utils.WildflyUtils;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +14,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @WebServlet(name = "leaderBoard", value = "/app/LeaderBoard")
@@ -27,6 +31,7 @@ public class LeaderboardServlet extends BootcampServlet {
         Map<String, HashMap<String, Double>> sortedSummaries = selectedCompetitionId != null
                 ? activityProcessFacade.getSortedSummariesForCompetition(selectedCompetitionId)
                 : activityProcessFacade.getSortedSummaries(loggedInAthlete == null ? null : loggedInAthlete.getId());
+        Map<String, String> athleteIdsByName = athleteIdsByName(selectedCompetitionId);
 
         out.println("<html><head>");
         out.println("</head><body>");
@@ -64,7 +69,7 @@ public class LeaderboardServlet extends BootcampServlet {
         out.println("<tbody>");
         int rank = 1;
         for (Map.Entry<String, Double> entry : sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary).entrySet()) {
-            out.println("<tr><td>" + entry.getKey());
+            out.println("<tr><td>" + athleteProfileLink(entry.getKey(), athleteIdsByName));
             if (rank == 1) {
                 out.println(" <i class='bi bi-trophy trophy gold' title='Gold Trophy'></i>");
             } else if (rank == 2) {
@@ -92,7 +97,7 @@ public class LeaderboardServlet extends BootcampServlet {
         out.println("<tbody>");
         rank = 1;
         for (Map.Entry<String, Double> entry : sortedSummaries.get(BootcampConstants.currentWeekPercentageOfGoalSummary).entrySet()) {
-            out.println("<tr><td>" + entry.getKey());
+            out.println("<tr><td>" + athleteProfileLink(entry.getKey(), athleteIdsByName));
             if (rank == 1) {
                 out.println(" <i class='bi bi-trophy trophy gold' title='Gold Trophy'></i>");
             } else if (rank == 2) {
@@ -134,5 +139,45 @@ public class LeaderboardServlet extends BootcampServlet {
         out.println("</script>");
 
         out.println("</div></body></html>");
+    }
+
+    private Map<String, String> athleteIdsByName(Long selectedCompetitionId) {
+        Map<String, String> athleteIdsByName = new HashMap<>();
+        if (selectedCompetitionId == null) {
+            return athleteIdsByName;
+        }
+        List<PerformanceResponse> performances = activityProcessFacade.getPerformanceListForCompetition(selectedCompetitionId);
+        for (PerformanceResponse performance : performances) {
+            BootcampAthlete athlete = performance.getAthlete();
+            if (athlete == null || athlete.getId() == null) {
+                continue;
+            }
+            String firstName = safe(athlete.getFirstname());
+            String fullName = (firstName + " " + safe(athlete.getLastname())).trim();
+            if (!firstName.isBlank()) {
+                athleteIdsByName.putIfAbsent(firstName, athlete.getId());
+            }
+            if (!fullName.isBlank()) {
+                athleteIdsByName.putIfAbsent(fullName, athlete.getId());
+            }
+        }
+        return athleteIdsByName;
+    }
+
+    private String athleteProfileLink(String athleteName, Map<String, String> athleteIdsByName) {
+        String athleteId = athleteIdsByName.get(athleteName);
+        if (athleteId == null || athleteId.isBlank()) {
+            return WildflyUtils.escape(athleteName);
+        }
+        return "<a href='#' class='link-primary' data-athlete-profile-id='" + escapeAttribute(athleteId)
+                + "' data-athlete-profile-name='" + escapeAttribute(athleteName) + "'>" + WildflyUtils.escape(athleteName) + "</a>";
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String escapeAttribute(String value) {
+        return WildflyUtils.escape(value == null ? "" : value).replace("'", "&#39;");
     }
 }

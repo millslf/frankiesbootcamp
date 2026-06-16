@@ -14,6 +14,76 @@ New way of working
 
 The latest completed work finished `FBC-16` and then completed and browser-tested `FBC-30` on `feature/fbc-30-competition-selection`. PR #16 is open and the user is moving `FBC-30` to code review. The repo now supports explicit multi-competition selection, historical competition browsing, competition-scoped sick weeks, and bounded/backgrounded historical rebuilds.
 
+### Current local branch after FBC-30: Insights tab work
+
+- Current branch: `feature/fbc-insights-tab`.
+- This branch was created from `feature/fbc-30-competition-selection` after committing and pushing the FBC-30 follow-up fix `4b3462c Fix multi-competition active rebuilds`.
+- Local uncommitted branch work adds a new read-only dashboard **Insights** tab using existing derived data. It should be opened as a PR **into `feature/fbc-30-competition-selection`**, because this branch is stacked on the FBC-30 PR.
+- The older local FBC-89 handoff/tracker notes are still intentionally uncommitted unless the user later asks to commit them.
+- Full `mvn package` is green after the final Strava-sex/profile-copy tweaks. Targeted tests have also been run repeatedly and are green:
+  - `mvn "-Dtest=CompetitionInsightsServiceTest" test`
+  - `mvn "-Dtest=PersistentActivityProcessServiceTest,CompetitionInsightsServiceTest" test`
+  - `mvn package`
+
+#### Insights tab implemented behavior
+
+- Adds `/app/Insights` via `InsightsServlet` and includes it as the final dashboard tab in `src\main\webapp\app\index.jsp`.
+- Uses `CompetitionInsightsService` and `CompetitionInsights` model to derive read-only views from existing `PerformanceResponse` / `WeeklyPerformance` data.
+- Active competitions exclude the current partial week from Insights calculations so early-week zeros do not distort charts/profile summaries.
+- Past/completed competition insights can use the full available persisted history.
+- The athlete profile supports any athlete in the selected competition, but is shown in a Bootstrap modal rather than navigating to a standalone profile page.
+- The profile selector is a compact dropdown for mobile rather than one button per athlete.
+- Profiles now include a global **Profile** card:
+  - verified blurbs are persisted by athlete, not competition
+  - unverified blurbs are generated lazily after page render and tagged `Generated / Unverified`
+  - the logged-in athlete can edit the text and `Accept and save`, which persists it as `Verified` for everyone
+  - unaccepted generated text is intentionally not stored globally
+  - clearing the profile box and saving deletes the verified row, so the profile returns to generated/unverified mode
+  - the generated Profile text is timeless/personal, not a current competition update
+- Profiles also include a separate generated **Performance summary** at the bottom that uses current selected-competition points/rank context, including the current week, but still avoids private km values.
+- Strava `sex` is stored on `athletes.sex` when an athlete links Strava. AI profile/performance prompts use it for pronouns when present (`M`/`F`); otherwise they stay generic and must not guess gender from names.
+- Athlete names in Leaderboard and Honour Roll open the profile modal when the dashboard has loaded the Insights include.
+- Names are intentionally **not** clickable in Insights "Week-by-week leaderboard winners" or "Sport-specific standings".
+- `InsightsServlet` deliberately does **not** close `response.getWriter()` and no longer prints nested `<html>` / `<body>` markup, because it is rendered through `<jsp:include>` inside `index.jsp`. Closing the included writer caused WildFly/Jasper `JBWEB004052: Exception occurred when flushing data` logs while the page still appeared to work.
+
+#### Insights privacy / scoring decisions
+
+- Public athlete-level km values must remain private.
+- Insights may show points, ranks, percentages where already exposed, activity/goal-crusher counts, sick-week counts, strongest sport name, and milestone labels.
+- New Insights surfaces do not expose athlete km totals.
+- Honour Roll distance values were also hidden; the table now shows only the distance leader name for that week.
+- The persistent text summary regression was fixed: `getLoggedInAthleteSummary(...)` and `getLoggedInAthleteSummaryForCompetition(...)` again show cumulative sport totals from `competition_summary_sport_stats`, matching old `PerformanceResponse.toString()` semantics, instead of latest-week sport totals.
+- Regression coverage for this is in `PersistentActivityProcessServiceTest#athleteSummaryReadsLatestValuesFromDb`.
+
+#### Position-over-time graph decisions
+
+- The graph represents **overall leaderboard position over time**, not Honour Roll winner order.
+- Equal leaderboard scores should share the same rank; the graph must not invent a deterministic ordering inside ties.
+- The x-axis is reversed by design:
+  - latest completed/current standings are on the left
+  - history runs rightward back to Week 1
+- Athlete names sit on the left at their latest/current rank.
+- The right side shows rank numbers only, one number per row.
+- Multiple lines may start/end on the same rank row when athletes are tied; some rank rows may have no line because competition ranking skips after ties.
+- `CompetitionInsightsServiceTest#rankTrendShowsSharedRankWhenLeaderboardPointsAreTied` covers shared-rank behavior.
+
+#### Main local files for Insights work
+
+- `src\main\java\com\frankies\bootcamp\model\CompetitionInsights.java`
+- `src\main\java\com\frankies\bootcamp\model\AthleteProfileBlurb.java`
+- `src\main\java\com\frankies\bootcamp\service\CompetitionInsightsService.java`
+- `src\main\java\com\frankies\bootcamp\service\AiMessageService.java`
+- `src\main\java\com\frankies\bootcamp\servlet\InsightsServlet.java`
+- `src\main\java\com\frankies\bootcamp\servlet\AthleteProfileSummaryServlet.java`
+- `src\main\java\com\frankies\bootcamp\servlet\LeaderboardServlet.java`
+- `src\main\java\com\frankies\bootcamp\servlet\HonourRollServlet.java`
+- `src\main\java\com\frankies\bootcamp\service\ActivityProcessFacade.java`
+- `src\main\java\com\frankies\bootcamp\service\PersistentActivityProcessService.java`
+- `src\main\java\com\frankies\bootcamp\service\DBService.java`
+- `src\main\webapp\app\index.jsp`
+- `src\test\java\com\frankies\bootcamp\service\CompetitionInsightsServiceTest.java`
+- `src\test\java\com\frankies\bootcamp\service\PersistentActivityProcessServiceTest.java`
+
 ### FBC-16 completion status
 
 - `FBC-16` is now effectively wrapped on the local branch `feature/fbc-16-competition-setup`.
@@ -102,6 +172,26 @@ The latest completed work finished `FBC-16` and then completed and browser-teste
   - `FBC-54`: formal global and competition-scoped authorization; current sick-week controls are still self-service only
   - `FBC-91`: webhook and rebuild optimization that avoids full athlete Strava refetches
   - `FBC-92`: broader removal of remaining legacy in-memory summary paths and `athletes.start_goal`
+
+### Next ticket shaping: FBC-89
+
+- User wants `FBC-89` to cover invitation-first joining after `FBC-30`.
+- Scope to capture in the ticket:
+  - admins can invite people to a competition by email
+  - existing FB users receive dashboard notifications/CTAs for pending invites
+  - non-users receive invite links that survive signup/login, Strava linking, and competition acceptance
+  - accepting creates/reactivates `competition_athlete` and captures/confirms the starting goal
+  - simple bulk invite by pasted comma/newline/semicolon-separated emails
+  - existing athlete/user search on the invite form by name/email, excluding athletes already active in the competition
+  - invitations should store normalized email, optional `invited_user_id`, token, status, invited-by user, timestamps, and expiry
+  - member lifecycle rules belong here: self-leave/remove, rejoin/reinvite, last-admin protection, and what happens to historical leaderboard/stat rows after membership changes
+  - use `competition_athlete.role = 'admin'` as the temporary invite permission gate until `FBC-54`
+- Keep out of FBC-89 unless explicitly expanded:
+  - CSV/contact import
+  - fancy email template work
+  - batch scheduling
+  - public competition discovery
+  - full admin console redesign
 
 ### Current historical outcome behavior
 

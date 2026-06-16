@@ -30,6 +30,11 @@ Issues and PRDs for this repo live in Jira. Use the Atlassian Jira CLI workflow 
   - `FBC-12` was re-checked in Jira and now means competition-aware onboarding flow, not registration/auth foundation.
   - For onboarding direction, treat `FBC-12` as the explicit onboarding-state and routing layer before `FBC-16`, `FBC-30`, and `FBC-54`.
   - Invitation-only competition visibility should be treated as `FBC-89` scope: the logged-in athlete should only see competitions they are invited to join unless a later ticket intentionally broadens discovery behavior.
+  - `FBC-89` should include invitation-first joining, simple bulk email invites, existing athlete/user search on the invite form, and membership lifecycle rules deferred from `FBC-30`:
+    - self-leave/remove rules for active/future/completed competitions
+    - rejoin/reinvite behavior
+    - last-admin protection
+    - historical leaderboard/stat row preservation vs hiding/exclusion after membership changes
   - Latest local status: `FBC-12` was reviewed as effectively complete and split to branch `feature/fbc-12-onboarding-flow` at commit `217fbbb`; a separate bugfix branch `bugfix/session-persistence` at commit `546c063` was also pushed.
   - Latest local status: `FBC-16` is now effectively complete on local branch `feature/fbc-16-competition-setup`, including lifecycle-aware onboarding and historical competition outcome access.
   - Latest local status: `FBC-30` is functionally complete and browser-tested on branch `feature/fbc-30-competition-selection`; PR #16 is open and the user is moving the ticket to code review.
@@ -45,6 +50,16 @@ Issues and PRDs for this repo live in Jira. Use the Atlassian Jira CLI workflow 
       - competition-scoped sick weeks are now stored under `competition_athlete_sick_week`; completed competitions cannot be edited through the history UI
       - incomplete historical competitions trigger bounded background rebuilds, then freeze once persisted state is complete and the comp is older than 14 days
       - self-removal/leaving a competition is intentionally not part of `FBC-30`; track that membership lifecycle under `FBC-89`, with authorization constraints in `FBC-54`
+  - Latest local follow-up status: a separate uncommitted local branch `feature/fbc-insights-tab` now exists for a read-only dashboard Insights tab built from existing derived data. It should be reviewed as a stacked PR targeting `feature/fbc-30-competition-selection`.
+    - It adds athlete profile modals, a compact profile dropdown, position-over-time leaderboard rank graph, week-by-week winner summaries, and sport-specific standings.
+    - Athlete profiles now include a global Profile card; accepted blurbs persist as verified, while unaccepted generated text is not stored and regenerates lazily after render. Clearing and saving the Profile deletes the verified row.
+    - Profiles also include a current generated Performance summary, and Strava-link-time `athletes.sex` is used for pronouns when present without guessing from names.
+    - Privacy rule: do not expose public athlete-level km values in Insights; Honour Roll distance values were also hidden locally and now show the distance leader name only.
+    - Active competitions exclude the current partial week from Insights.
+    - Tied leaderboard scores share the same rank in the position graph.
+    - Persistent summary text was fixed locally to use cumulative sport totals from `competition_summary_sport_stats`.
+    - Targeted tests and full `mvn package` are green after the latest UI/profile-summary tweaks.
+    - If this work is not folded into `FBC-30`, create/assign a Jira ticket before committing/pushing.
 
 ## Conventions
 
