@@ -11,21 +11,6 @@
     <meta charset="UTF-8">
     <%@ include file="/WEB-INF/jspf/head-common.jspf" %>
     <title>Frankies Bootcamp</title>
-    <script>
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tab-content");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tab-button");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].classList.remove("active");
-            }
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.classList.add("active");
-        }
-    </script>
 </head>
 <body>
 <%@ include file="/WEB-INF/jspf/header.jspf" %>
@@ -34,18 +19,18 @@
 <div id="tabsContainer" class="overflow-auto"
      style="position: sticky; top: 56px; z-index: 1020; background-color: white; border-bottom: 1px solid #ddd;">
     <div class="d-flex flex-row flex-nowrap">
-        <button class="tab-button active" onclick="openTab(event, 'Tab1Content', 'history')"><i
+        <button class="tab-button active" data-tab-content="Tab1Content" data-audit-tab="history" onclick="openTab(event, 'Tab1Content', 'history')"><i
                 class="bi bi-hourglass-bottom header-icon"></i>Weekly History
         </button>
-        <button class="tab-button" onclick="openTab(event, 'Tab3Content', 'leaderboard')"><i
+        <button class="tab-button" data-tab-content="Tab3Content" data-audit-tab="leaderboard" onclick="openTab(event, 'Tab3Content', 'leaderboard')"><i
                 class='bi bi-bar-chart-line-fill header-icon'></i>Leaderboard
         </button>
-        <button class="tab-button" onclick="openTab(event, 'Tab2Content', 'honour-roll')"><i class="bi bi-trophy-fill header-icon"></i>Honour
+        <button class="tab-button" data-tab-content="Tab2Content" data-audit-tab="honour-roll" onclick="openTab(event, 'Tab2Content', 'honour-roll')"><i class="bi bi-trophy-fill header-icon"></i>Honour
             Roll
         </button>
-        <button class="tab-button" onclick="openTab(event, 'Tab4Content', 'summary')"><i class="bi bi-list-ol header-icon"></i>Summary
+        <button class="tab-button" data-tab-content="Tab4Content" data-audit-tab="summary" onclick="openTab(event, 'Tab4Content', 'summary')"><i class="bi bi-list-ol header-icon"></i>Summary
         </button>
-        <button class="tab-button" onclick="openTab(event, 'Tab8Content', 'insights')"><i class="bi bi-lightbulb-fill header-icon"></i>Insights
+        <button class="tab-button" data-tab-content="Tab8Content" data-audit-tab="insights" onclick="openTab(event, 'Tab8Content', 'insights')"><i class="bi bi-lightbulb-fill header-icon"></i>Insights
         </button>
     </div>
 </div>
@@ -82,18 +67,6 @@
 <%@ include file="/WEB-INF/jspf/zenbot.jspf" %>
 
 <script>
-    document.getElementsByClassName("tab-button")[0].click(); // Default to first tab
-    fetch('<%=request.getContextPath()%>/app/TabAudit', {
-        method: 'POST',
-        credentials: 'include',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-        body: 'tab=' + encodeURIComponent('landing')
-    }).catch(function () {
-        // keep landing resilient even if audit logging fails
-    });
-</script>
-<script>
     function openTab(evt, tabName, auditTab) {
         var i, tabcontent, tablinks;
         tabcontent = document.getElementsByClassName("tab-content");
@@ -104,12 +77,18 @@
         for (i = 0; i < tablinks.length; i++) {
             tablinks[i].classList.remove("active");
         }
-        document.getElementById(tabName).style.display = "block";
-        if (evt.currentTarget.classList.contains("tab-button")) {
+        var tabElement = document.getElementById(tabName);
+        if (!tabElement) return;
+        tabElement.style.display = "block";
+        if (evt && evt.currentTarget && evt.currentTarget.classList.contains("tab-button")) {
             evt.currentTarget.classList.add("active");
+        } else {
+            var matchingButton = document.querySelector('.tab-button[data-tab-content="' + tabName + '"]');
+            if (matchingButton) matchingButton.classList.add("active");
         }
 
-        if (auditTab && evt.isTrusted) {
+        if (auditTab && evt && evt.isTrusted) {
+            rememberActiveTab(auditTab);
             fetch('<%=request.getContextPath()%>/app/TabAudit', {
                 method: 'POST',
                 credentials: 'include',
@@ -121,6 +100,41 @@
             });
         }
     }
+
+    function rememberActiveTab(tabName) {
+        if (!window.history || !window.URL) return;
+        var url = new URL(window.location.href);
+        url.searchParams.set('tab', tabName);
+        url.hash = '';
+        window.history.replaceState({}, '', url);
+    }
+
+    function requestedTab() {
+        var url = new URL(window.location.href);
+        var tab = url.searchParams.get('tab');
+        if (!tab && window.location.hash) {
+            tab = window.location.hash.substring(1);
+        }
+        return tab || 'history';
+    }
+
+    function activateRequestedTab() {
+        var tab = requestedTab();
+        var button = document.querySelector('.tab-button[data-audit-tab="' + tab + '"]')
+                || document.querySelector('.tab-button[data-audit-tab="history"]');
+        openTab({ currentTarget: button, isTrusted: false }, button.getAttribute('data-tab-content'), button.getAttribute('data-audit-tab'));
+    }
+
+    activateRequestedTab();
+    fetch('<%=request.getContextPath()%>/app/TabAudit', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: 'tab=' + encodeURIComponent('landing')
+    }).catch(function () {
+        // keep landing resilient even if audit logging fails
+    });
 </script>
 </body>
 </html>
