@@ -19,7 +19,7 @@ class OnboardingStateServiceTest {
 
     @Test
     void resolveReturnsStravaPendingWhenNoLinkedAthleteExists() throws SQLException {
-        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(false, null, List.of()));
+        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(false, List.of(), null, List.of()));
 
         OnboardingStatus status = service.resolve(user("usr-1"), null);
 
@@ -31,7 +31,7 @@ class OnboardingStateServiceTest {
 
     @Test
     void resolveReturnsCompetitionPendingWhenStravaLinkedWithoutMembership() throws SQLException {
-        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(false, null, List.of()));
+        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(false, List.of(), null, List.of()));
 
         OnboardingStatus status = service.resolve(user("usr-1"), athlete("12345"));
 
@@ -42,19 +42,34 @@ class OnboardingStateServiceTest {
 
     @Test
     void resolveReturnsReadyWhenStravaLinkedWithCompetitionMembership() throws SQLException {
-        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(true, null, List.of()));
+        CompetitionSummaryView active = new CompetitionSummaryView(3L, "Main Bootcamp", "Australia/Sydney", Instant.now().getEpochSecond() - 86400, null, "active");
+        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(true, List.of(active), null, List.of()));
 
         OnboardingStatus status = service.resolve(user("usr-1"), athlete("12345"));
 
         assertEquals(OnboardingState.READY, status.getState());
         assertTrue(status.isStravaLinked());
         assertTrue(status.hasCompetitionMembership());
+        assertEquals(1, status.getActiveCompetitions().size());
+    }
+
+    @Test
+    void resolveReturnsCompetitionSelectionRequiredWhenMultipleActiveCompetitionsExist() throws SQLException {
+        CompetitionSummaryView first = new CompetitionSummaryView(3L, "Main Bootcamp", "Australia/Sydney", Instant.now().getEpochSecond() - 86400, null, "active");
+        CompetitionSummaryView second = new CompetitionSummaryView(4L, "Second Bootcamp", "Australia/Sydney", Instant.now().getEpochSecond() - 43200, null, "active");
+        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(true, List.of(second, first), null, List.of()));
+
+        OnboardingStatus status = service.resolve(user("usr-1"), athlete("12345"));
+
+        assertEquals(OnboardingState.COMPETITION_SELECTION_REQUIRED, status.getState());
+        assertEquals(2, status.getActiveCompetitions().size());
+        assertEquals(second, status.getActiveCompetition());
     }
 
     @Test
     void resolveReturnsCompetitionStartsSoonWhenUpcomingCompetitionExists() throws SQLException {
         CompetitionSummaryView upcoming = new CompetitionSummaryView(9L, "Winter Bootcamp", "Australia/Sydney", Instant.now().getEpochSecond() + 86400, null, "active");
-        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(false, upcoming, List.of()));
+        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(false, List.of(), upcoming, List.of()));
 
         OnboardingStatus status = service.resolve(user("usr-1"), athlete("12345"));
 
@@ -65,7 +80,7 @@ class OnboardingStateServiceTest {
     @Test
     void resolveReturnsCompetitionHistoryOnlyWhenOnlyPastCompetitionsExist() throws SQLException {
         CompetitionSummaryView past = new CompetitionSummaryView(7L, "Autumn Bootcamp", "Australia/Sydney", Instant.now().getEpochSecond() - 86400 * 30, Instant.now().getEpochSecond() - 86400, "active");
-        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(false, null, List.of(past)));
+        OnboardingStateService service = new OnboardingStateService(new StubCompetitionMembershipLookup(false, List.of(), null, List.of(past)));
 
         OnboardingStatus status = service.resolve(user("usr-1"), athlete("12345"));
 
@@ -90,11 +105,16 @@ class OnboardingStateServiceTest {
 
     private static final class StubCompetitionMembershipLookup implements OnboardingStateService.CompetitionMembershipLookup {
         private final boolean hasMembership;
+        private final List<CompetitionSummaryView> activeCompetitions;
         private final CompetitionSummaryView upcomingCompetition;
         private final List<CompetitionSummaryView> pastCompetitions;
 
-        private StubCompetitionMembershipLookup(boolean hasMembership, CompetitionSummaryView upcomingCompetition, List<CompetitionSummaryView> pastCompetitions) {
+        private StubCompetitionMembershipLookup(boolean hasMembership,
+                                                List<CompetitionSummaryView> activeCompetitions,
+                                                CompetitionSummaryView upcomingCompetition,
+                                                List<CompetitionSummaryView> pastCompetitions) {
             this.hasMembership = hasMembership;
+            this.activeCompetitions = activeCompetitions;
             this.upcomingCompetition = upcomingCompetition;
             this.pastCompetitions = pastCompetitions;
         }
@@ -102,6 +122,11 @@ class OnboardingStateServiceTest {
         @Override
         public boolean hasActiveCompetitionMembership(String athleteId) {
             return hasMembership;
+        }
+
+        @Override
+        public List<CompetitionSummaryView> listCurrentActiveCompetitions(String athleteId) {
+            return activeCompetitions;
         }
 
         @Override

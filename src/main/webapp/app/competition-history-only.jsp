@@ -46,10 +46,6 @@
                         </p>
                     </div>
 
-                    <div class="alert alert-secondary" role="alert">
-                        Past competition browsing is the next step, but your previous competitions are listed below now.
-                    </div>
-
                     <h2 class="h5 mt-4">Previous competitions</h2>
                     <ul class="list-group mb-4">
                         <% for (CompetitionSummaryView competition : pastCompetitions) {

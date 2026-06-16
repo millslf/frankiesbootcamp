@@ -16,6 +16,11 @@ Issues and PRDs for this repo live in Jira. Use the Atlassian Jira CLI workflow 
 - Current implemented-and-ready-to-close ticket state:
   - `FBC-22` should be treated as effectively complete as a first persistence slice and ready to close in Jira.
   - `FBC-91` owns the deferred webhook optimization to rebuild from persisted activity rows instead of full Strava refetch.
+    - Current local prompt direction:
+      - replace webhook-triggered whole-athlete Strava refetch with competition-aware incremental mutation logic
+      - persist per-athlete watermarks for latest fully imported activity start time and last full reconciliation time
+      - use incremental startup/restart fetches for new activities, but keep webhook update/delete as the source of truth for older edited activities
+      - add periodic athlete reconciliation roughly every 3 to 4 days across all linked competitions
   - `FBC-92` owns broader removal of remaining legacy in-memory summary code.
   - `FBC-93` owns analysis-only heart-rate-informed equivalent-distance metric work.
 - Current backlog note from the handoff files:
@@ -27,7 +32,19 @@ Issues and PRDs for this repo live in Jira. Use the Atlassian Jira CLI workflow 
   - Invitation-only competition visibility should be treated as `FBC-89` scope: the logged-in athlete should only see competitions they are invited to join unless a later ticket intentionally broadens discovery behavior.
   - Latest local status: `FBC-12` was reviewed as effectively complete and split to branch `feature/fbc-12-onboarding-flow` at commit `217fbbb`; a separate bugfix branch `bugfix/session-persistence` at commit `546c063` was also pushed.
   - Latest local status: `FBC-16` is now effectively complete on local branch `feature/fbc-16-competition-setup`, including lifecycle-aware onboarding and historical competition outcome access.
-  - Latest local status: broader competition selection/defaulting behavior beyond that slice should now move into `FBC-30`.
+  - Latest local status: `FBC-30` is functionally complete and browser-tested on branch `feature/fbc-30-competition-selection`; PR #16 is open and the user is moving the ticket to code review.
+    - local implementation includes:
+      - multi-active competition detection
+      - a required chooser state when multiple active competitions exist
+      - dashboard-shell competition switching links
+      - default to the current active competition when there is exactly one active choice
+      - explicitly handle the UX when there are multiple simultaneously active competitions
+      - expose competition switching from the normal dashboard shell
+      - keep explicit selected competition context separate from implicit current-active defaults
+      - list past competitions in the dashboard shell and chooser so athletes can switch into historical outcome context
+      - competition-scoped sick weeks are now stored under `competition_athlete_sick_week`; completed competitions cannot be edited through the history UI
+      - incomplete historical competitions trigger bounded background rebuilds, then freeze once persisted state is complete and the comp is older than 14 days
+      - self-removal/leaving a competition is intentionally not part of `FBC-30`; track that membership lifecycle under `FBC-89`, with authorization constraints in `FBC-54`
 
 ## Conventions
 

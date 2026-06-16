@@ -12,7 +12,7 @@ New way of working
 
 ## Current state
 
-The latest completed work focused on `FBC-16`: competition setup/join, lifecycle-aware onboarding, competition-scoped reads, and historical competition outcome access. Broader competition-selection UX beyond that slice should now move into `FBC-30`.
+The latest completed work finished `FBC-16` and then completed and browser-tested `FBC-30` on `feature/fbc-30-competition-selection`. PR #16 is open and the user is moving `FBC-30` to code review. The repo now supports explicit multi-competition selection, historical competition browsing, competition-scoped sick weeks, and bounded/backgrounded historical rebuilds.
 
 ### FBC-16 completion status
 
@@ -45,13 +45,80 @@ The latest completed work focused on `FBC-16`: competition setup/join, lifecycle
   - making selected competition context explicit and user-visible, not just implicit/session-backed from the history-only page
   - cleaning up any remaining mixed assumptions between "current active competition" and "explicitly selected competition"
 
+### FBC-30 completion status
+
+- A new local branch was created for this ticket:
+  - `feature/fbc-30-competition-selection`
+- Implemented in this slice:
+  - new onboarding state `COMPETITION_SELECTION_REQUIRED`
+  - detection of multiple currently active competitions for one athlete
+  - explicit chooser screen at `src\main\webapp\app\competition-selection.jsp`
+  - `/app` now blocks on a chooser when the athlete has more than one active competition and no selection has been made yet
+  - single-current-active behavior still defaults straight into the dashboard
+  - selected competition context is now exposed in the dashboard off-canvas/header so the athlete can switch competition context from the normal app shell
+  - historical competition selection from `FBC-16` still works alongside the new active-competition chooser
+  - past competitions are now listed in the dashboard shell and chooser so athletes can switch into historical outcome context from the normal app
+  - one current active competition is stored as the selected competition context automatically, while an explicit past selection is preserved
+  - current vs historical history screens now respect the selected competition's starting goal, week count, start/end dates, and completed/current-week status
+  - global app loading overlay now covers navigation/fetch/form calls and escalates long-running rebuilds with a keep-browsing option
+  - historical competition rebuilds are bounded by competition start/end Strava query parameters and run in the background when selection detects incomplete persisted state
+  - completed competitions older than 14 days stop rebuilding once all active competition athletes have summary and weekly rows
+  - `competition_athlete_sick_week` now stores sick weeks per athlete per competition; current competitions can mark/clear sick weeks, completed competitions cannot
+  - historical Zen messages now use whole-competition recap context instead of current-week wording
+  - the in-app "Join or create competition" menu entry is hidden until `FBC-89` implements the invitation/join flow properly
+- Main files changed so far for `FBC-30`:
+  - `src\main\java\com\frankies\bootcamp\model\OnboardingState.java`
+  - `src\main\java\com\frankies\bootcamp\model\OnboardingStatus.java`
+  - `src\main\java\com\frankies\bootcamp\service\OnboardingStateService.java`
+  - `src\main\java\com\frankies\bootcamp\service\DBService.java`
+  - `src\main\java\com\frankies\bootcamp\service\AuthSessionService.java`
+  - `src\main\java\com\frankies\bootcamp\servlet\BootcampServlet.java`
+  - `src\main\java\com\frankies\bootcamp\servlet\SelectCompetitionServlet.java`
+  - `src\main\java\com\frankies\bootcamp\servlet\AthleteHistoryServlet.java`
+  - `src\main\java\com\frankies\bootcamp\servlet\SickWeekServlet.java`
+  - `src\main\java\com\frankies\bootcamp\service\PersistentActivityProcessService.java`
+  - `src\main\java\com\frankies\bootcamp\service\StravaService.java`
+  - `src\main\java\com\frankies\bootcamp\service\AiMessageService.java`
+  - `src\main\java\com\frankies\bootcamp\service\CompetitionSetupService.java`
+  - `src\main\webapp\WEB-INF\jspf\head-common.jspf`
+  - `src\main\webapp\WEB-INF\jspf\header.jspf`
+  - `src\main\webapp\app\competition-selection.jsp`
+  - `src\main\webapp\app\competition-setup.jsp`
+  - `src\main\webapp\styles\main.css`
+  - `src\test\java\com\frankies\bootcamp\service\OnboardingStateServiceTest.java`
+  - `src\test\java\com\frankies\bootcamp\service\CompetitionSetupServiceTest.java`
+  - `src\test\java\com\frankies\bootcamp\service\PersistentActivityProcessServiceTest.java`
+  - `src\test\java\com\frankies\bootcamp\servlet\BootcampServletTest.java`
+- Targeted tests currently green after this slice:
+  - `CompetitionSetupServiceTest`
+  - `OnboardingStateServiceTest`
+  - `BootcampServletTest`
+
+### FBC-30 closeout / follow-up boundary
+
+- Treat `FBC-30` as functionally complete, browser-tested by the user, and in code review via PR #16.
+- Follow-up candidates intentionally left outside this ticket:
+  - `FBC-89`: invitation-only competition discovery/join flow, re-exposing join/create affordances, and member self-leave/removal lifecycle
+  - `FBC-54`: formal global and competition-scoped authorization; current sick-week controls are still self-service only
+  - `FBC-91`: webhook and rebuild optimization that avoids full athlete Strava refetches
+  - `FBC-92`: broader removal of remaining legacy in-memory summary paths and `athletes.start_goal`
+
 ### Current historical outcome behavior
 
 - Historical outcome access is intentionally persistence-first:
-  - when a past competition is selected, the app first checks persisted DB-derived state for that athlete + competition
-  - if found, it trusts that historical result as the outcome
-  - only if no persisted snapshot exists does it backfill the selected historical competition from Strava data
-- This was chosen specifically to avoid unnecessary rebuilds of already-finished competitions.
+  - when a past competition is selected, the app first checks persisted DB-derived state for that competition
+  - if every active `competition_athlete` has summary and weekly rows, it trusts that historical DB snapshot
+  - if the competition is incomplete, it starts a competition-wide background rebuild once and redirects immediately
+  - completed competitions older than 14 days do not rebuild again after the persisted state is complete
+  - Strava fetches for bounded competitions now use both `after=start_timestamp` and `before=end_timestamp`
+- This was chosen specifically to avoid unnecessary rebuilds of already-finished competitions while still allowing recreated old competitions to backfill once.
+
+### Latest validation
+
+- User browser-tested the deployed `FBC-30` flow after the sick-week rebuild ordering fix and confirmed it works.
+- Full local package build passed after the fix:
+  - `mvn package`
+  - 58 tests passed
 
 ### FBC-22 / FBC-32 architecture interrogation outcome
 

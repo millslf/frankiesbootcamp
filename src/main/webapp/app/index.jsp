@@ -88,7 +88,6 @@
         // keep landing resilient even if audit logging fails
     });
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function openTab(evt, tabName, auditTab) {
         var i, tabcontent, tablinks;

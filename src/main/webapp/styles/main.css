@@ -11,6 +11,96 @@ body, html {
     background-color: #f9f9f9;
 }
 
+.app-loading-overlay {
+    align-items: center;
+    background: rgba(13, 27, 42, 0.55);
+    display: none;
+    inset: 0;
+    justify-content: center;
+    position: fixed;
+    z-index: 3000;
+}
+
+.app-loading-overlay.is-visible {
+    display: flex;
+}
+
+.app-loading-card {
+    align-items: center;
+    background: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.25);
+    color: #0d6efd;
+    display: flex;
+    gap: 0.75rem;
+    max-width: min(92vw, 32rem);
+    padding: 1rem 1.25rem;
+}
+
+.app-loading-overlay.is-slow .app-loading-card {
+    align-items: flex-start;
+    color: #24456f;
+    flex-wrap: wrap;
+}
+
+.app-loading-stop {
+    display: none;
+    margin-left: auto;
+}
+
+.app-loading-overlay.is-slow .app-loading-stop {
+    display: inline-block;
+}
+
+.app-loading-runner {
+    animation: bootcamp-runner-bounce 0.55s ease-in-out infinite alternate;
+    display: inline-block;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.app-loading-track {
+    background: repeating-linear-gradient(
+            90deg,
+            #0d6efd 0,
+            #0d6efd 0.5rem,
+            transparent 0.5rem,
+            transparent 0.85rem
+    );
+    border-radius: 999px;
+    display: inline-block;
+    height: 0.25rem;
+    overflow: hidden;
+    position: relative;
+    width: 3rem;
+}
+
+.app-loading-track::after {
+    animation: bootcamp-track-slide 0.7s linear infinite;
+    background: linear-gradient(90deg, transparent, #ffffff, transparent);
+    content: "";
+    inset: 0;
+    position: absolute;
+}
+
+@keyframes bootcamp-runner-bounce {
+    from {
+        transform: translateY(0) rotate(-4deg);
+    }
+    to {
+        transform: translateY(-0.35rem) rotate(5deg);
+    }
+}
+
+@keyframes bootcamp-track-slide {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
 /* === Typography === */
 h1 {
     font-size: 1.8rem;
@@ -288,6 +378,53 @@ table th i {
     font-size: .8rem;
     color: #666;
     margin-bottom: 10px;
+}
+
+.competition-timing-summary {
+    background: #f8fbff;
+    border: 1px solid #cfe2ff;
+    border-left: 4px solid #0d6efd;
+    border-radius: 0.5rem;
+    color: #24456f;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0.75rem 0 1rem;
+    padding: 0.75rem 1rem;
+}
+
+.competition-timing-summary summary {
+    align-items: start;
+    cursor: pointer;
+    display: grid;
+    gap: 0.15rem;
+    grid-template-columns: 1fr auto;
+    list-style: none;
+}
+
+.competition-timing-summary summary::marker {
+    content: "";
+}
+
+.competition-timing-summary summary::-webkit-details-marker {
+    display: none;
+}
+
+.competition-timing-summary summary::after {
+    color: #0d6efd;
+    content: "\F282";
+    font-family: "bootstrap-icons";
+    font-size: 1rem;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    line-height: 1.3;
+}
+
+.competition-timing-summary[open] summary::after {
+    content: "\F286";
+}
+
+.competition-timing-summary[open] summary {
+    margin-bottom: 0.4rem;
 }
 
 /* === Off-canvas === */

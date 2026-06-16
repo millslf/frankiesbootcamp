@@ -149,14 +149,19 @@ public class StravaService {
     }
 
     public List<StravaActivityResponse> getAthleteActivitiesForPeriod(long after, String bearer) throws IOException {
+        return getAthleteActivitiesForPeriod(after, null, bearer);
+    }
+
+    public List<StravaActivityResponse> getAthleteActivitiesForPeriod(long after, Long before, String bearer) throws IOException {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
         List<StravaActivityResponse> stravaActivityResponses = new ArrayList<>();
         int page = 1;
         boolean hasMoreData = true;
         while (hasMoreData) {
+            String beforeQuery = before == null ? "" : "&before=" + before;
             Request request = new Request.Builder()
-                    .url("https://www.strava.com/api/v3/athlete/activities?after=" + after + "&per_page=100&page=" + page)
+                    .url("https://www.strava.com/api/v3/athlete/activities?after=" + after + beforeQuery + "&per_page=100&page=" + page)
                     .method("GET", null)
                     .addHeader("Authorization", "Bearer " + bearer)
                     .build();

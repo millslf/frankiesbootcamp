@@ -22,10 +22,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -60,7 +62,7 @@ public class PersistentActivityProcessService {
             if (!hasActiveCompetitionMembership(athlete.getId())) {
                 continue;
             }
-            rebuildAthleteState(athlete);
+            rebuildCurrentCompetitionStates(athlete);
         }
         persistHonourRollRows();
         regenerateSummaryMaps();
@@ -73,7 +75,7 @@ public class PersistentActivityProcessService {
         if (!hasActiveCompetitionMembership(athlete.getId())) {
             return;
         }
-        rebuildAthleteState(athlete);
+        rebuildCurrentCompetitionStates(athlete);
         persistHonourRollRows();
         regenerateSummaryMaps();
     }
@@ -93,6 +95,22 @@ public class PersistentActivityProcessService {
         regenerateSummaryMaps();
     }
 
+    public void prepareCompetitionSummary(long competitionId) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        List<BootcampAthlete> athletes = dbService.listCompetitionAthletes(competitionId);
+        for (BootcampAthlete athlete : athletes) {
+            if (athlete.getId() == null || athlete.getId().isBlank() || athlete.getId().startsWith("local-")) {
+                continue;
+            }
+            Long competitionAthleteId = dbService.findCompetitionAthleteId(athlete.getId(), competitionId);
+            if (competitionAthleteId == null) {
+                continue;
+            }
+            rebuildAthleteStateForCompetition(athlete, competitionAthleteId);
+        }
+        persistCompetitionHonourRollRows(competitionId);
+        regenerateSummaryMaps();
+    }
+
     protected PerformanceResponse rebuildAthleteState(BootcampAthlete athlete) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         BootcampAthlete refreshedAthlete = stravaService.refreshToken(athlete);
         LOG.info("Busy with athlete: " + refreshedAthlete.getFirstname() + " " + refreshedAthlete.getLastname());
@@ -106,12 +124,37 @@ public class PersistentActivityProcessService {
         return rebuildAthleteStateForCompetition(refreshedAthlete, competitionAthleteId);
     }
 
+    protected void rebuildCurrentCompetitionStates(BootcampAthlete athlete) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        BootcampAthlete refreshedAthlete = stravaService.refreshToken(athlete);
+        List<Long> competitionAthleteIds = listCurrentCompetitionAthleteIds(refreshedAthlete.getId());
+        if (competitionAthleteIds.isEmpty()) {
+            LOG.info("Skipping persistent rebuild for athlete without active competition membership: " + refreshedAthlete.getId());
+            return;
+        }
+        LOG.info("Busy with athlete: " + refreshedAthlete.getFirstname() + " " + refreshedAthlete.getLastname());
+        for (Long competitionAthleteId : competitionAthleteIds) {
+            rebuildAthleteStateForCompetition(refreshedAthlete, competitionAthleteId);
+        }
+    }
+
+    protected List<Long> listCurrentCompetitionAthleteIds(String athleteId) throws SQLException {
+        return dbService.listCurrentCompetitionAthleteIds(athleteId);
+    }
+
     protected PerformanceResponse rebuildAthleteStateForCompetition(BootcampAthlete athlete,
                                                                     long competitionAthleteId) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         BootcampAthlete refreshedAthlete = athlete.getAccessToken() == null || athlete.getAccessToken().isBlank()
                 ? athlete
                 : stravaService.refreshToken(athlete);
-        List<StravaActivityResponse> activities = stravaService.getAthleteActivitiesForPeriod(getStartTimeStamp(), refreshedAthlete.getAccessToken());
+        DBService.CompetitionAthleteConfig competitionConfig = getCompetitionAthleteConfig(competitionAthleteId);
+        long startTimestamp = competitionConfig.startTimestamp();
+        Long endTimestamp = competitionConfig.endTimestamp();
+        double startingGoal = competitionConfig.startingGoal();
+        Set<Integer> sickWeeks = getCompetitionSickWeeks(competitionAthleteId);
+        List<StravaActivityResponse> activities = stravaService.getAthleteActivitiesForPeriod(startTimestamp, endTimestamp, refreshedAthlete.getAccessToken());
+        activities = activities.stream()
+                .sorted(Comparator.comparing(activity -> Instant.parse(activity.getStart_date())))
+                .toList();
 
         PerformanceResponse performance = new PerformanceResponse();
         performance.setAthlete(refreshedAthlete);
@@ -122,16 +165,20 @@ public class PersistentActivityProcessService {
 
         double distanceToDate = 0.0;
         double scoreToDate = 0.0;
-        int numberOfWeeksSinceStart = getNumberOfWeeksSinceStart();
+        int numberOfWeeksSinceStart = getNumberOfWeeksSinceStart(startTimestamp, endTimestamp);
         int week = 1;
-        long weekEnding = getStartTimeStamp() + BootcampConstants.WEEK_IN_SECONDS;
-        WeeklyPerformance weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, refreshedAthlete.getGoal(), -1.0);
+        long weekEnding = startTimestamp + BootcampConstants.WEEK_IN_SECONDS;
+        WeeklyPerformance weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, startingGoal, -1.0);
 
         for (StravaActivityResponse activity : activities) {
+            long activityTimestamp = Instant.parse(activity.getStart_date()).getEpochSecond();
+            if (activityTimestamp < startTimestamp || (endTimestamp != null && activityTimestamp > endTimestamp)) {
+                continue;
+            }
             int loopCount = 0;
-            while (Instant.parse(activity.getStart_date()).getEpochSecond() > weekEnding) {
+            while (activityTimestamp > weekEnding) {
                 weeklyPerformance.setAverageWeeklyScore(scoreToDate, week - 1);
-                weeklyPerformance.setIsSick(refreshedAthlete.isSick(week));
+                weeklyPerformance.setIsSick(sickWeeks.contains(week));
                 scoreToDate += weeklyPerformance.getWeekScore();
                 performance.addWeeklyPerformance(weeklyPerformance, week);
                 weeklyRows.add(buildWeeklyRow(week, weeklyPerformance, weekEnding));
@@ -155,11 +202,19 @@ public class PersistentActivityProcessService {
 
         int loopCount = 0;
         if (performance.getWeeklyPerformances() == null) {
+            weeklyPerformance.setAverageWeeklyScore(scoreToDate, week - 1);
+            weeklyPerformance.setIsSick(sickWeeks.contains(week));
+            scoreToDate += weeklyPerformance.getWeekScore();
             performance.addWeeklyPerformance(weeklyPerformance, week);
+            weeklyRows.add(buildWeeklyRow(week, weeklyPerformance, weekEnding));
+            week++;
+            weekEnding += BootcampConstants.WEEK_IN_SECONDS;
+            weeklyPerformance = new WeeklyPerformance("Week" + week, weekEnding, weeklyPerformance.getWeekGoal(), loopCount == 0 ? weeklyPerformance.getTotalDistance() : 0.0);
+            loopCount++;
         }
         while (performance.getWeeklyPerformances().size() < numberOfWeeksSinceStart) {
             weeklyPerformance.setAverageWeeklyScore(scoreToDate, week - 1);
-            weeklyPerformance.setIsSick(refreshedAthlete.isSick(week));
+            weeklyPerformance.setIsSick(sickWeeks.contains(week));
             scoreToDate += weeklyPerformance.getWeekScore();
             performance.addWeeklyPerformance(weeklyPerformance, week);
             weeklyRows.add(buildWeeklyRow(week, weeklyPerformance, weekEnding));
@@ -177,9 +232,9 @@ public class PersistentActivityProcessService {
                 distanceToDate,
                 scoreToDate,
                 numberOfWeeksSinceStart,
-                latestWeek != null ? latestWeek.getWeekGoal() : refreshedAthlete.getGoal(),
+                latestWeek != null ? latestWeek.getWeekGoal() : startingGoal,
                 Math.max(0, numberOfWeeksSinceStart - 1),
-                refreshedAthlete.getGoal() == null ? 0.0 : refreshedAthlete.getGoal(),
+                startingGoal,
                 latestWeek != null ? latestWeek.getWeekScore() : 0.0,
                 latestWeek != null ? latestWeek.getTotalPercentOfGoal() * 100 : 0.0
         );
@@ -198,6 +253,14 @@ public class PersistentActivityProcessService {
 
     protected boolean hasActiveCompetitionMembership(String athleteId) throws SQLException {
         return dbService.hasActiveCompetitionMembership(athleteId);
+    }
+
+    protected DBService.CompetitionAthleteConfig getCompetitionAthleteConfig(long competitionAthleteId) throws SQLException {
+        return dbService.getCompetitionAthleteConfig(competitionAthleteId);
+    }
+
+    protected Set<Integer> getCompetitionSickWeeks(long competitionAthleteId) throws SQLException {
+        return dbService.listCompetitionSickWeeks(competitionAthleteId);
     }
 
     protected void replacePersistentCompetitionState(long competitionAthleteId,
@@ -331,7 +394,7 @@ public class PersistentActivityProcessService {
         }
 
         Map<Integer, WeeklyPerformance> history = dbService.getPersistentAthleteHistory(athleteId);
-        WeeklyPerformance currentWeek = history.get(getNumberOfWeeksSinceStart());
+        WeeklyPerformance currentWeek = history.get(latestPersistedWeek(history));
 
         StringBuilder sports = new StringBuilder();
         if (currentWeek != null && currentWeek.getSports() != null) {
@@ -358,7 +421,7 @@ public class PersistentActivityProcessService {
         }
 
         Map<Integer, WeeklyPerformance> history = dbService.getPersistentAthleteHistory(athleteId, competitionId);
-        WeeklyPerformance currentWeek = history.get(getNumberOfWeeksSinceStart());
+        WeeklyPerformance currentWeek = history.get(latestPersistedWeek(history));
 
         StringBuilder sports = new StringBuilder();
         if (currentWeek != null && currentWeek.getSports() != null) {
@@ -388,9 +451,21 @@ public class PersistentActivityProcessService {
         return sb.toString();
     }
 
+    private int latestPersistedWeek(Map<Integer, WeeklyPerformance> history) {
+        return history.keySet().stream().mapToInt(Integer::intValue).max().orElse(getNumberOfWeeksSinceStart());
+    }
+
     public int getNumberOfWeeksSinceStart() {
-        return (int) Math.round(Math.ceil((double) (System.currentTimeMillis() - (getStartTimeStamp() * 1000)) /
-                (BootcampConstants.WEEK_IN_SECONDS * 1000)));
+        return getNumberOfWeeksSinceStart(getStartTimeStamp(), null);
+    }
+
+    public int getNumberOfWeeksSinceStart(long startTimestamp, Long endTimestamp) {
+        long effectiveEndMillis = endTimestamp == null
+                ? System.currentTimeMillis()
+                : Math.min(System.currentTimeMillis(), endTimestamp * 1000);
+        int weeks = (int) Math.ceil((double) (effectiveEndMillis - (startTimestamp * 1000)) /
+                (BootcampConstants.WEEK_IN_SECONDS * 1000));
+        return Math.max(1, weeks);
     }
 
     public Map<String, HashMap<String, Double>> getSortedSummaries() {
@@ -432,7 +507,8 @@ public class PersistentActivityProcessService {
                 return "No athlete stats are currently available.";
             }
 
-            WeeklyPerformance currentWeek = dbService.getPersistentAthleteHistory(athleteId).get(getNumberOfWeeksSinceStart());
+            Map<Integer, WeeklyPerformance> history = dbService.getPersistentAthleteHistory(athleteId);
+            WeeklyPerformance currentWeek = history.get(latestPersistedWeek(history));
             if (currentWeek == null) {
                 return "No athlete stats are currently available.";
             }
