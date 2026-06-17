@@ -4,6 +4,7 @@ import com.frankies.bootcamp.model.AuthenticatedUser;
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.service.AuthService;
 import com.frankies.bootcamp.service.AuthSessionService;
+import com.frankies.bootcamp.service.CompetitionAccessService;
 import com.frankies.bootcamp.service.CompetitionSetupService;
 import jakarta.inject.Inject;
 import jakarta.servlet.ServletException;
@@ -11,6 +12,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jboss.logging.Logger;
 import org.wildfly.security.credential.store.CredentialStoreException;
 
 import java.io.IOException;
@@ -19,6 +21,8 @@ import java.sql.SQLException;
 
 @WebServlet(name = "competitionSetup", value = "/app/competition-setup")
 public class CompetitionSetupServlet extends HttpServlet {
+    private static final Logger log = Logger.getLogger(CompetitionSetupServlet.class);
+
     @Inject
     private AuthSessionService authSessionService;
 
@@ -28,15 +32,24 @@ public class CompetitionSetupServlet extends HttpServlet {
     @Inject
     private CompetitionSetupService competitionSetupService;
 
+    @Inject
+    private CompetitionAccessService competitionAccessService;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
             BootcampAthlete athlete = requireLinkedAthlete(req);
+            if (!competitionAccessService.canAccessCompetitionSetup(authSessionService.getAuthenticatedUser(req))) {
+                resp.sendRedirect(req.getContextPath() + "/app");
+                return;
+            }
             req.setAttribute("competitionSetupView", competitionSetupService.loadView(athlete));
             req.getRequestDispatcher("/app/competition-setup.jsp").forward(req, resp);
         } catch (IllegalStateException e) {
+            log.error("Competition setup GET rejected", e);
             resp.sendRedirect(req.getContextPath() + "/app");
         } catch (SQLException e) {
+            log.error("Unable to load competition setup view", e);
             throw new ServletException("Unable to load competition setup view", e);
         }
     }
@@ -47,6 +60,10 @@ public class CompetitionSetupServlet extends HttpServlet {
 
         try {
             BootcampAthlete athlete = requireLinkedAthlete(req);
+            if (!competitionAccessService.canAccessCompetitionSetup(authSessionService.getAuthenticatedUser(req))) {
+                resp.sendRedirect(req.getContextPath() + "/app");
+                return;
+            }
 
             if ("create".equals(action)) {
                 competitionSetupService.createCompetitionAndJoin(
@@ -69,16 +86,21 @@ public class CompetitionSetupServlet extends HttpServlet {
 
             resp.sendRedirect(req.getContextPath() + "/app");
         } catch (IllegalArgumentException e) {
+            log.error("Competition setup validation failed", e);
             try {
                 reloadWithError(req, resp, e.getMessage());
             } catch (SQLException sqlException) {
+                log.error("Unable to reload competition setup after validation error", sqlException);
                 throw new ServletException("Unable to reload competition setup after validation error", sqlException);
             }
         } catch (IllegalStateException e) {
+            log.error("Competition setup blocked", e);
             resp.sendRedirect(req.getContextPath() + "/app");
         } catch (SQLException e) {
+            log.error("Unable to save competition setup", e);
             throw new ServletException("Unable to save competition setup", e);
         } catch (CredentialStoreException | NoSuchAlgorithmException e) {
+            log.error("Unable to refresh athlete competition data after setup", e);
             throw new ServletException("Unable to refresh athlete competition data after setup", e);
         }
     }

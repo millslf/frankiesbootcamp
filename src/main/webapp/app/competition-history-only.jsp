@@ -10,6 +10,7 @@
     AuthenticatedUser onboardingUser = (AuthenticatedUser) session.getAttribute("authUser");
     OnboardingStatus onboardingStatus = (OnboardingStatus) request.getAttribute("onboardingStatus");
     List<CompetitionSummaryView> pastCompetitions = onboardingStatus == null ? List.of() : onboardingStatus.getPastCompetitions();
+    Boolean competitionSetupAllowed = (Boolean) request.getAttribute("competitionSetupAllowed");
     String displayName = (onboardingUser == null || onboardingUser.getDisplayName() == null || onboardingUser.getDisplayName().isBlank())
             ? "there"
             : onboardingUser.getDisplayName();
@@ -64,7 +65,9 @@
 
                     <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mt-4">
                         <a class="btn btn-outline-secondary btn-lg" href="<%=pageContextPath%>/logout">Sign out</a>
+                        <% if (Boolean.TRUE.equals(competitionSetupAllowed)) { %>
                         <a class="btn btn-primary btn-lg" href="<%=pageContextPath%>/app/competition-setup">Set up or join competition</a>
+                        <% } %>
                     </div>
                 </div>
             </div>

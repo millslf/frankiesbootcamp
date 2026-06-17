@@ -271,6 +271,10 @@ public class StravaRefreshResponse implements Serializable {
         bootcampAthlete.setEmail(currentAthlete.getEmail());
         bootcampAthlete.setGoal(currentAthlete.getGoal());
         bootcampAthlete.setSex(currentAthlete.getSex());
+        bootcampAthlete.setCity(currentAthlete.getCity());
+        bootcampAthlete.setState(currentAthlete.getState());
+        bootcampAthlete.setCountry(currentAthlete.getCountry());
+        bootcampAthlete.setProfileMedium(currentAthlete.getProfileMedium());
         return bootcampAthlete;
     }
 }

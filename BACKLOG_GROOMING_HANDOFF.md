@@ -67,15 +67,17 @@ A "dev ready" top-of-board order was established to prioritize:
   - Leaving/removing yourself from a competition is intentionally deferred to `FBC-89` for membership lifecycle and `FBC-54` for authorization rules.
 - Current local follow-up branch:
   - `feature/fbc-insights-tab` was created from the FBC-30 feature branch after the multi-active competition stale rebuild fix was committed and pushed to PR #16 as `4b3462c`.
-  - This branch is uncommitted local work for a read-only dashboard Insights tab, not yet assigned to a Jira ticket in this handoff. PR should target `feature/fbc-30-competition-selection`, because this is stacked on PR #16.
+  - This branch is pushed local work for a read-only dashboard Insights tab, not yet assigned to a Jira ticket in this handoff. PR should target `feature/fbc-30-competition-selection`, because this is stacked on PR #16.
   - Implemented local scope:
     - final dashboard tab `/app/Insights`
     - athlete profile modal for any athlete in the selected competition
     - compact dropdown for choosing another athlete profile
     - global Profile card on athlete profiles, with accepted blurbs persisted as verified and unaccepted generated text lazily regenerated after render
     - clearing the Profile box and saving deletes the verified profile, returning that athlete to generated/unverified mode
+    - accepted/verified profiles disable `Save changes` until the text is edited
     - generated current Performance summary at the bottom of the profile modal
     - Strava-link-time storage of `athletes.sex`, used for AI pronouns when present; otherwise prompts stay generic and do not guess gender from names
+    - active dashboard tab is stored in the URL as `?tab=...`, so pull-to-refresh restores the selected tab instead of defaulting to Weekly History
     - position-over-time graph showing overall leaderboard rank history
     - current/latest completed week is shown on the left; history runs rightward back to Week 1
     - tied leaderboard scores share the same rank rather than inventing order
@@ -91,7 +93,7 @@ A "dev ready" top-of-board order was established to prioritize:
     - `getLoggedInAthleteSummary(...)` and `getLoggedInAthleteSummaryForCompetition(...)` now use cumulative sport totals from `competition_summary_sport_stats`, restoring old `PerformanceResponse.toString()` behavior.
   - Current validation:
     - targeted service tests are green, including `CompetitionInsightsServiceTest` and `PersistentActivityProcessServiceTest`
-    - full `mvn package` is green after the latest graph/UI/profile-summary/Strava-sex tweaks
+    - full `mvn package` is green after the latest graph/UI/profile-summary/Strava-sex/tab-refresh tweaks
   - This probably deserves its own Jira ticket if it is kept separate from FBC-30 rather than folded into the PR.
 
 ## Agreed current board order

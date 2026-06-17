@@ -18,9 +18,9 @@ The latest completed work finished `FBC-16` and then completed and browser-teste
 
 - Current branch: `feature/fbc-insights-tab`.
 - This branch was created from `feature/fbc-30-competition-selection` after committing and pushing the FBC-30 follow-up fix `4b3462c Fix multi-competition active rebuilds`.
-- Local uncommitted branch work adds a new read-only dashboard **Insights** tab using existing derived data. It should be opened as a PR **into `feature/fbc-30-competition-selection`**, because this branch is stacked on the FBC-30 PR.
+- Pushed branch work adds a new read-only dashboard **Insights** tab using existing derived data. Open it as a PR **into `feature/fbc-30-competition-selection`**, because this branch is stacked on the FBC-30 PR.
 - The older local FBC-89 handoff/tracker notes are still intentionally uncommitted unless the user later asks to commit them.
-- Full `mvn package` is green after the final Strava-sex/profile-copy tweaks. Targeted tests have also been run repeatedly and are green:
+- Full `mvn package` is green after the final tab-refresh/profile tweaks. Targeted tests have also been run repeatedly and are green:
   - `mvn "-Dtest=CompetitionInsightsServiceTest" test`
   - `mvn "-Dtest=PersistentActivityProcessServiceTest,CompetitionInsightsServiceTest" test`
   - `mvn package`
@@ -39,11 +39,13 @@ The latest completed work finished `FBC-16` and then completed and browser-teste
   - the logged-in athlete can edit the text and `Accept and save`, which persists it as `Verified` for everyone
   - unaccepted generated text is intentionally not stored globally
   - clearing the profile box and saving deletes the verified row, so the profile returns to generated/unverified mode
+  - accepted/verified profiles show an inactive `Save changes` button until the text is edited
   - the generated Profile text is timeless/personal, not a current competition update
 - Profiles also include a separate generated **Performance summary** at the bottom that uses current selected-competition points/rank context, including the current week, but still avoids private km values.
 - Strava `sex` is stored on `athletes.sex` when an athlete links Strava. AI profile/performance prompts use it for pronouns when present (`M`/`F`); otherwise they stay generic and must not guess gender from names.
 - Athlete names in Leaderboard and Honour Roll open the profile modal when the dashboard has loaded the Insights include.
 - Names are intentionally **not** clickable in Insights "Week-by-week leaderboard winners" or "Sport-specific standings".
+- Dashboard tab state is stored in the URL as `?tab=history|leaderboard|honour-roll|summary|insights`, so pull-to-refresh restores the currently selected tab instead of defaulting to Weekly History.
 - `InsightsServlet` deliberately does **not** close `response.getWriter()` and no longer prints nested `<html>` / `<body>` markup, because it is rendered through `<jsp:include>` inside `index.jsp`. Closing the included writer caused WildFly/Jasper `JBWEB004052: Exception occurred when flushing data` logs while the page still appeared to work.
 
 #### Insights privacy / scoring decisions

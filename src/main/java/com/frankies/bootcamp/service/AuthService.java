@@ -5,20 +5,30 @@ import com.frankies.bootcamp.model.BootcampAthlete;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.Locale;
 
+import org.wildfly.security.credential.store.CredentialStoreException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @ApplicationScoped
 public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     // Identity model notes:
     // - app_users is the canonical application identity used by session auth and future RBAC.
     // - auth_identities allows multiple login providers to point at the same logical user later.
     // - athletes remains the current domain/person record for compatibility with the existing app.
     private DBService db;
+    private StravaService stravaService;
 
     @Inject
-    public AuthService(DBService db) {
+    public AuthService(DBService db, StravaService stravaService) {
         this.db = db;
+        this.stravaService = stravaService;
     }
 
     protected AuthService() {
@@ -82,6 +92,14 @@ public class AuthService {
         }
         if (athlete != null && (athlete.getEmail() == null || athlete.getEmail().isBlank())) {
             athlete.setEmail(user.getEmail());
+        }
+        if (athlete != null && stravaService != null) {
+            try {
+                athlete = stravaService.backfillAthleteProfileIfMissing(athlete);
+            } catch (CredentialStoreException | NoSuchAlgorithmException | IOException e) {
+                // Keep login flowing; the profile backfill is opportunistic.
+                log.warn("Failed to backfill Strava athlete profile for {}", user.getEmail(), e);
+            }
         }
         return athlete;
     }

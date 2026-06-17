@@ -4,6 +4,9 @@ import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.AuthenticatedUser;
 import com.frankies.bootcamp.model.AthleteProfileBlurb;
 import com.frankies.bootcamp.model.EmailAccess;
+import com.frankies.bootcamp.model.CompetitionInviteCandidateView;
+import com.frankies.bootcamp.model.CompetitionInvitationStatus;
+import com.frankies.bootcamp.model.CompetitionInvitationView;
 import com.frankies.bootcamp.model.PerformanceResponse;
 import com.frankies.bootcamp.model.WeeklyPerformance;
 import com.frankies.bootcamp.model.CompetitionSummaryView;
@@ -191,6 +194,31 @@ public class DBService {
                             "CONSTRAINT fk_comp_honour_roll_comp FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE" +
                             ")"
             );
+
+            statement.execute(
+                    "CREATE TABLE IF NOT EXISTS competition_invitation (" +
+                            "id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
+                            "competition_id BIGINT NOT NULL, " +
+                            "invited_email VARCHAR(255) NOT NULL, " +
+                            "invited_email_normalized VARCHAR(255) NOT NULL, " +
+                            "invited_user_id VARCHAR(50) NULL, " +
+                            "token VARCHAR(128) NOT NULL, " +
+                            "status VARCHAR(32) NOT NULL DEFAULT 'pending', " +
+                            "invited_by_user_id VARCHAR(50) NOT NULL, " +
+                            "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                            "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                            "expires_at TIMESTAMP NOT NULL, " +
+                            "accepted_at TIMESTAMP NULL, " +
+                            "declined_at TIMESTAMP NULL, " +
+                            "UNIQUE KEY uq_comp_invite_token (token), " +
+                            "UNIQUE KEY uq_comp_invite_email_status (competition_id, invited_email_normalized, status), " +
+                            "UNIQUE KEY uq_comp_invite_user_status (competition_id, invited_user_id, status), " +
+                            "INDEX idx_comp_invite_user (invited_user_id), " +
+                            "INDEX idx_comp_invite_competition (competition_id), " +
+                            "CONSTRAINT fk_comp_invite_comp FOREIGN KEY (competition_id) REFERENCES competitions(id) ON DELETE CASCADE, " +
+                            "CONSTRAINT fk_comp_invite_by_user FOREIGN KEY (invited_by_user_id) REFERENCES app_users(id)" +
+                            ")"
+            );
         }
     }
 
@@ -272,6 +300,7 @@ public class DBService {
         ) {
             ensureAthleteUserIdColumn(connection, statement);
             ensureAthleteSexColumn(connection, statement);
+            ensureAthleteProfileColumns(connection, statement);
             ensureNullableAppUserAthleteLink(connection, statement);
 
             statement.execute(
@@ -323,6 +352,24 @@ public class DBService {
     private void ensureAthleteSexColumn(Connection connection, Statement statement) throws SQLException {
         if (!columnExists(connection, "athletes", "sex")) {
             statement.execute("ALTER TABLE athletes ADD COLUMN sex VARCHAR(10) NULL");
+        }
+    }
+
+    private void ensureAthleteProfileColumns(Connection connection, Statement statement) throws SQLException {
+        if (!columnExists(connection, "athletes", "city")) {
+            statement.execute("ALTER TABLE athletes ADD COLUMN city VARCHAR(100) NULL");
+        }
+
+        if (!columnExists(connection, "athletes", "state")) {
+            statement.execute("ALTER TABLE athletes ADD COLUMN state VARCHAR(100) NULL");
+        }
+
+        if (!columnExists(connection, "athletes", "country")) {
+            statement.execute("ALTER TABLE athletes ADD COLUMN country VARCHAR(100) NULL");
+        }
+
+        if (!columnExists(connection, "athletes", "profile_medium")) {
+            statement.execute("ALTER TABLE athletes ADD COLUMN profile_medium VARCHAR(255) NULL");
         }
     }
 
@@ -448,6 +495,10 @@ public class DBService {
                 athlete.setFirstname(resultSet.getString("firstname"));
                 athlete.setEmail(resultSet.getString("email"));
                 athlete.setSex(resultSet.getString("sex"));
+                athlete.setCity(resultSet.getString("city"));
+                athlete.setState(resultSet.getString("state"));
+                athlete.setCountry(resultSet.getString("country"));
+                athlete.setProfileMedium(resultSet.getString("profile_medium"));
                 athlete.setGoal(resultSet.getDouble("start_goal"));
                 athlete.setSickWeeks(resultSet.getString("sick_week"));
                 user.add(athlete);
@@ -460,10 +511,10 @@ public class DBService {
         try (
                 Connection connection = ds.getConnection();
                 PreparedStatement statement = connection.prepareStatement("insert into athletes " +
-                        "(access_token, refresh_token, expires_at, token_type, expires_in, lastname, firstname, id, user_id, email, sex, start_goal)" +
-                        "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                        "(access_token, refresh_token, expires_at, token_type, expires_in, lastname, firstname, id, user_id, email, sex, city, state, country, profile_medium, start_goal)" +
+                        "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                         "ON DUPLICATE KEY UPDATE " +
-                        "access_token=?, refresh_token=?, expires_at=?, token_type=?, expires_in=?, lastname=?, firstname=?, user_id=COALESCE(VALUES(user_id), user_id), email=COALESCE(VALUES(email), email), sex=COALESCE(VALUES(sex), sex), start_goal=COALESCE(VALUES(start_goal), start_goal)")
+                        "access_token=?, refresh_token=?, expires_at=?, token_type=?, expires_in=?, lastname=?, firstname=?, user_id=COALESCE(VALUES(user_id), user_id), email=COALESCE(VALUES(email), email), sex=COALESCE(VALUES(sex), sex), city=COALESCE(VALUES(city), city), state=COALESCE(VALUES(state), state), country=COALESCE(VALUES(country), country), profile_medium=COALESCE(VALUES(profile_medium), profile_medium), start_goal=COALESCE(VALUES(start_goal), start_goal)")
         ) {
             statement.setString(1, athlete.getAccessToken());
             statement.setString(2, athlete.getRefreshToken());
@@ -476,18 +527,22 @@ public class DBService {
             statement.setString(9, athlete.getUserId());
             statement.setString(10, athlete.getEmail());
             statement.setString(11, normaliseSex(athlete.getSex()));
+            statement.setString(12, athlete.getCity());
+            statement.setString(13, athlete.getState());
+            statement.setString(14, athlete.getCountry());
+            statement.setString(15, athlete.getProfileMedium());
             if (athlete.getGoal() == null) {
-                statement.setNull(12, java.sql.Types.DOUBLE);
+                statement.setNull(16, java.sql.Types.DOUBLE);
             } else {
-                statement.setDouble(12, athlete.getGoal());
+                statement.setDouble(16, athlete.getGoal());
             }
-            statement.setString(13, athlete.getAccessToken());
-            statement.setString(14, athlete.getRefreshToken());
-            statement.setLong(15, athlete.getExpiresAt());
-            statement.setString(16, athlete.getTokenType());
-            statement.setInt(17, athlete.getExpiresIn());
-            statement.setString(18, athlete.getLastname());
-            statement.setString(19, athlete.getFirstname());
+            statement.setString(17, athlete.getAccessToken());
+            statement.setString(18, athlete.getRefreshToken());
+            statement.setLong(19, athlete.getExpiresAt());
+            statement.setString(20, athlete.getTokenType());
+            statement.setInt(21, athlete.getExpiresIn());
+            statement.setString(22, athlete.getLastname());
+            statement.setString(23, athlete.getFirstname());
 
             statement.execute();
         }
@@ -1157,6 +1212,322 @@ public class DBService {
         return competitions;
     }
 
+    public CompetitionSummaryView findCompetitionSummary(long competitionId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT id, name, timezone, start_timestamp, end_timestamp, status FROM competitions WHERE id = ? LIMIT 1"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return new CompetitionSummaryView(
+                            resultSet.getLong("id"),
+                            resultSet.getString("name"),
+                            resultSet.getString("timezone"),
+                            resultSet.getLong("start_timestamp"),
+                            getNullableLong(resultSet, "end_timestamp"),
+                            resultSet.getString("status")
+                    );
+                }
+            }
+        }
+        return null;
+    }
+
+    public boolean isCompetitionAdmin(long competitionId, String athleteId) throws SQLException {
+        if (athleteId == null || athleteId.isBlank()) {
+            return false;
+        }
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT 1 FROM competition_athlete WHERE competition_id = ? AND athlete_id = ? AND role = 'admin' AND status = 'active' LIMIT 1"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            statement.setString(2, athleteId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
+    }
+
+    public boolean hasActiveCompetitionInvitationForEmail(long competitionId, String normalizedEmail) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT 1 FROM competition_invitation WHERE competition_id = ? AND invited_email_normalized = ? AND status = 'pending' LIMIT 1"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            statement.setString(2, normalizedEmail);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
+    }
+
+    public boolean hasActiveCompetitionInvitationForUser(long competitionId, String invitedUserId) throws SQLException {
+        if (invitedUserId == null || invitedUserId.isBlank()) {
+            return false;
+        }
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT 1 FROM competition_invitation WHERE competition_id = ? AND invited_user_id = ? AND status = 'pending' LIMIT 1"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            statement.setString(2, invitedUserId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
+    }
+
+    public long createCompetitionInvitation(long competitionId,
+                                            String invitedEmail,
+                                            String invitedUserId,
+                                            String token,
+                                            String invitedByUserId,
+                                            Instant expiresAt) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO competition_invitation (competition_id, invited_email, invited_email_normalized, invited_user_id, token, status, invited_by_user_id, expires_at) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)",
+                        Statement.RETURN_GENERATED_KEYS
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            statement.setString(2, invitedEmail);
+            statement.setString(3, invitedEmail == null ? null : invitedEmail.toLowerCase(java.util.Locale.ROOT));
+            if (invitedUserId == null || invitedUserId.isBlank()) {
+                statement.setNull(4, java.sql.Types.VARCHAR);
+            } else {
+                statement.setString(4, invitedUserId);
+            }
+            statement.setString(5, token);
+            statement.setString(6, invitedByUserId);
+            statement.setTimestamp(7, Timestamp.from(expiresAt));
+            statement.executeUpdate();
+            try (ResultSet resultSet = statement.getGeneratedKeys()) {
+                if (resultSet.next()) {
+                    return resultSet.getLong(1);
+                }
+            }
+        }
+        throw new SQLException("Unable to create competition invitation");
+    }
+
+    public CompetitionInvitationView findCompetitionInvitationByToken(String token) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.token = ? LIMIT 1"
+                )
+        ) {
+            statement.setString(1, token);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapInvitation(resultSet);
+                }
+            }
+        }
+        return null;
+    }
+
+    public CompetitionInvitationView findCompetitionInvitationByCompetitionAndToken(long competitionId, String token) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.competition_id = ? AND ci.token = ? LIMIT 1"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            statement.setString(2, token);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapInvitation(resultSet);
+                }
+            }
+        }
+        return null;
+    }
+
+    public CompetitionInvitationView findCompetitionInvitationById(long invitationId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.id = ? LIMIT 1"
+                )
+        ) {
+            statement.setLong(1, invitationId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapInvitation(resultSet);
+                }
+            }
+        }
+        return null;
+    }
+
+    public List<CompetitionInvitationView> listPendingCompetitionInvitationsForCompetition(long competitionId) throws SQLException {
+        List<CompetitionInvitationView> invitations = new ArrayList<>();
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.competition_id = ? AND ci.status = 'pending' ORDER BY ci.created_at DESC, ci.id DESC"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    invitations.add(mapInvitation(resultSet));
+                }
+            }
+        }
+        return invitations;
+    }
+
+    public List<CompetitionInvitationView> listPendingCompetitionInvitationsForUser(String userId, String email, String athleteId) throws SQLException {
+        List<CompetitionInvitationView> invitations = new ArrayList<>();
+        if ((userId == null || userId.isBlank()) && (email == null || email.isBlank()) && (athleteId == null || athleteId.isBlank())) {
+            return invitations;
+        }
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.status = 'pending' AND (" +
+                                "(ci.invited_user_id = ? AND ? IS NOT NULL) OR " +
+                                "(ci.invited_email_normalized = LOWER(?) AND ? IS NOT NULL) OR " +
+                                "(ci.invited_email_normalized = LOWER(?) AND ? IS NOT NULL)" +
+                                ") ORDER BY ci.created_at DESC, ci.id DESC"
+                )
+        ) {
+            statement.setString(1, userId);
+            statement.setString(2, userId);
+            statement.setString(3, email);
+            statement.setString(4, email);
+            statement.setString(5, athleteId);
+            statement.setString(6, athleteId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    invitations.add(mapInvitation(resultSet));
+                }
+            }
+        }
+        return invitations;
+    }
+
+    public List<CompetitionInviteCandidateView> searchCompetitionInviteCandidates(long competitionId, String query) throws SQLException {
+        List<CompetitionInviteCandidateView> candidates = new ArrayList<>();
+        String normalizedQuery = query == null ? "" : query.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalizedQuery.isBlank()) {
+            return candidates;
+        }
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT DISTINCT u.id AS user_id, a.id AS athlete_id, u.display_name, u.email, a.profile_medium, a.firstname, a.lastname, a.city, a.state, a.country, " +
+                                "EXISTS(SELECT 1 FROM competition_athlete ca WHERE ca.competition_id = ? AND ca.athlete_id = a.id AND ca.status = 'active') AS already_in_competition " +
+                                "FROM app_users u " +
+                                "LEFT JOIN athletes a ON a.user_id = u.id OR (a.email IS NOT NULL AND LOWER(a.email) = LOWER(u.email)) " +
+                                "WHERE (LOWER(u.display_name) LIKE ? OR LOWER(COALESCE(a.firstname, '')) LIKE ? OR LOWER(COALESCE(a.lastname, '')) LIKE ?) " +
+                                "AND NOT EXISTS (SELECT 1 FROM competition_athlete ca2 WHERE ca2.competition_id = ? AND ca2.athlete_id = a.id AND ca2.status = 'active') " +
+                                "ORDER BY already_in_competition ASC, COALESCE(u.display_name, CONCAT(a.firstname, ' ', a.lastname)) ASC"
+                )
+        ) {
+            String like = "%" + normalizedQuery + "%";
+            statement.setLong(1, competitionId);
+            statement.setString(2, like);
+            statement.setString(3, like);
+            statement.setString(4, like);
+            statement.setLong(5, competitionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    String displayName = resultSet.getString("display_name");
+                    if (displayName == null || displayName.isBlank()) {
+                        displayName = (resultSet.getString("firstname") == null ? "" : resultSet.getString("firstname"))
+                                + " "
+                                + (resultSet.getString("lastname") == null ? "" : resultSet.getString("lastname"));
+                        displayName = displayName.trim();
+                    }
+                    candidates.add(new CompetitionInviteCandidateView(
+                            resultSet.getString("user_id"),
+                            resultSet.getString("athlete_id"),
+                            displayName,
+                            resultSet.getString("email"),
+                            resultSet.getString("profile_medium"),
+                            resultSet.getString("city"),
+                            resultSet.getString("state"),
+                            resultSet.getString("country"),
+                            resultSet.getBoolean("already_in_competition")
+                    ));
+                }
+            }
+        }
+        return candidates;
+    }
+
+    public void acceptCompetitionInvitation(long invitationId, String athleteId, double startingGoal) throws SQLException {
+        try (Connection connection = ds.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                CompetitionInvitationView invitation = findCompetitionInvitationById(invitationId);
+                if (invitation == null) {
+                    throw new SQLException("Invitation not found");
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "INSERT INTO competition_athlete (competition_id, athlete_id, role, starting_goal, status) VALUES (?, ?, 'member', ?, 'active') " +
+                                "ON DUPLICATE KEY UPDATE status = 'active', starting_goal = VALUES(starting_goal)"
+                )) {
+                    statement.setLong(1, invitation.getCompetitionId());
+                    statement.setString(2, athleteId);
+                    statement.setDouble(3, startingGoal);
+                    statement.executeUpdate();
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE competition_invitation SET status = 'accepted', accepted_at = CURRENT_TIMESTAMP WHERE id = ?"
+                )) {
+                    statement.setLong(1, invitationId);
+                    statement.executeUpdate();
+                }
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(true);
+            }
+        }
+    }
+
+    public void declineCompetitionInvitation(long invitationId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE competition_invitation SET status = 'declined', declined_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'pending'"
+                )
+        ) {
+            statement.setLong(1, invitationId);
+            statement.executeUpdate();
+        }
+    }
+
+    public void expireCompetitionInvitation(long invitationId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE competition_invitation SET status = 'expired' WHERE id = ? AND status = 'pending'"
+                )
+        ) {
+            statement.setLong(1, invitationId);
+            statement.executeUpdate();
+        }
+    }
+
     public boolean athleteBelongsToCompetition(String athleteId, long competitionId) throws SQLException {
         try (
                 Connection connection = ds.getConnection();
@@ -1719,9 +2090,32 @@ public class DBService {
         return resultSet.wasNull() ? null : value;
     }
 
+    private Instant getNullableInstant(ResultSet resultSet, String columnName) throws SQLException {
+        Timestamp timestamp = resultSet.getTimestamp(columnName);
+        return timestamp == null ? null : timestamp.toInstant();
+    }
+
     private Long getNullableLong(ResultSet resultSet, String columnName) throws SQLException {
         long value = resultSet.getLong(columnName);
         return resultSet.wasNull() ? null : value;
+    }
+
+    private CompetitionInvitationView mapInvitation(ResultSet resultSet) throws SQLException {
+        return new CompetitionInvitationView(
+                resultSet.getLong("id"),
+                resultSet.getLong("competition_id"),
+                resultSet.getString("competition_name"),
+                resultSet.getString("invited_email"),
+                resultSet.getString("invited_user_id"),
+                resultSet.getString("token"),
+                resultSet.getString("status"),
+                resultSet.getString("invited_by_user_id"),
+                getNullableInstant(resultSet, "created_at"),
+                getNullableInstant(resultSet, "updated_at"),
+                getNullableInstant(resultSet, "expires_at"),
+                getNullableInstant(resultSet, "accepted_at"),
+                getNullableInstant(resultSet, "declined_at")
+        );
     }
 
     private void deletePersistentCompetitionDerivedState(Connection connection, long competitionAthleteId) throws SQLException {

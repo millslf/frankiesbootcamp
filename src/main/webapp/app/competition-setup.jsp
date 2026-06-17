@@ -74,40 +74,6 @@
                     </div>
                 </div>
 
-                <div class="col-lg-6">
-                    <div class="card h-100 shadow-sm border-0">
-                        <div class="card-body p-4">
-                            <h2 class="h5 mb-3">Join an existing competition</h2>
-                            <form method="post" action="<%=pageContextPath%>/app/competition-setup">
-                                <input type="hidden" name="action" value="join">
-
-                                <div class="mb-3">
-                                    <label class="form-label" for="competitionId">Available competitions</label>
-                                    <select class="form-select" id="competitionId" name="competitionId" required>
-                                        <option value="">Select a competition</option>
-                                        <% if (setupView != null) {
-                                            for (CompetitionSummaryView competition : setupView.getActiveCompetitions()) {
-                                                String startLabel = Instant.ofEpochSecond(competition.getStartTimestamp())
-                                                        .atZone(ZoneId.of(competition.getTimezone()))
-                                                        .format(formatter);
-                                        %>
-                                        <option value="<%= competition.getId() %>"><%= competition.getName() %> - starts <%= startLabel %></option>
-                                        <%  }
-                                           } %>
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label" for="joinStartingGoal">Starting goal</label>
-                                    <input class="form-control" id="joinStartingGoal" name="joinStartingGoal" type="number" min="0" step="0.1"
-                                           value="<%= setupView == null || setupView.getSuggestedStartingGoal() == null ? "20" : setupView.getSuggestedStartingGoal() %>">
-                                </div>
-
-                                <button class="btn btn-outline-primary" type="submit">Join competition</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

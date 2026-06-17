@@ -44,18 +44,18 @@
                     </div>
 
                     <p class="mb-3">
-                        Choose whether to create a competition or join an existing one so your competition membership is explicit.
+                        Your account is ready. Wait for a competition invitation from an admin, or open an invite link if you already have one.
                     </p>
 
                     <ul class="text-muted">
                         <li>Your app user is ready.</li>
                         <li>Your Strava link is complete.</li>
-                        <li>Your next step is to create a competition or join one.</li>
+                        <li>Your next step is to accept a competition invitation.</li>
                     </ul>
 
                     <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mt-4">
                         <a class="btn btn-outline-secondary btn-lg" href="<%=pageContextPath%>/logout">Sign out</a>
-                        <a class="btn btn-primary btn-lg" href="<%=pageContextPath%>/app/competition-setup">Set up or join competition</a>
+                        <a class="btn btn-primary btn-lg" href="<%=pageContextPath%>/app/invitations">View invitations</a>
                     </div>
                 </div>
             </div>

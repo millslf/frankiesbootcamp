@@ -10,9 +10,32 @@
     List<CompetitionSummaryView> activeCompetitions = activeCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) activeCompetitionsAttr : List.of();
     Object pastCompetitionsAttr = request.getAttribute("pastCompetitions");
     List<CompetitionSummaryView> pastCompetitions = pastCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) pastCompetitionsAttr : List.of();
+    Object pendingCompetitionInvitationsAttr = request.getAttribute("pendingCompetitionInvitations");
+    List<?> pendingCompetitionInvitations = pendingCompetitionInvitationsAttr instanceof List<?> ? (List<?>) pendingCompetitionInvitationsAttr : List.of();
+    Object selectedCompetitionAdminAttr = request.getAttribute("selectedCompetitionAdmin");
+    boolean selectedCompetitionAdmin = selectedCompetitionAdminAttr instanceof Boolean && (Boolean) selectedCompetitionAdminAttr;
     int activeMenuCount = Math.min(activeCompetitions.size(), 5);
     int recentMenuCount = Math.min(pastCompetitions.size(), 3);
 %>
+<style>
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: rgba(255, 255, 255, 0.18);
+    }
+
+    .user-avatar-placeholder {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.18);
+    }
+</style>
 
 <header class="d-flex align-items-center justify-content-between text-white px-3 py-2 shadow-sm"
         style="min-height:56px; position: sticky; top: 0; z-index: 1030; background-color: #0d6efd;">
@@ -98,6 +121,16 @@
                         <% } %>
                         <% } %>
                         <% } %>
+                        <% if (inApp && !pendingCompetitionInvitations.isEmpty()) { %>
+                        <a class="btn btn-warning mb-2" href="<%=ctx%>/app/invitations">
+                            <i class="bi bi-envelope-paper me-1"></i> Invitations (<%= pendingCompetitionInvitations.size() %>)
+                        </a>
+                        <% } %>
+                        <% if (inApp && selectedCompetitionAdmin && selectedCompetitionId != null) { %>
+                        <a class="btn btn-outline-warning mb-2" href="<%=ctx%>/app/competition-invitations?competitionId=<%= selectedCompetitionId %>">
+                            <i class="bi bi-person-plus me-1"></i> Manage invites
+                        </a>
+                        <% } %>
 
                         <button id="linkStravaBtn" class="btn btn-outline-primary d-none" onclick="linkStravaPopup()">
                             <i class="bi bi-link-45deg me-1"></i> Link Strava
@@ -117,7 +150,10 @@
     </h1>
     <!-- Signed-in user chip -->
     <span id="userChip" class="user-chip d-none ms-2">
-        <i class="bi bi-person-circle me-1" aria-hidden="true"></i>
+        <span id="userAvatarWrap" class="me-1 d-none" aria-hidden="true">
+            <img id="userAvatarImg" class="user-avatar" alt="">
+            <span id="userAvatarPlaceholder" class="user-avatar-placeholder d-none"><i class="bi bi-person"></i></span>
+        </span>
         <span id="userName"></span>
     </span>
 </header>
@@ -137,7 +173,7 @@
 <script>
     (function () {
         const ctx = '<%=ctx%>';
-        const state = { authed: false, name: '', email: '', stravaLinked: false };
+        const state = { authed: false, name: '', email: '', stravaLinked: false, profileMedium: '' };
 
         async function fetchAuth() {
             try {
@@ -158,6 +194,7 @@
                         state.name = d.name || '';
                         state.email = d.email || '';
                         state.stravaLinked = d.stravaLinked === true;
+                        state.profileMedium = d.profileMedium || '';
                     } else {
                         setLoggedOut();
                     }
@@ -170,7 +207,7 @@
             render();
         }
 
-        function setLoggedOut() { state.authed = false; state.name = ''; state.email = ''; state.stravaLinked = false; }
+        function setLoggedOut() { state.authed = false; state.name = ''; state.email = ''; state.stravaLinked = false; state.profileMedium = ''; }
 
         function render() {
             const group = document.querySelector('#offcanvasMenu .btn-group-vertical');
@@ -181,11 +218,27 @@
             const linkBtn   = document.getElementById('linkStravaBtn');   // <--
             const signedInAs    = document.getElementById('signedInAs');
             const signedInName  = document.getElementById('signedInName');
+            const userAvatarWrap = document.getElementById('userAvatarWrap');
+            const userAvatarImg = document.getElementById('userAvatarImg');
+            const userAvatarPlaceholder = document.getElementById('userAvatarPlaceholder');
 
             if (state.authed) {
                 if (signedInAs) {
                     signedInAs.classList.remove('d-none');
                     signedInName && (signedInName.textContent = state.name || state.email || 'You');
+                }
+                if (userAvatarWrap) {
+                    userAvatarWrap.classList.remove('d-none');
+                    if (state.profileMedium) {
+                        if (userAvatarImg) {
+                            userAvatarImg.src = state.profileMedium;
+                            userAvatarImg.classList.remove('d-none');
+                        }
+                        userAvatarPlaceholder && userAvatarPlaceholder.classList.add('d-none');
+                    } else {
+                        userAvatarImg && userAvatarImg.classList.add('d-none');
+                        userAvatarPlaceholder && userAvatarPlaceholder.classList.remove('d-none');
+                    }
                 }
                 if (loginBtn) {
                     loginBtn.innerHTML = '<i class="bi bi-speedometer2 me-1"></i> Go to dashboard';
@@ -201,6 +254,7 @@
                 }
             } else {
                 if (signedInAs) signedInAs.classList.add('d-none');
+                if (userAvatarWrap) userAvatarWrap.classList.add('d-none');
                 if (loginBtn) {
                     loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
                     loginBtn.href = ctx + '/login';

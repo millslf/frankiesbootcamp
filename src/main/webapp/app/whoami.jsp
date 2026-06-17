@@ -44,7 +44,11 @@
   Object athlete = session.getAttribute("athlete");
   if (athlete instanceof com.frankies.bootcamp.model.BootcampAthlete) {
     String athleteId = ((com.frankies.bootcamp.model.BootcampAthlete) athlete).getId();
+    String profileMedium = ((com.frankies.bootcamp.model.BootcampAthlete) athlete).getProfileMedium();
     stravaLinked = athleteId != null && !athleteId.startsWith("local-");
+    if (profileMedium != null && !profileMedium.isBlank()) {
+      json.append(",\"profileMedium\":\"").append(jsonEscape(profileMedium)).append("\"");
+    }
   }
   boolean authed = (email != null);
 

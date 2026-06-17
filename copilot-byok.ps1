@@ -5,8 +5,8 @@
 # Editable non-secret defaults
 $defaultCopilotProviderType = "openai"
 $defaultCopilotProviderBaseUrl = "https://api.openai.com/v1"
-$defaultCopilotProviderModelId = "gpt-5.4"
-$defaultCopilotProviderWireModel = "gpt-5.5"
+$defaultCopilotProviderModelId = "gpt-5.4-mini"
+$defaultCopilotProviderWireModel = "gpt-5.4-mini"
 $defaultCopilotProviderWireApi = "responses"
 $defaultMavenBinPath = "C:\TFS\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin"
 $defaultAtlassianBaseUrl = "https://millses.atlassian.net"
