@@ -4,6 +4,7 @@ import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.CompetitionInsights;
 import com.frankies.bootcamp.model.PerformanceResponse;
 import com.frankies.bootcamp.model.WeeklyPerformance;
+import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.ArrayList;
@@ -16,6 +17,8 @@ import java.util.Objects;
 
 @ApplicationScoped
 public class CompetitionInsightsService {
+    @Inject
+    private DBService dbService;
 
     public CompetitionInsights buildInsights(List<PerformanceResponse> performances, String selectedAthleteId) {
         return buildInsights(performances, selectedAthleteId, false);
@@ -140,6 +143,7 @@ public class CompetitionInsightsService {
         return new CompetitionInsights.AthleteProfileSummary(
                 athleteId(performance),
                 athleteName(performance),
+                profileMedium(performance),
                 overallRank,
                 "",
                 weeks.values().stream().mapToDouble(WeeklyPerformance::getWeekScore).sum(),
@@ -286,6 +290,33 @@ public class CompetitionInsightsService {
         String name = ((athlete.getFirstname() == null ? "" : athlete.getFirstname()) + " "
                 + (athlete.getLastname() == null ? "" : athlete.getLastname())).trim();
         return name.isBlank() ? "Athlete" : name;
+    }
+
+    private String profileMedium(PerformanceResponse performance) {
+        BootcampAthlete athlete = performance.getAthlete();
+        String storedProfileMedium = storedProfileMedium(athlete);
+        if (storedProfileMedium != null) {
+            return storedProfileMedium;
+        }
+        if (athlete != null && athlete.getProfileMedium() != null && !athlete.getProfileMedium().isBlank()) {
+            return athlete.getProfileMedium();
+        }
+        return null;
+    }
+
+    private String storedProfileMedium(BootcampAthlete athlete) {
+        if (athlete == null || athlete.getId() == null || athlete.getId().isBlank() || dbService == null) {
+            return null;
+        }
+        try {
+            BootcampAthlete storedAthlete = dbService.findAthleteByStravaID(athlete.getId());
+            if (storedAthlete != null && storedAthlete.getProfileMedium() != null && !storedAthlete.getProfileMedium().isBlank()) {
+                return storedAthlete.getProfileMedium();
+            }
+        } catch (Exception ignored) {
+            // fall through to no avatar
+        }
+        return null;
     }
 
     private double value(Double value) {

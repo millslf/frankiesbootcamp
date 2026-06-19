@@ -1,4 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="com.frankies.bootcamp.model.CompetitionInvitationView" %>
 <%@ page import="com.frankies.bootcamp.model.CompetitionSetupView" %>
 <%@ page import="com.frankies.bootcamp.model.CompetitionSummaryView" %>
 <%@ page import="java.time.Instant" %>
@@ -6,6 +7,7 @@
 <%@ page import="java.time.format.DateTimeFormatter" %>
 <%
     CompetitionSetupView setupView = (CompetitionSetupView) request.getAttribute("competitionSetupView");
+    List<CompetitionInvitationView> pendingInvitations = (List<CompetitionInvitationView>) request.getAttribute("pendingCompetitionInvitations");
     String pageContextPath = request.getContextPath();
     String error = (String) request.getAttribute("competitionSetupError");
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
@@ -68,8 +70,37 @@
                                            value="<%= setupView == null || setupView.getSuggestedStartingGoal() == null ? "20" : setupView.getSuggestedStartingGoal() %>">
                                 </div>
 
-                                <button class="btn btn-primary" type="submit">Create competition</button>
+                                <button class="btn btn-primary" type="submit">Create competition and continue to invites</button>
                             </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body p-4">
+                            <h2 class="h5 mb-3">Join with an invite</h2>
+                            <% if (pendingInvitations == null || pendingInvitations.isEmpty()) { %>
+                            <div class="alert alert-info mb-0">No pending invitations right now.</div>
+                            <% } else { %>
+                            <div class="list-group">
+                                <% for (CompetitionInvitationView invitation : pendingInvitations) { %>
+                                <div class="list-group-item">
+                                    <div class="fw-semibold"><%= invitation.getCompetitionName() %></div>
+                                    <div class="text-muted small">
+                                        <% if (invitation.getInvitedUserId() != null && !invitation.getInvitedUserId().isBlank()) { %>
+                                        This invite is linked to your account.
+                                        <% } else { %>
+                                        Use the invite from your email to join this competition.
+                                        <% } %>
+                                    </div>
+                                    <div class="d-grid d-sm-flex gap-2 mt-3">
+                                        <a class="btn btn-primary" href="<%=pageContextPath%>/invite?token=<%= invitation.getToken() %>">Use invite</a>
+                                    </div>
+                                </div>
+                                <% } %>
+                            </div>
+                            <% } %>
                         </div>
                     </div>
                 </div>

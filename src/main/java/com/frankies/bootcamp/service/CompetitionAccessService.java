@@ -10,7 +10,7 @@ import java.util.Set;
 public class CompetitionAccessService {
     private static final Set<String> COMPETITION_SETUP_ALLOWLIST = Set.of(
             "millslf@gmail.com",
-            "frankiesbootcamp.gmail.com",
+            "frankiesbootcamp@gmail.com",
             "conlik@gmail.com",
             "millslf@yahoo.com"
     );

@@ -3,6 +3,7 @@ package com.frankies.bootcamp.servlet;
 import com.frankies.bootcamp.model.WeeklyPerformance;
 import com.frankies.bootcamp.model.CompetitionSummaryView;
 import com.frankies.bootcamp.service.ActivityProcessFacade;
+import com.frankies.bootcamp.service.AuthSessionService;
 import com.frankies.bootcamp.utils.DateTimeUtils;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
@@ -37,6 +38,8 @@ public class AthleteHistoryServlet extends BootcampServlet {
     @Inject
     private ActivityProcessFacade activityProcessFacade;
     @Inject
+    private AuthSessionService authSessionService;
+    @Inject
     private AiMessageService aiMessageService;
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -56,6 +59,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
         }
         CompetitionSummaryView selectedCompetition = findSelectedCompetition(request, selectedCompetitionId);
         boolean selectedCompetitionIsCurrent = selectedCompetitionId == null || isCurrentCompetition(request, selectedCompetitionId);
+        boolean hideMotivationalMessage = authSessionService.isHistoryMotivationalMessageHidden(request);
         if (history.isEmpty() || selectedActiveCompetitionHistoryIsStale(history, selectedCompetition, selectedCompetitionIsCurrent)) {
             try {
                 if (selectedCompetitionId == null) {
@@ -130,23 +134,18 @@ public class AthleteHistoryServlet extends BootcampServlet {
             String favouriteSports = com.frankies.bootcamp.sport.SportsUtils.getFavouriteSports(sports, 2);
             String suggestedSport = com.frankies.bootcamp.sport.SportsUtils.getSuggestedSport(sports.keySet());
 
-            String aiMsg = selectedCompetitionIsCurrent
-                    ? aiMessageService.getMotivationalMessage(
-                            athleteName, distance, goal, hitGoal, leaderboardRank, favouriteSports, suggestedSport
-                    )
-                    : aiMessageService.getCompetitionRecapMessage(
-                            athleteName,
-                            selectedCompetition == null ? null : selectedCompetition.getName(),
-                            displayWeekCount,
-                            totalDistance(history),
-                            totalScore(history),
-                            leaderboardRank,
-                            favouriteSports
-                    );
-            out.println("<div class='alert alert-info alert-dismissible fade show history-subheading' style='margin-bottom:1em;' role='alert'>");
-            out.println(aiMsg);
-            out.println("<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Dismiss ZenBot message'></button>");
-            out.println("</div>");
+            if (selectedCompetitionIsCurrent && !hideMotivationalMessage) {
+                String aiMsg = aiMessageService.getMotivationalMessage(
+                        athleteName, distance, goal, hitGoal, leaderboardRank, favouriteSports, suggestedSport
+                );
+                out.println("<div class='alert alert-info history-subheading d-flex justify-content-between align-items-start gap-3' style='margin-bottom:1em;' role='alert'>");
+                out.println("<div>" + aiMsg + "</div>");
+                out.println("<form method='post' action='" + request.getContextPath() + "/app/AthleteHistory' class='m-0'>");
+                out.println("<input type='hidden' name='action' value='hideMotivationalMessage'>");
+                out.println("<button type='submit' class='btn-close' aria-label='Dismiss ZenBot message'></button>");
+                out.println("</form>");
+                out.println("</div>");
+            }
         }
         out.println("<div class='table-responsive mt-4'>");
         out.println("<table class='table table-bordered table-striped align-middle'>");
@@ -224,6 +223,15 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("</div>");
         out.println("</div>");
         out.println("</body></html>");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String action = request.getParameter("action");
+        if ("hideMotivationalMessage".equals(action)) {
+            authSessionService.hideHistoryMotivationalMessage(request);
+        }
+        response.sendRedirect(request.getContextPath() + "/app/");
     }
 
     private static boolean isCurrentCompetition(HttpServletRequest request, Long selectedCompetitionId) {

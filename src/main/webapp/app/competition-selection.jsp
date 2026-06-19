@@ -47,6 +47,14 @@
                         </p>
                     </div>
 
+                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-4">
+                        <a class="btn btn-primary" href="<%=pageContextPath%>/app/competition-setup">Create or join competition</a>
+                        <% if (request.getAttribute("selectedCompetitionAdmin") instanceof Boolean selectedAdmin && selectedAdmin
+                                && request.getAttribute("selectedCompetitionId") instanceof Long selectedId) { %>
+                        <a class="btn btn-outline-warning" href="<%=pageContextPath%>/app/competition-invitations?competitionId=<%= selectedId %>">Manage invites for selected competition</a>
+                        <% } %>
+                    </div>
+
                     <h2 class="h5 mt-4">Current competitions</h2>
                     <% if (selectionActiveCompetitions.isEmpty()) { %>
                     <div class="alert alert-info">You do not have any current active competitions.</div>

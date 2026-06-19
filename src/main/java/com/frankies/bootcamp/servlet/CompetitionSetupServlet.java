@@ -2,9 +2,11 @@ package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.model.AuthenticatedUser;
 import com.frankies.bootcamp.model.BootcampAthlete;
+import com.frankies.bootcamp.model.CompetitionInvitationView;
 import com.frankies.bootcamp.service.AuthService;
 import com.frankies.bootcamp.service.AuthSessionService;
 import com.frankies.bootcamp.service.CompetitionAccessService;
+import com.frankies.bootcamp.service.CompetitionInvitationService;
 import com.frankies.bootcamp.service.CompetitionSetupService;
 import jakarta.inject.Inject;
 import jakarta.servlet.ServletException;
@@ -18,6 +20,7 @@ import org.wildfly.security.credential.store.CredentialStoreException;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
+import java.util.List;
 
 @WebServlet(name = "competitionSetup", value = "/app/competition-setup")
 public class CompetitionSetupServlet extends HttpServlet {
@@ -35,6 +38,9 @@ public class CompetitionSetupServlet extends HttpServlet {
     @Inject
     private CompetitionAccessService competitionAccessService;
 
+    @Inject
+    private CompetitionInvitationService competitionInvitationService;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
@@ -44,6 +50,7 @@ public class CompetitionSetupServlet extends HttpServlet {
                 return;
             }
             req.setAttribute("competitionSetupView", competitionSetupService.loadView(athlete));
+            applyInvitationAttributes(req, athlete);
             req.getRequestDispatcher("/app/competition-setup.jsp").forward(req, resp);
         } catch (IllegalStateException e) {
             log.error("Competition setup GET rejected", e);
@@ -66,7 +73,7 @@ public class CompetitionSetupServlet extends HttpServlet {
             }
 
             if ("create".equals(action)) {
-                competitionSetupService.createCompetitionAndJoin(
+                long competitionId = competitionSetupService.createCompetitionAndJoin(
                         athlete,
                         req.getParameter("competitionName"),
                         req.getParameter("timezone"),
@@ -74,6 +81,9 @@ public class CompetitionSetupServlet extends HttpServlet {
                         req.getParameter("endDate"),
                         req.getParameter("startingGoal")
                 );
+                authSessionService.setSelectedCompetitionId(req, competitionId);
+                resp.sendRedirect(req.getContextPath() + "/app/competition-invitations?competitionId=" + competitionId);
+                return;
             } else if ("join".equals(action)) {
                 competitionSetupService.joinCompetition(
                         athlete,
@@ -83,7 +93,6 @@ public class CompetitionSetupServlet extends HttpServlet {
             } else {
                 throw new IllegalArgumentException("Unsupported competition setup action.");
             }
-
             resp.sendRedirect(req.getContextPath() + "/app");
         } catch (IllegalArgumentException e) {
             log.error("Competition setup validation failed", e);
@@ -108,8 +117,15 @@ public class CompetitionSetupServlet extends HttpServlet {
     private void reloadWithError(HttpServletRequest req, HttpServletResponse resp, String error) throws ServletException, IOException, SQLException {
         BootcampAthlete athlete = requireLinkedAthlete(req);
         req.setAttribute("competitionSetupView", competitionSetupService.loadView(athlete));
+        applyInvitationAttributes(req, athlete);
         req.setAttribute("competitionSetupError", error);
         req.getRequestDispatcher("/app/competition-setup.jsp").forward(req, resp);
+    }
+
+    private void applyInvitationAttributes(HttpServletRequest req, BootcampAthlete athlete) throws SQLException {
+        AuthenticatedUser authenticatedUser = authSessionService.getAuthenticatedUser(req);
+        List<CompetitionInvitationView> invitations = competitionInvitationService.listPendingForUser(authenticatedUser, athlete);
+        req.setAttribute("pendingCompetitionInvitations", invitations);
     }
 
     private BootcampAthlete requireLinkedAthlete(HttpServletRequest req) throws SQLException {

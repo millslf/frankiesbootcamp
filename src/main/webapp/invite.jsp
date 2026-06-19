@@ -7,6 +7,7 @@
     String pageContextPath = request.getContextPath();
     AuthenticatedUser authUser = (AuthenticatedUser) session.getAttribute("authUser");
     boolean loggedIn = authUser != null && authUser.getUserId() != null && !authUser.getUserId().isBlank();
+    String tokenParam = request.getParameter("token");
 %>
 <%!
     private String escapeHtml(String value) {
@@ -48,12 +49,23 @@
                         <h1 class="h3 mb-3">You have a competition invitation</h1>
                     </div>
 
+                    <form method="post" action="<%=pageContextPath%>/invite" class="mb-4">
+                        <label class="form-label" for="token">Paste invitation token</label>
+                        <div class="input-group">
+                            <input class="form-control" id="token" name="token" value="<%= escapeHtml(tokenParam == null ? "" : tokenParam) %>" placeholder="Paste the token or invite link from your email">
+                            <button class="btn btn-outline-primary" type="submit">Open invite</button>
+                        </div>
+                        <div class="form-text">Paste the raw token or the full invite link and we’ll open the right invitation.</div>
+                    </form>
+
                     <% if (error != null && !error.isBlank()) { %>
                     <div class="alert alert-warning" role="alert"><%= escapeHtml(error) %></div>
                     <% } else if (invitation != null) { %>
                     <div class="alert alert-primary" role="alert">
                         <strong><%= escapeHtml(invitation.getCompetitionName()) %></strong>
-                        <% if (invitation.getInvitedEmail() != null) { %>
+                        <% if (invitation.getInvitedUserId() != null && !invitation.getInvitedUserId().isBlank()) { %>
+                        is linked to your account.
+                        <% } else if (invitation.getInvitedEmail() != null) { %>
                         was sent to <strong><%= escapeHtml(invitation.getInvitedEmail()) %></strong>.
                         <% } %>
                     </div>

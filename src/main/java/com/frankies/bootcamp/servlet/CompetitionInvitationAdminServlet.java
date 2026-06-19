@@ -8,6 +8,7 @@ import com.frankies.bootcamp.model.CompetitionInvitationView;
 import com.frankies.bootcamp.service.AuthService;
 import com.frankies.bootcamp.service.AuthSessionService;
 import com.frankies.bootcamp.service.CompetitionInvitationService;
+import com.frankies.bootcamp.util.EmailDisplayUtil;
 import jakarta.inject.Inject;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -62,6 +63,7 @@ public class CompetitionInvitationAdminServlet extends BootcampServlet {
                         competitionId,
                         athlete.getUserId(),
                         req.getParameter("emails"),
+                        req.getParameter("message"),
                         req
                 );
                 feedback = result.createdInvites().isEmpty()
@@ -78,9 +80,12 @@ public class CompetitionInvitationAdminServlet extends BootcampServlet {
                         athlete.getUserId(),
                         invitedUserId,
                         invitedEmail,
+                        req.getParameter("message"),
                         req
                 );
-                feedback = "Created invitation for " + created.invitedEmail();
+                feedback = created.invitedUserId() != null
+                        ? "Created invitation for selected user."
+                        : "Created invitation for " + EmailDisplayUtil.maskEmail(created.invitedEmail());
             } else {
                 throw new IllegalArgumentException("Unsupported invite action.");
             }

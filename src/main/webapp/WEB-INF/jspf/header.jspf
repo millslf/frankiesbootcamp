@@ -1,5 +1,6 @@
 <%@ page import="com.frankies.bootcamp.model.CompetitionSummaryView" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.Set" %>
 <%
     String ctx = request.getContextPath();
     boolean inApp = request.getRequestURI().startsWith(ctx + "/app");
@@ -14,8 +15,9 @@
     List<?> pendingCompetitionInvitations = pendingCompetitionInvitationsAttr instanceof List<?> ? (List<?>) pendingCompetitionInvitationsAttr : List.of();
     Object selectedCompetitionAdminAttr = request.getAttribute("selectedCompetitionAdmin");
     boolean selectedCompetitionAdmin = selectedCompetitionAdminAttr instanceof Boolean && (Boolean) selectedCompetitionAdminAttr;
-    int activeMenuCount = Math.min(activeCompetitions.size(), 5);
-    int recentMenuCount = Math.min(pastCompetitions.size(), 3);
+    Object competitionSetupAllowedAttr = request.getAttribute("competitionSetupAllowed");
+    boolean competitionSetupAllowed = competitionSetupAllowedAttr instanceof Boolean && (Boolean) competitionSetupAllowedAttr;
+    Set<Long> activeCompetitionIds = activeCompetitions.stream().map(CompetitionSummaryView::getId).collect(java.util.stream.Collectors.toSet());
 %>
 <style>
     .user-avatar {
@@ -97,36 +99,54 @@
                             <i class="bi bi-shield-lock me-1"></i> Privacy Policy
                         </a>
 
-                        <% if (inApp && (!activeCompetitions.isEmpty() || !pastCompetitions.isEmpty())) { %>
-                        <% if (!activeCompetitions.isEmpty()) { %>
-                        <div class="mt-3 mb-2 text-muted small">Current competitions</div>
-                        <% for (int i = 0; i < activeMenuCount; i++) {
-                            CompetitionSummaryView competition = activeCompetitions.get(i);
-                        %>
-                        <a class="btn <%= selectedCompetitionId != null && selectedCompetitionId == competition.getId() ? "btn-primary" : "btn-outline-primary" %> mb-2"
-                           href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
-                            <i class="bi bi-flag me-1"></i> <%= competition.getName() %>
+                        <% if (inApp && !activeCompetitions.isEmpty()) { %>
+                        <div class="dropdown mt-3 mb-2">
+                            <button class="btn btn-outline-primary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-flag me-1"></i> Current competitions (<%= activeCompetitions.size() %>)
+                            </button>
+                            <ul class="dropdown-menu w-100" style="max-height: 18rem; overflow-y: auto;">
+                                <% for (CompetitionSummaryView competition : activeCompetitions) { %>
+                                <li>
+                                    <a class="dropdown-item <%= selectedCompetitionId != null && selectedCompetitionId == competition.getId() ? "active" : "" %>"
+                                       href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
+                                        <%= competition.getName() %>
+                                    </a>
+                                </li>
+                                <% } %>
+                            </ul>
+                        </div>
+                        <% } %>
+                        <% if (inApp && !pastCompetitions.isEmpty()) { %>
+                        <div class="dropdown mb-2">
+                            <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-clock-history me-1"></i> Past competitions (<%= pastCompetitions.size() %>)
+                            </button>
+                            <ul class="dropdown-menu w-100" style="max-height: 14rem; overflow-y: auto;">
+                                <% for (CompetitionSummaryView competition : pastCompetitions) { %>
+                                <li>
+                                    <a class="dropdown-item <%= selectedCompetitionId != null && selectedCompetitionId == competition.getId() ? "active" : "" %>"
+                                       href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
+                                        <%= competition.getName() %>
+                                    </a>
+                                </li>
+                                <% } %>
+                            </ul>
+                        </div>
+                        <% } %>
+                        <% if (inApp && Boolean.TRUE.equals(competitionSetupAllowed)) { %>
+                        <a class="btn btn-outline-primary mb-2" href="<%=ctx%>/app/competitions">
+                            <i class="bi bi-list-check me-1"></i> Manage competitions
                         </a>
-                        <% } %>
-                        <% } %>
-                        <% if (!pastCompetitions.isEmpty()) { %>
-                        <div class="mt-3 mb-2 text-muted small">Recently finished</div>
-                        <% for (int i = 0; i < recentMenuCount; i++) {
-                            CompetitionSummaryView competition = pastCompetitions.get(i);
-                        %>
-                        <a class="btn <%= selectedCompetitionId != null && selectedCompetitionId == competition.getId() ? "btn-primary" : "btn-outline-secondary" %> mb-2"
-                           href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
-                            <i class="bi bi-clock-history me-1"></i> <%= competition.getName() %>
+                        <a class="btn btn-outline-secondary mb-2" href="<%=ctx%>/app/competition-setup">
+                            <i class="bi bi-plus-circle me-1"></i> Create or join competition
                         </a>
-                        <% } %>
-                        <% } %>
                         <% } %>
                         <% if (inApp && !pendingCompetitionInvitations.isEmpty()) { %>
                         <a class="btn btn-warning mb-2" href="<%=ctx%>/app/invitations">
                             <i class="bi bi-envelope-paper me-1"></i> Invitations (<%= pendingCompetitionInvitations.size() %>)
                         </a>
                         <% } %>
-                        <% if (inApp && selectedCompetitionAdmin && selectedCompetitionId != null) { %>
+                        <% if (inApp && selectedCompetitionAdmin && selectedCompetitionId != null && activeCompetitionIds.contains(selectedCompetitionId)) { %>
                         <a class="btn btn-outline-warning mb-2" href="<%=ctx%>/app/competition-invitations?competitionId=<%= selectedCompetitionId %>">
                             <i class="bi bi-person-plus me-1"></i> Manage invites
                         </a>

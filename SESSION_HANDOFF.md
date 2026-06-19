@@ -12,18 +12,21 @@ New way of working
 
 ## Current state
 
-The latest completed work finished `FBC-16` and then completed and browser-tested `FBC-30` on `feature/fbc-30-competition-selection`. PR #16 is open and the user is moving `FBC-30` to code review. The repo now supports explicit multi-competition selection, historical competition browsing, competition-scoped sick weeks, and bounded/backgrounded historical rebuilds.
+The latest completed work finished the competition invitation flow and the related profile/avatar hardening on `security-hardening-invites-avatar`. The repo now supports DB-backed competition invitations, invite links that survive signup/login/onboarding, dashboard invite CTAs, bulk invites, and stored-avatar-first profile rendering.
 
-### Current local branch after FBC-30: Insights tab work
+### Current local branch after competition invites and profile hardening
 
-- Current branch: `feature/fbc-insights-tab`.
-- This branch was created from `feature/fbc-30-competition-selection` after committing and pushing the FBC-30 follow-up fix `4b3462c Fix multi-competition active rebuilds`.
-- Pushed branch work adds a new read-only dashboard **Insights** tab using existing derived data. Open it as a PR **into `feature/fbc-30-competition-selection`**, because this branch is stacked on the FBC-30 PR.
-- The older local FBC-89 handoff/tracker notes are still intentionally uncommitted unless the user later asks to commit them.
-- Full `mvn package` is green after the final tab-refresh/profile tweaks. Targeted tests have also been run repeatedly and are green:
-  - `mvn "-Dtest=CompetitionInsightsServiceTest" test`
-  - `mvn "-Dtest=PersistentActivityProcessServiceTest,CompetitionInsightsServiceTest" test`
-  - `mvn package`
+- Current branch: `security-hardening-invites-avatar`.
+- HEAD is `ca4b465`, with local edits still in the worktree for the avatar-precedence fix and handoff updates.
+- Completed on this branch:
+  - competition invitations by email
+  - bulk invite entry with comma/newline/semicolon parsing
+  - existing-athlete search on the invite form
+  - invite accept/decline and dashboard invite CTAs
+  - public invite links that survive login and Strava onboarding
+  - temporary allowlist gating for create/join competition access
+  - stored-avatar-first profile rendering for the insights/profile modal
+- Current local validation: `mvn -q -DskipTests compile` is green.
 
 #### Insights tab implemented behavior
 

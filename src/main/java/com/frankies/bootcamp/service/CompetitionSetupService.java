@@ -74,7 +74,7 @@ public class CompetitionSetupService {
         );
     }
 
-    public void createCompetitionAndJoin(BootcampAthlete athlete,
+    public long createCompetitionAndJoin(BootcampAthlete athlete,
                                          String competitionName,
                                          String timezone,
                                          String startDate,
@@ -94,8 +94,9 @@ public class CompetitionSetupService {
         Long endTimestamp = parseEndDate(endDate, resolvedTimezone, startTimestamp);
         double goal = parseStartingGoal(startingGoal, athlete.getGoal());
 
-        competitionRepository.createCompetitionWithAdmin(trimmedName, resolvedTimezone, startTimestamp, endTimestamp, athlete.getId(), goal);
+        long competitionId = competitionRepository.createCompetitionWithAdmin(trimmedName, resolvedTimezone, startTimestamp, endTimestamp, athlete.getId(), goal);
         athleteRefresh.refresh(athlete);
+        return competitionId;
     }
 
     public void joinCompetition(BootcampAthlete athlete,

@@ -77,7 +77,13 @@
                                 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
                                     <div>
                                         <div class="fw-semibold"><%= escapeHtml(invitation.getCompetitionName()) %></div>
-                                        <div class="text-muted small"><%= escapeHtml(maskEmail(invitation.getInvitedEmail())) %></div>
+                                        <div class="text-muted small">
+                                            <% if (invitation.getInvitedUserId() != null && !invitation.getInvitedUserId().isBlank()) { %>
+                                            Invite linked to your account
+                                            <% } else { %>
+                                            <%= escapeHtml(maskEmail(invitation.getInvitedEmail())) %>
+                                            <% } %>
+                                        </div>
                                     </div>
                                     <span class="badge text-bg-warning">Pending</span>
                                 </div>

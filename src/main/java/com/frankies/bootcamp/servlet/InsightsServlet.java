@@ -278,6 +278,15 @@ public class InsightsServlet extends BootcampServlet {
     }
 
     private void renderProfileContent(PrintWriter out, CompetitionInsights.AthleteProfileSummary profile, AthleteProfileBlurb blurb, String loggedInAthleteId, String profileSummaryAction, String profileSummaryGenerateUrl) {
+        out.println("<div class='d-flex align-items-center gap-3 mb-3'>");
+        if (profile.profileMedium() != null && !profile.profileMedium().isBlank()) {
+            out.println("<img src='" + escapeAttribute(profile.profileMedium()) + "' alt='' class='rounded-circle border' style='width:56px;height:56px;object-fit:cover;' onerror=\"this.style.display='none';this.nextElementSibling.classList.remove('d-none');\">");
+            out.println("<span class='rounded-circle border d-none d-inline-flex align-items-center justify-content-center' style='width:56px;height:56px;'><i class='bi bi-person'></i></span>");
+        } else {
+            out.println("<span class='rounded-circle border d-inline-flex align-items-center justify-content-center' style='width:56px;height:56px;'><i class='bi bi-person'></i></span>");
+        }
+        out.println("<div><div class='fw-semibold'>" + escape(profile.athleteName()) + "</div><div class='text-muted small'>Strava athlete</div></div>");
+        out.println("</div>");
         renderProfileBlurb(out, profile, blurb, loggedInAthleteId, profileSummaryAction, profileSummaryGenerateUrl);
         out.println("<div class='row g-3'>");
         metric(out, "Overall rank", "#" + profile.overallRank());

@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -71,6 +72,16 @@ class AuthSessionServiceTest {
         service.clear(request);
 
         assertTrue(session.invalidated);
+    }
+
+    @Test
+    void historyMotivationalMessageHiddenFlagPersistsInSession() {
+        AuthSessionService service = new AuthSessionService();
+        FakeHttpServletRequest request = new FakeHttpServletRequest("", new FakeHttpSession());
+
+        assertFalse(service.isHistoryMotivationalMessageHidden(request));
+        service.hideHistoryMotivationalMessage(request);
+        assertTrue(service.isHistoryMotivationalMessageHidden(request));
     }
 
     @Test

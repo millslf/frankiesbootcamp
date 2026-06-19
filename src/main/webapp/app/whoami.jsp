@@ -36,6 +36,7 @@
   String name  = (String) session.getAttribute("athleteName");
   String email = (String) session.getAttribute("athleteEmail");
   String handle = null;
+  String profileMedium = null;
   boolean stravaLinked = false;
   Object authUser = session.getAttribute("authUser");
   if (authUser instanceof com.frankies.bootcamp.model.AuthenticatedUser) {
@@ -44,11 +45,8 @@
   Object athlete = session.getAttribute("athlete");
   if (athlete instanceof com.frankies.bootcamp.model.BootcampAthlete) {
     String athleteId = ((com.frankies.bootcamp.model.BootcampAthlete) athlete).getId();
-    String profileMedium = ((com.frankies.bootcamp.model.BootcampAthlete) athlete).getProfileMedium();
+    profileMedium = ((com.frankies.bootcamp.model.BootcampAthlete) athlete).getProfileMedium();
     stravaLinked = athleteId != null && !athleteId.startsWith("local-");
-    if (profileMedium != null && !profileMedium.isBlank()) {
-      json.append(",\"profileMedium\":\"").append(jsonEscape(profileMedium)).append("\"");
-    }
   }
   boolean authed = (email != null);
 
@@ -59,6 +57,9 @@
     json.append(",\"email\":\"").append(jsonEscape(email)).append("\"");
     if (handle != null) json.append(",\"handle\":\"").append(jsonEscape(handle)).append("\"");
     json.append(",\"stravaLinked\":").append(stravaLinked ? "true" : "false");
+    if (profileMedium != null && !profileMedium.isBlank()) {
+      json.append(",\"profileMedium\":\"").append(jsonEscape(profileMedium)).append("\"");
+    }
   }
   json.append('}');
 

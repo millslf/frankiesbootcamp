@@ -7,6 +7,7 @@ import com.frankies.bootcamp.model.CompetitionInvitationPageView;
 import com.frankies.bootcamp.model.CompetitionInvitationStatus;
 import com.frankies.bootcamp.model.CompetitionInvitationView;
 import com.frankies.bootcamp.model.CompetitionSummaryView;
+import com.frankies.bootcamp.util.EmailDisplayUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
@@ -192,28 +193,28 @@ public class CompetitionInvitationService {
         return invitation;
     }
 
-    public InviteSubmissionResult inviteByEmails(long competitionId, String invitedByUserId, String rawEmails, HttpServletRequest request) throws SQLException {
+    public InviteSubmissionResult inviteByEmails(long competitionId, String invitedByUserId, String rawEmails, String customMessage, HttpServletRequest request) throws SQLException {
         Map<String, String> normalizedToOriginal = splitEmails(rawEmails);
         List<InviteRecord> created = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         for (Map.Entry<String, String> entry : normalizedToOriginal.entrySet()) {
             String normalizedEmail = entry.getKey();
             if (!isValidEmail(normalizedEmail)) {
-                errors.add(entry.getValue() + ": invalid email");
+                errors.add(EmailDisplayUtil.maskEmail(entry.getValue()) + ": invalid email");
                 continue;
             }
             if (repository.hasActiveInvitationForEmail(competitionId, normalizedEmail)) {
-                errors.add(entry.getValue() + ": already invited");
+                errors.add(EmailDisplayUtil.maskEmail(entry.getValue()) + ": already invited");
                 continue;
             }
             long invitationId = createSingleInvitation(competitionId, normalizedEmail, null, invitedByUserId);
             created.add(new InviteRecord(invitationId, normalizedEmail, null));
-            sendInvitationEmail(competitionId, invitationId, normalizedEmail, request);
+            sendInvitationEmail(competitionId, invitationId, normalizedEmail, customMessage, request);
         }
         return new InviteSubmissionResult(created, errors);
     }
 
-    public InviteRecord inviteExistingUser(long competitionId, String invitedByUserId, String invitedUserId, String invitedEmail, HttpServletRequest request) throws SQLException {
+    public InviteRecord inviteExistingUser(long competitionId, String invitedByUserId, String invitedUserId, String invitedEmail, String customMessage, HttpServletRequest request) throws SQLException {
         String normalizedEmail = normalizeEmail(invitedEmail);
         if (normalizedEmail == null) {
             throw new IllegalArgumentException("Selected athlete must have an email address.");
@@ -225,7 +226,7 @@ public class CompetitionInvitationService {
             throw new IllegalArgumentException("Selected athlete already has a pending invite.");
         }
         long invitationId = createSingleInvitation(competitionId, normalizedEmail, invitedUserId, invitedByUserId);
-        sendInvitationEmail(competitionId, invitationId, normalizedEmail, request);
+        sendInvitationEmail(competitionId, invitationId, normalizedEmail, customMessage, request);
         return new InviteRecord(invitationId, normalizedEmail, invitedUserId);
     }
 
@@ -269,19 +270,19 @@ public class CompetitionInvitationService {
         CompetitionInvitationView invitation = repository.findInvitationById(invitationId);
         if (invitation != null && invitation.getInvitedEmail() != null) {
             String inviteUrl = buildInvitationUrl(baseUrl, invitation.getToken());
-            emailService.sendInvitation(invitation.getInvitedEmail(), "You're invited to " + competitionName, buildBody(competitionName, inviteUrl));
+            emailService.sendInvitation(invitation.getInvitedEmail(), "You're invited to " + competitionName, buildBody(competitionName, inviteUrl, null));
         }
         return invitationId;
     }
 
-    private void sendInvitationEmail(long competitionId, long invitationId, String invitedEmail, HttpServletRequest request) throws SQLException {
+    private void sendInvitationEmail(long competitionId, long invitationId, String invitedEmail, String customMessage, HttpServletRequest request) throws SQLException {
         CompetitionInvitationView invitation = repository.findInvitationById(invitationId);
         CompetitionSummaryView competition = repository.findCompetition(competitionId);
         if (invitation == null || competition == null || invitedEmail == null) {
             return;
         }
         String inviteUrl = buildInvitationUrl(baseUrl(request), invitation.getToken());
-        emailService.sendInvitation(invitedEmail, "You're invited to " + competition.getName(), buildBody(competition.getName(), inviteUrl));
+        emailService.sendInvitation(invitedEmail, "You're invited to " + competition.getName(), buildBody(competition.getName(), inviteUrl, customMessage));
     }
 
     public String buildInvitationUrl(String baseUrl, String token) {
@@ -339,8 +340,14 @@ public class CompetitionInvitationService {
         return UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
     }
 
-    private String buildBody(String competitionName, String inviteUrl) {
-        return "You have been invited to join " + competitionName + ".\n\nOpen this link to continue: " + inviteUrl;
+    private String buildBody(String competitionName, String inviteUrl, String customMessage) {
+        StringBuilder body = new StringBuilder();
+        body.append("You have been invited to join ").append(competitionName).append('.');
+        if (customMessage != null && !customMessage.isBlank()) {
+            body.append("\n\n").append(customMessage.trim());
+        }
+        body.append("\n\nOpen this link to continue: ").append(inviteUrl);
+        return body.toString();
     }
 
     public record InviteRecord(long invitationId, String invitedEmail, String invitedUserId) {}

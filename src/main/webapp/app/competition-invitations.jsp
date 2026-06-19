@@ -9,6 +9,7 @@
     String feedback = (String) request.getAttribute("invitationAdminFeedback");
     String error = (String) request.getAttribute("invitationAdminError");
     String pageContextPath = request.getContextPath();
+    String inviteMessage = request.getParameter("message");
 %>
 <%!
     private String escapeHtml(String value) {
@@ -93,6 +94,10 @@
                             <label class="form-label" for="emails">Invite by email</label>
                             <textarea class="form-control" id="emails" name="emails" rows="4" placeholder="comma, newline, or semicolon separated emails"></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="message">Invite message</label>
+                            <textarea class="form-control" id="message" name="message" rows="4" placeholder="Add a friendly note for the invite email"><%= inviteMessage == null ? "" : escapeHtml(inviteMessage) %></textarea>
+                        </div>
                         <button class="btn btn-primary" type="submit">Send invitations</button>
                     </form>
                 </div>
@@ -133,11 +138,12 @@
                                 <% if (candidate.isAlreadyInCompetition()) { %>
                                 <span class="badge text-bg-secondary">Already active</span>
                                 <% } else { %>
-                                <form method="post" action="<%=pageContextPath%>/app/competition-invitations">
+                                <form method="post" action="<%=pageContextPath%>/app/competition-invitations" data-invite-form="candidate">
                                     <input type="hidden" name="action" value="inviteCandidate">
                                     <input type="hidden" name="competitionId" value="<%= view.getCompetitionId() %>">
                                     <input type="hidden" name="invitedUserId" value="<%= escapeHtml(candidate.getUserId()) %>">
                                     <input type="hidden" name="invitedEmail" value="<%= escapeHtml(candidate.getEmail()) %>">
+                                    <input type="hidden" name="message" value="">
                                     <button class="btn btn-sm btn-primary" type="submit">Invite</button>
                                 </form>
                                 <% } %>
@@ -186,7 +192,13 @@
                     <div class="list-group">
                         <% for (CompetitionInvitationView invitation : view.getPendingInvitations()) { %>
                         <div class="list-group-item">
-                            <div class="fw-semibold"><%= escapeHtml(invitation.getInvitedEmail()) %></div>
+                            <div class="fw-semibold">
+                                <% if (invitation.getInvitedUserId() != null && !invitation.getInvitedUserId().isBlank()) { %>
+                                Invite linked to existing user
+                                <% } else { %>
+                                <%= escapeHtml(invitation.getInvitedEmail()) %>
+                                <% } %>
+                            </div>
                             <div class="text-muted small">Status: <%= escapeHtml(invitation.getStatus()) %></div>
                         </div>
                         <% } %>
@@ -197,5 +209,21 @@
         </div>
     </div>
 </div>
+<script>
+    (function () {
+        const messageField = document.getElementById('message');
+        if (!messageField) {
+            return;
+        }
+        document.querySelectorAll('form[data-invite-form="candidate"]').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                const hiddenMessage = form.querySelector('input[name="message"]');
+                if (hiddenMessage) {
+                    hiddenMessage.value = messageField.value;
+                }
+            });
+        });
+    })();
+</script>
 </body>
 </html>

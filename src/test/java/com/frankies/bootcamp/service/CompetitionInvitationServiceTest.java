@@ -3,6 +3,7 @@ package com.frankies.bootcamp.service;
 import com.frankies.bootcamp.model.CompetitionInviteCandidateView;
 import com.frankies.bootcamp.model.CompetitionInvitationView;
 import com.frankies.bootcamp.model.CompetitionSummaryView;
+import com.frankies.bootcamp.model.BootcampAthlete;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -28,11 +29,12 @@ class CompetitionInvitationServiceTest {
         RecordingEmailService emailService = new RecordingEmailService();
         CompetitionInvitationService service = new CompetitionInvitationService(repository, emailService);
 
-        CompetitionInvitationService.InviteSubmissionResult result = service.inviteByEmails(7L, "usr-admin", "ALICE@example.com, alice@example.com;bob@example.com", null);
+        CompetitionInvitationService.InviteSubmissionResult result = service.inviteByEmails(7L, "usr-admin", "ALICE@example.com, alice@example.com;bob@example.com", "Keep it up!", null);
 
         assertEquals(2, result.createdInvites().size());
         assertEquals(2, repository.invites.size());
         assertEquals(2, emailService.sentSubjects.size());
+        assertTrue(emailService.sentBodies.get(0).contains("Keep it up!"));
     }
 
     @Test
@@ -42,7 +44,7 @@ class CompetitionInvitationServiceTest {
         CompetitionInvitationService service = new CompetitionInvitationService(repository, new RecordingEmailService());
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.inviteExistingUser(7L, "usr-admin", "athlete-1", "athlete@example.com", null));
+                () -> service.inviteExistingUser(7L, "usr-admin", "athlete-1", "athlete@example.com", null, null));
     }
 
     @Test
@@ -90,6 +92,7 @@ class CompetitionInvitationServiceTest {
 
     private static final class RecordingEmailService extends CompetitionInvitationEmailService {
         private final List<String> sentSubjects = new ArrayList<>();
+        private final List<String> sentBodies = new ArrayList<>();
 
         private RecordingEmailService() {
             super();
@@ -98,6 +101,7 @@ class CompetitionInvitationServiceTest {
         @Override
         public boolean sendInvitation(String to, String subject, String body) {
             sentSubjects.add(subject);
+            sentBodies.add(body);
             return true;
         }
     }
@@ -207,6 +211,11 @@ class CompetitionInvitationServiceTest {
 
         @Override
         public List<CompetitionInviteCandidateView> searchInviteCandidates(long competitionId, String query) {
+            return List.of();
+        }
+
+        @Override
+        public List<BootcampAthlete> listCompetitionAthletes(long competitionId) {
             return List.of();
         }
 

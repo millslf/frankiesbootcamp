@@ -41,12 +41,13 @@ class CompetitionSetupServiceTest {
 
         BootcampAthlete athlete = athlete("athlete-1", 18.0);
 
-        service.createCompetitionAndJoin(athlete, "Winter Bootcamp", "Australia/Sydney", "2026-07-01", "2026-09-30", "25");
+        long competitionId = service.createCompetitionAndJoin(athlete, "Winter Bootcamp", "Australia/Sydney", "2026-07-01", "2026-09-30", "25");
 
         assertEquals("Winter Bootcamp", dbService.createdCompetitionName);
         assertEquals("Australia/Sydney", dbService.createdCompetitionTimezone);
         assertEquals("athlete-1", dbService.createdCompetitionAthleteId);
         assertEquals(25.0, dbService.createdCompetitionGoal, 0.0001);
+        assertEquals(9L, competitionId);
         assertEquals(LocalDate.parse("2026-09-30").atStartOfDay(ZoneId.of("Australia/Sydney")).toEpochSecond(), dbService.createdCompetitionEndTimestamp);
         assertEquals(athlete, athleteRefresh.lastAthlete);
         assertEquals(1, athleteRefresh.refreshCalls);
