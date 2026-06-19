@@ -5,19 +5,19 @@
     String ctx = request.getContextPath();
     boolean inApp = request.getRequestURI().startsWith(ctx + "/app");
     String brandHref = inApp ? ctx + "/app/" : ctx + "/";
-    Object selectedCompetitionIdAttr = request.getAttribute("selectedCompetitionId");
-    Long selectedCompetitionId = selectedCompetitionIdAttr instanceof Long ? (Long) selectedCompetitionIdAttr : null;
-    Object activeCompetitionsAttr = request.getAttribute("activeCompetitions");
-    List<CompetitionSummaryView> activeCompetitions = activeCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) activeCompetitionsAttr : List.of();
-    Object pastCompetitionsAttr = request.getAttribute("pastCompetitions");
-    List<CompetitionSummaryView> pastCompetitions = pastCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) pastCompetitionsAttr : List.of();
-    Object pendingCompetitionInvitationsAttr = request.getAttribute("pendingCompetitionInvitations");
-    List<?> pendingCompetitionInvitations = pendingCompetitionInvitationsAttr instanceof List<?> ? (List<?>) pendingCompetitionInvitationsAttr : List.of();
-    Object selectedCompetitionAdminAttr = request.getAttribute("selectedCompetitionAdmin");
-    boolean selectedCompetitionAdmin = selectedCompetitionAdminAttr instanceof Boolean && (Boolean) selectedCompetitionAdminAttr;
-    Object competitionSetupAllowedAttr = request.getAttribute("competitionSetupAllowed");
-    boolean competitionSetupAllowed = competitionSetupAllowedAttr instanceof Boolean && (Boolean) competitionSetupAllowedAttr;
-    Set<Long> activeCompetitionIds = activeCompetitions.stream().map(CompetitionSummaryView::getId).collect(java.util.stream.Collectors.toSet());
+    Object headerSelectedCompetitionIdAttr = request.getAttribute("selectedCompetitionId");
+    Long headerSelectedCompetitionId = headerSelectedCompetitionIdAttr instanceof Long ? (Long) headerSelectedCompetitionIdAttr : null;
+    Object headerActiveCompetitionsAttr = request.getAttribute("activeCompetitions");
+    List<CompetitionSummaryView> headerActiveCompetitions = headerActiveCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) headerActiveCompetitionsAttr : List.of();
+    Object headerPastCompetitionsAttr = request.getAttribute("pastCompetitions");
+    List<CompetitionSummaryView> headerPastCompetitions = headerPastCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) headerPastCompetitionsAttr : List.of();
+    Object headerPendingCompetitionInvitationsAttr = request.getAttribute("pendingCompetitionInvitations");
+    List<?> headerPendingCompetitionInvitations = headerPendingCompetitionInvitationsAttr instanceof List<?> ? (List<?>) headerPendingCompetitionInvitationsAttr : List.of();
+    Object headerSelectedCompetitionAdminAttr = request.getAttribute("selectedCompetitionAdmin");
+    boolean headerSelectedCompetitionAdmin = headerSelectedCompetitionAdminAttr instanceof Boolean && (Boolean) headerSelectedCompetitionAdminAttr;
+    Object headerCompetitionSetupAllowedAttr = request.getAttribute("competitionSetupAllowed");
+    boolean headerCompetitionSetupAllowed = headerCompetitionSetupAllowedAttr instanceof Boolean && (Boolean) headerCompetitionSetupAllowedAttr;
+    Set<Long> headerActiveCompetitionIds = headerActiveCompetitions.stream().map(CompetitionSummaryView::getId).collect(java.util.stream.Collectors.toSet());
 %>
 <style>
     .user-avatar {
@@ -99,15 +99,15 @@
                             <i class="bi bi-shield-lock me-1"></i> Privacy Policy
                         </a>
 
-                        <% if (inApp && !activeCompetitions.isEmpty()) { %>
+                        <% if (inApp && !headerActiveCompetitions.isEmpty()) { %>
                         <div class="dropdown mt-3 mb-2">
                             <button class="btn btn-outline-primary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-flag me-1"></i> Current competitions (<%= activeCompetitions.size() %>)
+                                <i class="bi bi-flag me-1"></i> Current competitions (<%= headerActiveCompetitions.size() %>)
                             </button>
                             <ul class="dropdown-menu w-100" style="max-height: 18rem; overflow-y: auto;">
-                                <% for (CompetitionSummaryView competition : activeCompetitions) { %>
+                                <% for (CompetitionSummaryView competition : headerActiveCompetitions) { %>
                                 <li>
-                                    <a class="dropdown-item <%= selectedCompetitionId != null && selectedCompetitionId == competition.getId() ? "active" : "" %>"
+                                    <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == competition.getId() ? "active" : "" %>"
                                        href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
                                         <%= competition.getName() %>
                                     </a>
@@ -116,15 +116,15 @@
                             </ul>
                         </div>
                         <% } %>
-                        <% if (inApp && !pastCompetitions.isEmpty()) { %>
+                        <% if (inApp && !headerPastCompetitions.isEmpty()) { %>
                         <div class="dropdown mb-2">
                             <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-clock-history me-1"></i> Past competitions (<%= pastCompetitions.size() %>)
+                                <i class="bi bi-clock-history me-1"></i> Past competitions (<%= headerPastCompetitions.size() %>)
                             </button>
                             <ul class="dropdown-menu w-100" style="max-height: 14rem; overflow-y: auto;">
-                                <% for (CompetitionSummaryView competition : pastCompetitions) { %>
+                                <% for (CompetitionSummaryView competition : headerPastCompetitions) { %>
                                 <li>
-                                    <a class="dropdown-item <%= selectedCompetitionId != null && selectedCompetitionId == competition.getId() ? "active" : "" %>"
+                                    <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == competition.getId() ? "active" : "" %>"
                                        href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
                                         <%= competition.getName() %>
                                     </a>
@@ -133,7 +133,7 @@
                             </ul>
                         </div>
                         <% } %>
-                        <% if (inApp && Boolean.TRUE.equals(competitionSetupAllowed)) { %>
+                        <% if (inApp && Boolean.TRUE.equals(headerCompetitionSetupAllowed)) { %>
                         <a class="btn btn-outline-primary mb-2" href="<%=ctx%>/app/competitions">
                             <i class="bi bi-list-check me-1"></i> Manage competitions
                         </a>
@@ -141,13 +141,13 @@
                             <i class="bi bi-plus-circle me-1"></i> Create or join competition
                         </a>
                         <% } %>
-                        <% if (inApp && !pendingCompetitionInvitations.isEmpty()) { %>
+                        <% if (inApp && !headerPendingCompetitionInvitations.isEmpty()) { %>
                         <a class="btn btn-warning mb-2" href="<%=ctx%>/app/invitations">
-                            <i class="bi bi-envelope-paper me-1"></i> Invitations (<%= pendingCompetitionInvitations.size() %>)
+                            <i class="bi bi-envelope-paper me-1"></i> Invitations (<%= headerPendingCompetitionInvitations.size() %>)
                         </a>
                         <% } %>
-                        <% if (inApp && selectedCompetitionAdmin && selectedCompetitionId != null && activeCompetitionIds.contains(selectedCompetitionId)) { %>
-                        <a class="btn btn-outline-warning mb-2" href="<%=ctx%>/app/competition-invitations?competitionId=<%= selectedCompetitionId %>">
+                        <% if (inApp && headerSelectedCompetitionAdmin && headerSelectedCompetitionId != null && headerActiveCompetitionIds.contains(headerSelectedCompetitionId)) { %>
+                        <a class="btn btn-outline-warning mb-2" href="<%=ctx%>/app/competition-invitations?competitionId=<%= headerSelectedCompetitionId %>">
                             <i class="bi bi-person-plus me-1"></i> Manage invites
                         </a>
                         <% } %>
