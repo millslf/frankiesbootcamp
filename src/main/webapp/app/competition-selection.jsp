@@ -11,12 +11,16 @@
     OnboardingStatus onboardingStatus = (OnboardingStatus) request.getAttribute("onboardingStatus");
     Object selectionActiveCompetitionsAttr = request.getAttribute("activeCompetitions");
     Object selectionPastCompetitionsAttr = request.getAttribute("pastCompetitions");
+    Object selectedCompetitionAdminAttr = request.getAttribute("selectedCompetitionAdmin");
+    Object selectedCompetitionIdAttr = request.getAttribute("selectedCompetitionId");
     List<CompetitionSummaryView> selectionActiveCompetitions = onboardingStatus == null
             ? (selectionActiveCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) selectionActiveCompetitionsAttr : List.of())
             : onboardingStatus.getActiveCompetitions();
     List<CompetitionSummaryView> selectionPastCompetitions = onboardingStatus == null
             ? (selectionPastCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) selectionPastCompetitionsAttr : List.of())
             : onboardingStatus.getPastCompetitions();
+    boolean selectedCompetitionAdmin = selectedCompetitionAdminAttr instanceof Boolean && (Boolean) selectedCompetitionAdminAttr;
+    Long selectedCompetitionId = selectedCompetitionIdAttr instanceof Long ? (Long) selectedCompetitionIdAttr : null;
     String displayName = (onboardingUser == null || onboardingUser.getDisplayName() == null || onboardingUser.getDisplayName().isBlank())
             ? "there"
             : onboardingUser.getDisplayName();
@@ -49,9 +53,8 @@
 
                     <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-4">
                         <a class="btn btn-primary" href="<%=pageContextPath%>/app/competition-setup">Create or join competition</a>
-                        <% if (request.getAttribute("selectedCompetitionAdmin") instanceof Boolean selectedAdmin && selectedAdmin
-                                && request.getAttribute("selectedCompetitionId") instanceof Long selectedId) { %>
-                        <a class="btn btn-outline-warning" href="<%=pageContextPath%>/app/competition-invitations?competitionId=<%= selectedId %>">Manage invites for selected competition</a>
+                        <% if (selectedCompetitionAdmin && selectedCompetitionId != null) { %>
+                        <a class="btn btn-outline-warning" href="<%=pageContextPath%>/app/competition-invitations?competitionId=<%= selectedCompetitionId %>">Manage invites for selected competition</a>
                         <% } %>
                     </div>
 
