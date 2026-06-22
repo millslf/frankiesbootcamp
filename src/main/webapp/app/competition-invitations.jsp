@@ -62,6 +62,27 @@
         }
         return builder.toString();
     }
+
+    private String formatInvitedName(CompetitionInvitationView invitation) {
+        if (invitation == null) {
+            return "";
+        }
+        String firstName = invitation.getInvitedFirstname() == null ? "" : invitation.getInvitedFirstname().trim();
+        String lastName = invitation.getInvitedLastname() == null ? "" : invitation.getInvitedLastname().trim();
+        String fullName = (firstName + " " + lastName).trim();
+        if (!fullName.isBlank()) {
+            return fullName;
+        }
+        String displayName = invitation.getInvitedDisplayName() == null ? "" : invitation.getInvitedDisplayName().trim();
+        if (!displayName.isBlank()) {
+            return displayName;
+        }
+        return "Invited user";
+    }
+
+    private String iconOnlyRewriteButtonClass() {
+        return "btn btn-light btn-sm border shadow-sm position-absolute bottom-0 end-0 me-2 mb-2 rounded-circle d-inline-flex align-items-center justify-content-center invite-rewrite-button";
+    }
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -70,6 +91,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <%@ include file="/WEB-INF/jspf/head-common.jspf" %>
     <title>Manage invitations</title>
+    <style>
+        .invite-message-wrap {
+            position: relative;
+        }
+
+        .invite-message-wrap .form-control {
+            padding-right: 3rem;
+            padding-bottom: 3rem;
+        }
+
+        .invite-rewrite-button {
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            opacity: 0.75;
+        }
+
+        .invite-rewrite-button:hover {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body class="bg-light">
 <%@ include file="/WEB-INF/jspf/header.jspf" %>
@@ -91,12 +133,20 @@
                         <input type="hidden" name="action" value="bulkInvite">
                         <input type="hidden" name="competitionId" value="<%= view == null ? "" : view.getCompetitionId() %>">
                         <div class="mb-3">
-                            <label class="form-label" for="emails">Invite by email</label>
+                            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-1">
+                                <label class="form-label mb-0" for="emails">Invite by email</label>
+                            </div>
                             <textarea class="form-control" id="emails" name="emails" rows="4" placeholder="comma, newline, or semicolon separated emails"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label" for="message">Invite message</label>
-                            <textarea class="form-control" id="message" name="message" rows="4" placeholder="Add a friendly note for the invite email"><%= inviteMessage == null ? "" : escapeHtml(inviteMessage) %></textarea>
+                            <label class="form-label mb-1" for="message">Invite message</label>
+                            <div class="invite-message-wrap">
+                                <textarea class="form-control" id="message" name="message" rows="4" placeholder="Add a friendly note for the invite email"><%= inviteMessage == null ? "" : escapeHtml(inviteMessage) %></textarea>
+                                <button class="<%= iconOnlyRewriteButtonClass() %>" type="button" id="rewriteInviteMessageBtn" aria-label="AI rewrite invite message" title="AI rewrite invite message">
+                                    <i class="bi bi-magic"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Keep your voice; AI can polish it or draft one from the bootcamp motto.</div>
                         </div>
                         <button class="btn btn-primary" type="submit">Send invitations</button>
                     </form>
@@ -194,7 +244,7 @@
                         <div class="list-group-item">
                             <div class="fw-semibold">
                                 <% if (invitation.getInvitedUserId() != null && !invitation.getInvitedUserId().isBlank()) { %>
-                                Invite linked to existing user
+                                <%= escapeHtml(formatInvitedName(invitation)) %>
                                 <% } else { %>
                                 <%= escapeHtml(invitation.getInvitedEmail()) %>
                                 <% } %>
@@ -209,12 +259,105 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="rewriteInviteMessageModal" tabindex="-1" aria-labelledby="rewriteInviteMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rewriteInviteMessageModalLabel">AI rewrite invite message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3" id="rewriteInviteMessageHint">Refine what you wrote, or generate a fresh invite from the Frankies Bootcamp motto.</p>
+                <div class="alert alert-info d-none" id="rewriteInviteMessageStatus"></div>
+                <textarea class="form-control mb-3" id="rewriteInviteMessageSuggestion" rows="5"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="rewriteInviteMessageRegenerateBtn">Regenerate</button>
+                <button type="button" class="btn btn-primary" id="rewriteInviteMessageUseBtn">Use this text</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
     (function () {
+        function initRewriteInviteMessage() {
         const messageField = document.getElementById('message');
-        if (!messageField) {
+        const rewriteButton = document.getElementById('rewriteInviteMessageBtn');
+        const modalElement = document.getElementById('rewriteInviteMessageModal');
+        const modalHint = document.getElementById('rewriteInviteMessageHint');
+        const modalStatus = document.getElementById('rewriteInviteMessageStatus');
+        const suggestionField = document.getElementById('rewriteInviteMessageSuggestion');
+        const useButton = document.getElementById('rewriteInviteMessageUseBtn');
+        const regenerateButton = document.getElementById('rewriteInviteMessageRegenerateBtn');
+        if (!messageField || !rewriteButton || !modalElement || !suggestionField || !useButton || !regenerateButton) {
             return;
         }
+        if (!window.bootstrap || !bootstrap.Modal) {
+            return;
+        }
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        let sourceMessage = '';
+
+        function setStatus(text, isError) {
+            if (!modalStatus) {
+                return;
+            }
+            modalStatus.textContent = text || '';
+            modalStatus.classList.toggle('d-none', !text);
+            modalStatus.classList.toggle('alert-danger', !!isError);
+            modalStatus.classList.toggle('alert-info', !isError);
+        }
+
+        function loadRewriteSuggestion() {
+            const params = new URLSearchParams();
+            params.set('action', 'rewriteMessage');
+            params.set('competitionId', '<%= view == null ? "" : view.getCompetitionId() %>');
+            params.set('message', sourceMessage);
+            setStatus('Thinking…', false);
+            suggestionField.value = '';
+            fetch('<%=pageContextPath%>/app/competition-invitations?' + params.toString(), {
+                credentials: 'include',
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json' }
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Could not rewrite invite message right now.');
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    suggestionField.value = data && data.message ? data.message : '';
+                    setStatus(data && data.source === 'generated' ? 'Fresh invite generated from the bootcamp motto.' : 'Invite polished while keeping your message.', false);
+                })
+                .catch(function () {
+                    suggestionField.value = sourceMessage;
+                    setStatus('Could not rewrite the message right now.', true);
+                });
+        }
+
+        rewriteButton.addEventListener('click', function () {
+            sourceMessage = messageField.value || '';
+            if (modalHint) {
+                modalHint.textContent = sourceMessage.trim()
+                    ? 'AI will keep your meaning and voice, then polish the invite.'
+                    : 'AI will draft a fresh invite from the Frankies Bootcamp motto.';
+            }
+            loadRewriteSuggestion();
+            modal.show();
+        });
+
+        regenerateButton.addEventListener('click', function () {
+            loadRewriteSuggestion();
+        });
+
+        useButton.addEventListener('click', function () {
+            messageField.value = suggestionField.value || sourceMessage;
+            messageField.dispatchEvent(new Event('input', { bubbles: true }));
+            modal.hide();
+        });
+
         document.querySelectorAll('form[data-invite-form="candidate"]').forEach(function (form) {
             form.addEventListener('submit', function () {
                 const hiddenMessage = form.querySelector('input[name="message"]');
@@ -223,6 +366,13 @@
                 }
             });
         });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initRewriteInviteMessage);
+        } else {
+            initRewriteInviteMessage();
+        }
     })();
 </script>
 </body>

@@ -122,8 +122,11 @@ public class CompetitionInsightsService {
     private CompetitionInsights.AthleteProfileSummary profile(PerformanceResponse performance,
                                                               int latestInsightWeek,
                                                               int overallRank) {
+        Map<Integer, WeeklyPerformance> allWeeks = weeklyPerformances(performance);
         Map<Integer, WeeklyPerformance> weeks = weeklyPerformancesThrough(performance, latestInsightWeek);
         Map<String, Double> sports = sportTotals(weeks);
+        int currentWeek = latestWeek(allWeeks);
+        WeeklyPerformance currentWeekPerformance = currentWeek == 0 ? null : allWeeks.get(currentWeek);
 
         int activeWeeks = (int) weeks.values().stream()
                 .filter(week -> week.getTotalDistance() > 0.0 || week.getWeekScore() > 0.0 || week.isSick())
@@ -139,6 +142,7 @@ public class CompetitionInsightsService {
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("None yet");
+        double totalScoreToDate = allWeeks.values().stream().mapToDouble(WeeklyPerformance::getWeekScore).sum();
 
         return new CompetitionInsights.AthleteProfileSummary(
                 athleteId(performance),
@@ -146,7 +150,8 @@ public class CompetitionInsightsService {
                 profileMedium(performance),
                 overallRank,
                 "",
-                weeks.values().stream().mapToDouble(WeeklyPerformance::getWeekScore).sum(),
+                totalScoreToDate,
+                currentWeekPerformance == null ? 0.0 : currentWeekPerformance.getTotalPercentOfGoal(),
                 activeWeeks,
                 sickWeeks,
                 goalCrushWeeks,
@@ -244,6 +249,13 @@ public class CompetitionInsightsService {
     private int latestWeek(List<PerformanceResponse> performances) {
         return performances.stream()
                 .flatMap(performance -> weeklyPerformances(performance).keySet().stream())
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+    }
+
+    private int latestWeek(Map<Integer, WeeklyPerformance> weeks) {
+        return weeks.keySet().stream()
                 .mapToInt(Integer::intValue)
                 .max()
                 .orElse(0);

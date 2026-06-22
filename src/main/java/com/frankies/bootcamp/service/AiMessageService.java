@@ -178,6 +178,50 @@ public class AiMessageService {
         }
     }
 
+    public String rewriteCompetitionInviteMessage(String competitionName, String currentMessage) {
+        String trimmedMessage = currentMessage == null ? "" : currentMessage.trim();
+        String trimmedCompetitionName = competitionName == null ? "" : competitionName.trim();
+        if (service == null) {
+            if (trimmedMessage.isBlank()) {
+                return "Frankies Bootcamp is all sports, all effort, all welcome. Come join the fun.";
+            }
+            return trimmedMessage;
+        }
+
+        String prompt;
+        if (trimmedMessage.isBlank()) {
+            prompt = "Write a fresh invitation message for a Frankies Bootcamp competition. " +
+                    "Use the motto: all sports are welcome, all sports are valid effort. " +
+                    "Keep it warm, inviting, and concise. " +
+                    (trimmedCompetitionName.isBlank() ? "" : "The competition is named " + trimmedCompetitionName + ". ") +
+                    "Do not mention AI. Keep it under 45 words.";
+        } else {
+            prompt = "Refine this invitation message without changing its intent or personality too much. " +
+                    "Keep the user's voice, tighten grammar and flow, and keep it warm and inviting. " +
+                    "If the message is already specific, preserve the specifics. " +
+                    "If it is vague, sharpen it gently rather than rewriting from scratch. " +
+                    (trimmedCompetitionName.isBlank() ? "" : "The competition is named " + trimmedCompetitionName + ". ") +
+                    "Message: " + trimmedMessage + ". Keep it under 55 words.";
+        }
+
+        ChatMessage systemMsg = new ChatMessage("system", "You write concise, friendly invitation copy for a sports challenge app.");
+        ChatMessage userMsg = new ChatMessage("user", prompt);
+        ChatCompletionRequest req = ChatCompletionRequest.builder()
+                .model("gpt-4")
+                .messages(List.of(systemMsg, userMsg))
+                .maxTokens(80)
+                .temperature(0.7)
+                .build();
+        try {
+            return service.createChatCompletion(req).getChoices().get(0).getMessage().getContent();
+        } catch (Exception e) {
+            log.warn("Could not rewrite competition invite message", e);
+            return trimmedMessage.isBlank()
+                    ? "Frankies Bootcamp is all sports, all effort, all welcome. Come join the fun."
+                    : trimmedMessage;
+        }
+    }
+
     public String getZenBotReply(String question, String athleteName, int conversationTurn, String statsContext) {
         if (service == null) {
             return "Even without cosmic Wi-Fi, a small walk can answer many questions.";

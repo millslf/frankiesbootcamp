@@ -50,6 +50,7 @@ public record CompetitionInsights(
             int overallRank,
             String totalDistanceDisplay,
             double totalScore,
+            double currentWeekPercentOfGoal,
             int activeWeeks,
             int sickWeeks,
             int goalCrushWeeks,

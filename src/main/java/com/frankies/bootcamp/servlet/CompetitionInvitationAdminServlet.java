@@ -5,6 +5,7 @@ import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.CompetitionInvitationPageView;
 import com.frankies.bootcamp.model.CompetitionInviteCandidateView;
 import com.frankies.bootcamp.model.CompetitionInvitationView;
+import com.frankies.bootcamp.service.AiMessageService;
 import com.frankies.bootcamp.service.AuthService;
 import com.frankies.bootcamp.service.AuthSessionService;
 import com.frankies.bootcamp.service.CompetitionInvitationService;
@@ -30,9 +31,17 @@ public class CompetitionInvitationAdminServlet extends BootcampServlet {
     @Inject
     private AuthService authService;
 
+    @Inject
+    private AiMessageService aiMessageService;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
+            String action = req.getParameter("action");
+            if ("rewriteMessage".equals(action)) {
+                handleRewriteMessage(req, resp);
+                return;
+            }
             long competitionId = resolveCompetitionId(req);
             BootcampAthlete athlete = requireAdminAthlete(req, competitionId);
             String query = req.getParameter("q");
@@ -47,6 +56,16 @@ public class CompetitionInvitationAdminServlet extends BootcampServlet {
         } catch (SQLException e) {
             throw new IOException("Unable to load competition invitations", e);
         }
+    }
+
+    private void handleRewriteMessage(HttpServletRequest req, HttpServletResponse resp) throws IOException, SQLException {
+        long competitionId = resolveCompetitionId(req);
+        requireAdminAthlete(req, competitionId);
+        CompetitionInvitationPageView view = competitionInvitationService.loadAdminPage(competitionId, null);
+        String currentMessage = req.getParameter("message");
+        String rewritten = aiMessageService.rewriteCompetitionInviteMessage(view.getCompetitionName(), currentMessage);
+        resp.setContentType("application/json; charset=UTF-8");
+        resp.getWriter().write("{\"message\":\"" + jsonEscape(rewritten) + "\",\"source\":\"" + ((currentMessage == null || currentMessage.isBlank()) ? "generated" : "refined") + "\"}");
     }
 
     @Override
@@ -118,13 +137,13 @@ public class CompetitionInvitationAdminServlet extends BootcampServlet {
     }
 
     private long resolveCompetitionId(HttpServletRequest req) throws SQLException {
-        Long selectedCompetitionId = authSessionService.getSelectedCompetitionId(req);
-        if (selectedCompetitionId != null) {
-            return selectedCompetitionId;
-        }
         String competitionId = req.getParameter("competitionId");
         if (competitionId != null && !competitionId.isBlank()) {
             return Long.parseLong(competitionId);
+        }
+        Long selectedCompetitionId = authSessionService.getSelectedCompetitionId(req);
+        if (selectedCompetitionId != null) {
+            return selectedCompetitionId;
         }
         throw new IllegalStateException("Competition selection required.");
     }
@@ -139,5 +158,12 @@ public class CompetitionInvitationAdminServlet extends BootcampServlet {
             throw new IllegalStateException("Admin access required");
         }
         return athlete;
+    }
+
+    private String jsonEscape(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n");
     }
 }

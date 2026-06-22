@@ -1007,6 +1007,19 @@ public class DBService {
         }
     }
 
+    public void leaveCompetition(long competitionId, String athleteId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE competition_athlete SET status = 'left' WHERE competition_id = ? AND athlete_id = ? AND status = 'active'"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            statement.setString(2, athleteId);
+            statement.executeUpdate();
+        }
+    }
+
     public long ensureCompetitionAthlete(String athleteId, Double startingGoal) throws SQLException {
         try (
                 Connection connection = ds.getConnection();
@@ -1254,6 +1267,20 @@ public class DBService {
         }
     }
 
+    public int countCompetitionAdmins(long competitionId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "SELECT COUNT(*) FROM competition_athlete WHERE competition_id = ? AND role = 'admin' AND status = 'active'"
+                )
+        ) {
+            statement.setLong(1, competitionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getInt(1) : 0;
+            }
+        }
+    }
+
     public boolean hasActiveCompetitionInvitationForEmail(long competitionId, String normalizedEmail) throws SQLException {
         try (
                 Connection connection = ds.getConnection();
@@ -1378,7 +1405,15 @@ public class DBService {
         try (
                 Connection connection = ds.getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.competition_id = ? AND ci.status = 'pending' ORDER BY ci.created_at DESC, ci.id DESC"
+                        "SELECT ci.*, c.name AS competition_name, " +
+                                "a.firstname AS invited_firstname, a.lastname AS invited_lastname, " +
+                                "u.display_name AS invited_display_name " +
+                                "FROM competition_invitation ci " +
+                                "JOIN competitions c ON c.id = ci.competition_id " +
+                                "LEFT JOIN app_users u ON u.id = ci.invited_user_id " +
+                                "LEFT JOIN athletes a ON a.user_id = u.id " +
+                                "WHERE ci.competition_id = ? AND ci.status = 'pending' " +
+                                "ORDER BY ci.created_at DESC, ci.id DESC"
                 )
         ) {
             statement.setLong(1, competitionId);
@@ -1399,7 +1434,14 @@ public class DBService {
         try (
                 Connection connection = ds.getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.status = 'pending' AND (" +
+                        "SELECT ci.*, c.name AS competition_name, " +
+                                "a.firstname AS invited_firstname, a.lastname AS invited_lastname, " +
+                                "u.display_name AS invited_display_name " +
+                                "FROM competition_invitation ci " +
+                                "JOIN competitions c ON c.id = ci.competition_id " +
+                                "LEFT JOIN app_users u ON u.id = ci.invited_user_id " +
+                                "LEFT JOIN athletes a ON a.user_id = u.id " +
+                                "WHERE ci.status = 'pending' AND (" +
                                 "(ci.invited_user_id = ? AND ? IS NOT NULL) OR " +
                                 "(ci.invited_email_normalized = LOWER(?) AND ? IS NOT NULL) OR " +
                                 "(ci.invited_email_normalized = LOWER(?) AND ? IS NOT NULL)" +
@@ -2107,6 +2149,9 @@ public class DBService {
                 resultSet.getString("competition_name"),
                 resultSet.getString("invited_email"),
                 resultSet.getString("invited_user_id"),
+                resultSet.getString("invited_firstname"),
+                resultSet.getString("invited_lastname"),
+                resultSet.getString("invited_display_name"),
                 resultSet.getString("token"),
                 resultSet.getString("status"),
                 resultSet.getString("invited_by_user_id"),

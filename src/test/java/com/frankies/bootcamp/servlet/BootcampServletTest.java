@@ -42,6 +42,12 @@ class BootcampServletTest {
         assertNull(selectedCompetitionId);
     }
 
+    @Test
+    void competitionManagementPathBypassesOnboardingGate() {
+        assertEquals(true, BootcampServlet.isCompetitionManagementPath("/bootcamp", "/bootcamp/app/competitions"));
+        assertEquals(false, BootcampServlet.isCompetitionManagementPath("/bootcamp", "/bootcamp/app"));
+    }
+
     private static OnboardingStatus status(List<CompetitionSummaryView> activeCompetitions,
                                            List<CompetitionSummaryView> pastCompetitions) {
         return new OnboardingStatus(

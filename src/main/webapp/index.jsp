@@ -1,8 +1,15 @@
+<%@ page import="com.frankies.bootcamp.model.AuthenticatedUser" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%
     response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     response.addHeader("Cache-Control", "post-check=0, pre-check=0");
     response.setHeader("Pragma", "no-cache");
+    boolean landingLoggedIn = session.getAttribute("authUser") instanceof AuthenticatedUser;
+    String landingPrimaryHref = request.getContextPath() + (landingLoggedIn ? "/app/" : "/login");
+    String landingPrimaryLabel = landingLoggedIn ? "Go to dashboard" : "Login";
+    String landingAlertSuffix = landingLoggedIn
+            ? " to open your dashboard."
+            : " to sign in or create your account through Auth0, then head to your dashboard.";
 %>
 <!doctype html>
 <html>
@@ -37,7 +44,7 @@
             </p>
 
             <div class="mb-4 d-flex flex-wrap gap-2">
-                <a class="btn btn-primary btn-lg" href="<%=request.getContextPath()%>/login">Login</a>
+                <a class="btn btn-primary btn-lg" href="<%= landingPrimaryHref %>"><%= landingPrimaryLabel %></a>
                 <a class="btn btn-outline-primary btn-lg" href="<%=request.getContextPath()%>/invite">Use an invitation</a>
                 <a class="btn btn-outline-primary btn-lg" href="<%=request.getContextPath()%>/scoring">See how scoring works</a>
             </div>
@@ -75,8 +82,7 @@
             <!-- info box: change /auth/login -> /app/ -->
             <div class="alert alert-info">
                 Ready to join or already have an account?
-                <a class="alert-link" href="<%=request.getContextPath()%>/login">Login</a>
-                to sign in or create your account through Auth0, then head to your dashboard.
+                <a class="alert-link" href="<%= landingPrimaryHref %>"><%= landingPrimaryLabel %></a><%= landingAlertSuffix %>
             </div>
         </div>
     </div>

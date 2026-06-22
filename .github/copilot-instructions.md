@@ -4,6 +4,7 @@
 - Apply `.copilotignore` before reading or indexing repo files.
 - Run `copilot-byok.ps1` from the repo root when local Copilot BYOK, Jira, Confluence, or Maven setup is needed.
 - Read `SESSION_HANDOFF.md`, `BACKLOG_GROOMING_HANDOFF.md`, `CONTEXT.md`, `AGENTS.md`, and the relevant `docs\agents\*.md` files before changing behavior or workflow-sensitive code.
+- For Jira work, the project key is `FBC`; read `docs\agents\issue-tracker.md` before creating, reprioritizing, or closing work.
 - Add or update a short ADR under `docs\adr\` when a change affects persistence shape, authorization boundaries, or long-term architecture.
 
 ## Build, test, and lint
@@ -13,13 +14,13 @@
   - `mvn -Dtest=ClassName test`
   - `mvn -Dtest=ClassName#methodName test`
   - `mvn package`
+- `mvnw.cmd` exists, but `.mvn\wrapper\maven-wrapper.properties` is missing, so use Maven directly.
 - Useful single-test examples:
   - `mvn -Dtest=AuthSessionServiceTest test`
   - `mvn -Dtest=ActivityProcessServiceTest test`
   - `mvn -Dtest=PersistentActivityProcessServiceTest test`
   - `mvn -Dtest=PerformanceFixtureLoadingTest test`
 - Tests live under `src\test\java\com\frankies\bootcamp\...`.
-- `mvnw.cmd` exists, but `.mvn\wrapper\maven-wrapper.properties` is missing, so use Maven directly.
 - There is no dedicated lint command in `pom.xml`.
 
 ## High-level architecture
@@ -36,6 +37,7 @@
 
 ## Key conventions
 - Use the repo vocabulary from `CONTEXT.md`: athlete, user, competition, competition membership, global roles, competition roles, All Sports Equal, normalized activities, derived stats, and DB-backed summary.
+- Prefer the glossary terms from `docs\agents\domain.md` when naming issues, tests, ADRs, or implementation concepts.
 - Prefer `competition_athlete` for the athlete-in-competition row/table name.
 - Keep `competition_activity_detail` thin; it should only hold the fields needed for current `stravaActivityDetails` behavior.
 - Persistent rebuilds are scoped to one `competition_athlete` at a time and should delete/recreate derived rows for that scope.

@@ -37,15 +37,6 @@ public class HonourRollServlet extends BootcampServlet {
         Map<String, String> athleteIdsByName = athleteIdsByName(selectedCompetitionId);
         int numberOfWeeksSinceStart = activityProcessFacade.getNumberOfWeeksSinceStart();
 
-        out.println("<!DOCTYPE html>");
-        out.println("<html lang=\"en\">");
-        out.println("<head>");
-        out.println("  <meta charset=\"UTF-8\">");
-        out.println("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-        out.println("  <title>Frankies Bootcamp - Honour Roll</title>");
-        out.println("</head>");
-        out.println("<body>");
-
         out.println("<div class='container'>");
         out.println("<h2 class='history-heading'>");
         out.println("<i class='bi bi-award-fill'></i> Bootcamp Honour Roll: Finishers & Front-Runners");
@@ -80,9 +71,7 @@ public class HonourRollServlet extends BootcampServlet {
         out.println("  </tbody>");
         out.println("</table>");
         out.println("</div>");
-        out.println("  </div>");
-        out.println("</body>");
-        out.println("</html>");
+        out.println("</div>");
     }
 
     private Map<String, String> athleteIdsByName(Long selectedCompetitionId) {

@@ -5,12 +5,14 @@
 <%@ page import="java.time.Instant" %>
 <%@ page import="java.time.ZoneId" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="java.util.TreeSet" %>
 <%
     CompetitionSetupView setupView = (CompetitionSetupView) request.getAttribute("competitionSetupView");
     List<CompetitionInvitationView> pendingInvitations = (List<CompetitionInvitationView>) request.getAttribute("pendingCompetitionInvitations");
     String pageContextPath = request.getContextPath();
     String error = (String) request.getAttribute("competitionSetupError");
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
+    TreeSet<String> availableTimezones = new TreeSet<>(ZoneId.getAvailableZoneIds());
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -51,7 +53,12 @@
 
                                 <div class="mb-3">
                                     <label class="form-label" for="timezone">Timezone</label>
-                                    <input class="form-control" id="timezone" name="timezone" value="Australia/Sydney" required>
+                                    <select class="form-select" id="timezone" name="timezone" required>
+                                        <% for (String timezone : availableTimezones) { %>
+                                        <option value="<%= timezone %>"><%= timezone %></option>
+                                        <% } %>
+                                    </select>
+                                    <div class="form-text">Your device timezone will be selected automatically.</div>
                                 </div>
 
                                 <div class="mb-3">
@@ -109,5 +116,17 @@
         </div>
     </div>
 </div>
+<script>
+    (function () {
+        const timezoneSelect = document.getElementById('timezone');
+        if (!timezoneSelect || !window.Intl || !Intl.DateTimeFormat) {
+            return;
+        }
+        const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (detectedTimezone) {
+            timezoneSelect.value = detectedTimezone;
+        }
+    })();
+</script>
 </body>
 </html>

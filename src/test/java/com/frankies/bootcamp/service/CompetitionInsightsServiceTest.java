@@ -50,6 +50,8 @@ class CompetitionInsightsServiceTest {
         assertEquals("Alex", profile.athleteName());
         assertEquals(1, profile.overallRank());
         assertEquals("", profile.totalDistanceDisplay());
+        assertEquals(3.8, profile.totalScore(), 0.0001);
+        assertEquals(0.8, profile.currentWeekPercentOfGoal(), 0.0001);
         assertEquals(2, profile.goalCrushWeeks());
         assertEquals(2, profile.activeWeeks());
         assertEquals("Ride", profile.strongestSport());
