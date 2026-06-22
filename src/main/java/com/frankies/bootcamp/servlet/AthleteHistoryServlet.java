@@ -81,9 +81,6 @@ public class AthleteHistoryServlet extends BootcampServlet {
         int latestHistoryWeek = history.keySet().stream().mapToInt(Integer::intValue).max().orElse(numberOfWeeksSinceStart);
         int displayWeekCount = selectedCompetitionId == null ? numberOfWeeksSinceStart : latestHistoryWeek;
 
-        out.println("<html><head>");
-        out.println("</head><body>");
-
         out.println("<div class='container'>");
 
         out.println("<h2 class='history-heading'>");
@@ -97,9 +94,12 @@ public class AthleteHistoryServlet extends BootcampServlet {
         if (history.isEmpty()) {
             out.println("<div class='alert alert-info'>We are getting things ready for your Strava account. Your history should appear shortly.</div>");
             out.println("</div>");
-            out.println("</body></html>");
             return;
         }
+
+        List<Integer> weekNumbers = history.keySet().stream()
+                .sorted()
+                .toList();
 
         WeeklyPerformance latest = history.get(displayWeekCount);
         if (latest != null) {
@@ -221,8 +221,29 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("</tbody>");
         out.println("</table>");
         out.println("</div>");
+
+        out.println("<script>");
+        out.println("(function () {");
+        out.println("const cards = Array.from(document.querySelectorAll('[data-history-week-index]'));");
+        out.println("const select = document.getElementById('historyWeekSelect');");
+        out.println("const prev = document.getElementById('historyWeekPrevBtn');");
+        out.println("const next = document.getElementById('historyWeekNextBtn');");
+        out.println("if (!cards.length || !select || !prev || !next) { return; }");
+        out.println("let currentIndex = 0;");
+        out.println("function showWeek(index) {");
+        out.println("  currentIndex = Math.max(0, Math.min(cards.length - 1, index));");
+        out.println("  cards.forEach(function (card, cardIndex) { card.classList.toggle('d-none', cardIndex !== currentIndex); });");
+        out.println("  select.value = String(currentIndex);");
+        out.println("  prev.disabled = currentIndex === 0;");
+        out.println("  next.disabled = currentIndex === cards.length - 1;");
+        out.println("}");
+        out.println("select.addEventListener('change', function () { showWeek(parseInt(select.value, 10)); });");
+        out.println("prev.addEventListener('click', function () { showWeek(currentIndex - 1); });");
+        out.println("next.addEventListener('click', function () { showWeek(currentIndex + 1); });");
+        out.println("showWeek(cards.length - 1);");
+        out.println("})();");
+        out.println("</script>");
         out.println("</div>");
-        out.println("</body></html>");
     }
 
     @Override
@@ -344,5 +365,23 @@ public class AthleteHistoryServlet extends BootcampServlet {
         }
         html.append("</details>");
         return html.toString();
+    }
+
+    private static void mobileMetric(PrintWriter out, String label, String value) {
+        out.println("<div class='col'>");
+        out.println("<div class='history-mobile-metric card h-100 border-0 bg-light-subtle shadow-sm'>");
+        out.println("<div class='card-body p-2'>");
+        out.println("<div class='text-muted small text-uppercase fw-semibold mb-1'>" + label + "</div>");
+        out.println("<div class='fw-semibold lh-sm'>" + value + "</div>");
+        out.println("</div>");
+        out.println("</div>");
+        out.println("</div>");
+    }
+
+    private static String prettyWeekLabel(String weekLabel) {
+        if (weekLabel == null) {
+            return "";
+        }
+        return weekLabel.replaceAll("([A-Za-z]+)(\\d+)", "$1 $2");
     }
 }

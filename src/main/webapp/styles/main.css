@@ -535,6 +535,10 @@ table th i {
         bottom: 12px;
     }
 
+    body.has-bottom-tabs #zenbotWidget {
+        bottom: calc(12px + 1.4rem + env(safe-area-inset-bottom, 0px));
+    }
+
     #zenbotBackdrop {
         background: rgba(18, 31, 53, 0.18);
     }
@@ -554,6 +558,10 @@ table th i {
     flex-direction: column;
     align-items: flex-end;
     gap: 12px;
+}
+
+body.has-bottom-tabs #zenbotWidget {
+    bottom: calc(20px + 3.9rem + env(safe-area-inset-bottom, 0px));
 }
 
 #zenbotBackdrop {
