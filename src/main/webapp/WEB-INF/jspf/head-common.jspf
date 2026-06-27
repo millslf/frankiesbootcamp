@@ -107,6 +107,8 @@
                 return;
             }
             if (url.origin !== window.location.origin || url.protocol !== window.location.protocol) return;
+            if (link.classList && (link.classList.contains('app-tab-link') || link.classList.contains('skip-loading-overlay'))) return;
+            if (link.getAttribute('data-no-loading-overlay') === 'true') return;
 
             event.preventDefault();
             show(link.href.includes('/app/select-competition') ? 'Switching competition...' : 'Loading...');

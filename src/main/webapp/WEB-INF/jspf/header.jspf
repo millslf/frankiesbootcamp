@@ -91,6 +91,27 @@
         font-size: 0.85rem;
     }
 
+    .profile-menu .dropdown-menu {
+        z-index: 1052;
+    }
+
+    .competition-dropdown-menu {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        overflow-x: hidden;
+    }
+
+    .competition-dropdown {
+        display: block;
+        width: 100%;
+    }
+
+    .competition-dropdown-menu .dropdown-item {
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+
     @media (hover: hover) and (pointer: fine) {
         .profile-menu:hover .dropdown-menu {
             display: block;
@@ -139,11 +160,11 @@
 
                         <div class="text-uppercase small text-muted mt-3 mb-2">Competition</div>
                         <% if (headerAuthUser != null && !headerActiveCompetitions.isEmpty()) { %>
-                        <div class="dropdown mb-2">
+                        <div class="dropdown competition-dropdown mb-2">
                             <button class="btn btn-outline-primary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-flag me-1"></i> Current competitions (<%= headerActiveCompetitions.size() %>)
                             </button>
-                            <ul class="dropdown-menu w-100" style="max-height: 18rem; overflow-y: auto;">
+                            <ul class="dropdown-menu competition-dropdown-menu" style="max-height: 18rem; overflow-y: auto;">
                                 <% for (CompetitionSummaryView competition : headerActiveCompetitions) { %>
                                 <li>
                                     <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == competition.getId() ? "active" : "" %>"
@@ -156,11 +177,11 @@
                         </div>
                         <% } %>
                         <% if (headerAuthUser != null && !headerPastCompetitions.isEmpty()) { %>
-                        <div class="dropdown mb-2">
+                        <div class="dropdown competition-dropdown mb-2">
                             <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-clock-history me-1"></i> Past competitions (<%= headerPastCompetitions.size() %>)
                             </button>
-                            <ul class="dropdown-menu w-100" style="max-height: 14rem; overflow-y: auto;">
+                            <ul class="dropdown-menu competition-dropdown-menu" style="max-height: 14rem; overflow-y: auto;">
                                 <% for (CompetitionSummaryView competition : headerPastCompetitions) { %>
                                 <li>
                                     <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == competition.getId() ? "active" : "" %>"
@@ -250,6 +271,8 @@
         </ul>
     </div>
 </header>
+
+<%@ include file="/WEB-INF/jspf/app-tabs.jspf" %>
 
 <div class="modal fade" id="athleteProfileModal" tabindex="-1" aria-labelledby="athleteProfileModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">

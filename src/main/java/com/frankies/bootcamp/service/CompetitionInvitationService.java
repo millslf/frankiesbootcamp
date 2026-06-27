@@ -41,6 +41,7 @@ public class CompetitionInvitationService {
         List<CompetitionInviteCandidateView> searchInviteCandidates(long competitionId, String query) throws SQLException;
         void acceptInvitation(long invitationId, String athleteId, double startingGoal) throws SQLException;
         void declineInvitation(long invitationId) throws SQLException;
+        boolean deleteInvitation(long invitationId) throws SQLException;
         void expireInvitation(long invitationId) throws SQLException;
         CompetitionInvitationView getInvitationForCompetitionAndToken(long competitionId, String token) throws SQLException;
         CompetitionSummaryView findCompetition(long competitionId) throws SQLException;
@@ -115,6 +116,11 @@ public class CompetitionInvitationService {
             @Override
             public void declineInvitation(long invitationId) throws SQLException {
                 dbService.declineCompetitionInvitation(invitationId);
+            }
+
+            @Override
+            public boolean deleteInvitation(long invitationId) throws SQLException {
+                return dbService.deleteCompetitionInvitation(invitationId);
             }
 
             @Override
@@ -258,6 +264,12 @@ public class CompetitionInvitationService {
             repository.declineInvitation(invitationId);
         }
         return InvitationDecisionResult.success("Invitation declined.");
+    }
+
+    public void removePendingInvitation(long invitationId) throws SQLException {
+        if (!repository.deleteInvitation(invitationId)) {
+            throw new IllegalArgumentException("Invitation not found or already processed.");
+        }
     }
 
     public long createInvitationAndNotify(long competitionId,

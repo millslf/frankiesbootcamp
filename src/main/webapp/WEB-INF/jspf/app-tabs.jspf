@@ -1,0 +1,216 @@
+<%@ page import="com.frankies.bootcamp.model.AuthenticatedUser" %>
+<%
+    String tabsContextPath = request.getContextPath();
+    AuthenticatedUser tabsAuthUser = (AuthenticatedUser) session.getAttribute("authUser");
+    boolean tabsVisible = tabsAuthUser != null;
+    String tabsRequestUri = request.getRequestURI();
+    boolean tabsOnDashboardHome = tabsRequestUri != null && (
+            tabsRequestUri.equals(tabsContextPath + "/app")
+                    || tabsRequestUri.equals(tabsContextPath + "/app/")
+                    || tabsRequestUri.equals(tabsContextPath + "/app/index.jsp")
+    );
+    String tabsRequestedTab = request.getParameter("tab");
+    if (tabsRequestedTab == null || tabsRequestedTab.isBlank()) {
+        tabsRequestedTab = "history";
+    }
+    String tabsActiveTab = tabsOnDashboardHome ? tabsRequestedTab : "";
+%>
+<% if (tabsVisible) { %>
+<style>
+    body.has-app-tabs {
+        padding-bottom: calc(4.8rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    body.is-switching-tabs .main-content-wrapper,
+    body.is-switching-tabs #appBottomTabs {
+        opacity: 0.82;
+        transform: translateY(2px);
+    }
+
+    #appBottomTabs,
+    .main-content-wrapper {
+        transition: opacity 140ms ease, transform 140ms ease;
+    }
+
+    #appBottomTabs {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1046;
+        background: #fff;
+        border-top: 1px solid #dee2e6;
+        box-shadow: 0 -0.25rem 0.75rem rgba(0, 0, 0, 0.08);
+    }
+
+    #appBottomTabs .tab-button {
+        flex: 1 1 20%;
+        min-width: 0;
+        border: 0;
+        background: transparent;
+        color: #6c757d;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.1rem;
+        padding: 0.45rem 0.15rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+        font-size: 0.72rem;
+        line-height: 1.1;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    #appBottomTabs .tab-button .header-icon {
+        font-size: 1rem;
+        margin-right: 0;
+    }
+
+    #appBottomTabs .tab-button.active,
+    #appBottomTabs .tab-button:hover {
+        color: #0d6efd;
+        border-bottom: 0;
+        background: rgba(13, 110, 253, 0.08);
+    }
+
+    #appBottomTabs + .main-content-wrapper {
+        padding-bottom: calc(4.8rem + env(safe-area-inset-bottom, 0px));
+    }
+</style>
+
+<div id="appBottomTabs" class="d-flex flex-row flex-nowrap">
+    <% if (tabsOnDashboardHome) { %>
+    <button type="button" class="tab-button <%= "history".equals(tabsActiveTab) ? "active" : "" %>" data-tab-content="Tab1Content" data-audit-tab="history" onclick="return bootcampAppTabs.handleClick(event, 'Tab1Content', 'history')"><i class="bi bi-hourglass-bottom header-icon"></i><span>History</span></button>
+    <button type="button" class="tab-button <%= "leaderboard".equals(tabsActiveTab) ? "active" : "" %>" data-tab-content="Tab2Content" data-audit-tab="leaderboard" onclick="return bootcampAppTabs.handleClick(event, 'Tab2Content', 'leaderboard')"><i class="bi bi-bar-chart-line-fill header-icon"></i><span>Board</span></button>
+    <button type="button" class="tab-button <%= "honour-roll".equals(tabsActiveTab) ? "active" : "" %>" data-tab-content="Tab3Content" data-audit-tab="honour-roll" onclick="return bootcampAppTabs.handleClick(event, 'Tab3Content', 'honour-roll')"><i class="bi bi-trophy-fill header-icon"></i><span>Roll</span></button>
+    <button type="button" class="tab-button <%= "insights".equals(tabsActiveTab) ? "active" : "" %>" data-tab-content="Tab4Content" data-audit-tab="insights" onclick="return bootcampAppTabs.handleClick(event, 'Tab4Content', 'insights')"><i class="bi bi-lightbulb-fill header-icon"></i><span>Insights</span></button>
+    <button type="button" class="tab-button <%= "help".equals(tabsActiveTab) ? "active" : "" %>" data-tab-content="Tab5Content" data-audit-tab="help" onclick="return bootcampAppTabs.handleClick(event, 'Tab5Content', 'help')"><i class="bi bi-info-circle header-icon"></i><span>Help</span></button>
+    <% } else { %>
+    <a class="tab-button app-tab-link <%= "history".equals(tabsActiveTab) ? "active" : "" %>" data-audit-tab="history" data-no-loading-overlay="true" href="<%=tabsContextPath%>/app/?tab=history"><i class="bi bi-hourglass-bottom header-icon"></i><span>History</span></a>
+    <a class="tab-button app-tab-link <%= "leaderboard".equals(tabsActiveTab) ? "active" : "" %>" data-audit-tab="leaderboard" data-no-loading-overlay="true" href="<%=tabsContextPath%>/app/?tab=leaderboard"><i class="bi bi-bar-chart-line-fill header-icon"></i><span>Board</span></a>
+    <a class="tab-button app-tab-link <%= "honour-roll".equals(tabsActiveTab) ? "active" : "" %>" data-audit-tab="honour-roll" data-no-loading-overlay="true" href="<%=tabsContextPath%>/app/?tab=honour-roll"><i class="bi bi-trophy-fill header-icon"></i><span>Roll</span></a>
+    <a class="tab-button app-tab-link <%= "insights".equals(tabsActiveTab) ? "active" : "" %>" data-audit-tab="insights" data-no-loading-overlay="true" href="<%=tabsContextPath%>/app/?tab=insights"><i class="bi bi-lightbulb-fill header-icon"></i><span>Insights</span></a>
+    <a class="tab-button app-tab-link <%= "help".equals(tabsActiveTab) ? "active" : "" %>" data-audit-tab="help" data-no-loading-overlay="true" href="<%=tabsContextPath%>/app/?tab=help"><i class="bi bi-info-circle header-icon"></i><span>Help</span></a>
+    <% } %>
+</div>
+
+<script>
+    (function () {
+        const ctx = '<%= tabsContextPath %>';
+        const onDashboardHome = <%= tabsOnDashboardHome ? "true" : "false" %>;
+        const requestedTab = '<%= tabsRequestedTab.replace("\\", "\\\\").replace("'", "\\'") %>';
+
+        if (!document.body.classList.contains('has-app-tabs')) {
+            document.body.classList.add('has-app-tabs');
+        }
+
+        function tabButtons() {
+            return document.querySelectorAll('#appBottomTabs .tab-button');
+        }
+
+        function activateButton(tabName) {
+            tabButtons().forEach(function (button) {
+                button.classList.toggle('active', button.getAttribute('data-audit-tab') === tabName);
+            });
+        }
+
+        function showDashboardTab(tabName, auditTab) {
+            var i, tabcontent;
+            tabcontent = document.getElementsByClassName('tab-content');
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = 'none';
+            }
+
+            var tabElement = document.getElementById(tabName);
+            if (!tabElement) {
+                return;
+            }
+
+            tabElement.style.display = 'block';
+            activateButton(auditTab);
+        }
+
+        function requestedDashboardTab() {
+            if (!onDashboardHome) {
+                return 'history';
+            }
+            var url = new URL(window.location.href);
+            var tab = url.searchParams.get('tab');
+            if (!tab && window.location.hash) {
+                tab = window.location.hash.substring(1);
+            }
+            return tab || requestedTab || 'history';
+        }
+
+        function initializeDashboardTabs() {
+            if (!onDashboardHome) {
+            return;
+            }
+
+            var tabName = requestedDashboardTab();
+            var requestedButton = document.querySelector('.tab-button[data-audit-tab="' + tabName + '"]');
+            showDashboardTab(
+                requestedButton ? requestedButton.getAttribute('data-tab-content') : 'Tab1Content',
+                tabName
+            );
+            document.body.classList.remove('is-switching-tabs');
+
+            fetch(ctx + '/app/TabAudit', {
+            method: 'POST',
+            credentials: 'include',
+            cache: 'no-store',
+            loadingOverlay: false,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: 'tab=' + encodeURIComponent('landing')
+            }).catch(function () {
+            // keep landing resilient even if audit logging fails
+            });
+        }
+
+        window.bootcampAppTabs = {
+            handleClick: function (event, tabName, auditTab) {
+                if (event && event.preventDefault) {
+                    event.preventDefault();
+                }
+                if (!onDashboardHome) {
+                    window.location.href = ctx + '/app/?tab=' + encodeURIComponent(auditTab);
+                    return false;
+                }
+
+                document.body.classList.add('is-switching-tabs');
+                window.requestAnimationFrame(function () {
+                    window.setTimeout(function () {
+                        showDashboardTab(tabName, auditTab);
+                        if (event && event.isTrusted) {
+                            fetch(ctx + '/app/TabAudit', {
+                                method: 'POST',
+                                credentials: 'include',
+                                cache: 'no-store',
+                                loadingOverlay: false,
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                                body: 'tab=' + encodeURIComponent(auditTab)
+                            }).catch(function () {
+                                // keep tab navigation resilient even if audit logging fails
+                            });
+                        }
+                        if (window.history && window.URL) {
+                            var url = new URL(window.location.href);
+                            url.searchParams.set('tab', auditTab);
+                            url.hash = '';
+                            window.history.replaceState({}, '', url);
+                        }
+                        document.body.classList.remove('is-switching-tabs');
+                    }, 120);
+                });
+                return false;
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDashboardTabs, { once: true });
+        } else {
+            initializeDashboardTabs();
+        }
+    })();
+</script>
+<% } %>

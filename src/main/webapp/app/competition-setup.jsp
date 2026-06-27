@@ -21,6 +21,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <%@ include file="/WEB-INF/jspf/head-common.jspf" %>
     <title>Competition setup</title>
+    <style>
+        .timezone-picker {
+            max-width: 100%;
+        }
+
+        .timezone-select {
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 <body class="bg-light">
 <%@ include file="/WEB-INF/jspf/header.jspf" %>
@@ -38,7 +51,7 @@
             <% } %>
 
             <div class="row g-4">
-                <div class="col-lg-6">
+                <div class="col-lg-7">
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-body p-4">
                             <h2 class="h5 mb-3">Create a competition</h2>
@@ -53,7 +66,8 @@
 
                                 <div class="mb-3">
                                     <label class="form-label" for="timezone">Timezone</label>
-                                    <select class="form-select" id="timezone" name="timezone" required>
+                                    <input class="form-control mb-2" id="timezoneFilter" type="search" placeholder="Filter timezones">
+                                    <select class="form-select timezone-select" id="timezone" name="timezone" required>
                                         <% for (String timezone : availableTimezones) { %>
                                         <option value="<%= timezone %>"><%= timezone %></option>
                                         <% } %>
@@ -83,7 +97,7 @@
                     </div>
                 </div>
 
-                <div class="col-lg-6">
+                <div class="col-lg-5">
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-body p-4">
                             <h2 class="h5 mb-3">Join with an invite</h2>
@@ -119,13 +133,33 @@
 <script>
     (function () {
         const timezoneSelect = document.getElementById('timezone');
-        if (!timezoneSelect || !window.Intl || !Intl.DateTimeFormat) {
+        const timezoneFilter = document.getElementById('timezoneFilter');
+        if (!timezoneSelect || !timezoneFilter || !window.Intl || !Intl.DateTimeFormat) {
             return;
         }
         const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if (detectedTimezone) {
             timezoneSelect.value = detectedTimezone;
         }
+
+        function filterTimezones() {
+            const query = timezoneFilter.value.trim().toLowerCase();
+            Array.from(timezoneSelect.options).forEach(function (option) {
+                const matches = !query || option.textContent.toLowerCase().includes(query);
+                option.hidden = !matches;
+            });
+            if (timezoneSelect.selectedOptions.length === 0 || timezoneSelect.selectedOptions[0].hidden) {
+                const firstVisible = Array.from(timezoneSelect.options).find(function (option) {
+                    return !option.hidden;
+                });
+                if (firstVisible) {
+                    timezoneSelect.value = firstVisible.value;
+                }
+            }
+        }
+
+        timezoneFilter.addEventListener('input', filterTimezones);
+        filterTimezones();
     })();
 </script>
 </body>

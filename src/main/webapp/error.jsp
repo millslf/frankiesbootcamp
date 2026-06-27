@@ -5,6 +5,14 @@
     <meta charset="UTF-8">
     <%@ include file="/WEB-INF/jspf/head-common.jspf" %>
     <title>Oops! Something went wrong</title>
+    <%
+        Throwable t = exception;
+        if (t != null) {
+            application.log("Unhandled 500 on " + request.getRequestURI(), t);
+        } else {
+            application.log("Unhandled 500 on " + request.getRequestURI());
+        }
+    %>
     <style>
         /* Flex container for h1 to wrap icon and text nicely */
         .container h1 {

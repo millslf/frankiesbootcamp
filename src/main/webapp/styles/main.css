@@ -429,8 +429,15 @@ table th i {
 
 /* === Off-canvas === */
 .offcanvas-start {
-    width: 75% !important;
+    width: min(75vw, 400px) !important;
     max-width: 400px;
+}
+
+@media (max-width: 576px) {
+    .offcanvas-start {
+        width: 75vw !important;
+        max-width: 400px;
+    }
 }
 
 /* === Responsive Styles === */
@@ -535,8 +542,9 @@ table th i {
         bottom: 12px;
     }
 
-    body.has-bottom-tabs #zenbotWidget {
-        bottom: calc(12px + 1.4rem + env(safe-area-inset-bottom, 0px));
+    body.has-bottom-tabs #zenbotWidget,
+    body.has-app-tabs #zenbotWidget {
+        bottom: calc(12px + 4.8rem + env(safe-area-inset-bottom, 0px));
     }
 
     #zenbotBackdrop {
@@ -560,8 +568,9 @@ table th i {
     gap: 12px;
 }
 
-body.has-bottom-tabs #zenbotWidget {
-    bottom: calc(20px + 3.9rem + env(safe-area-inset-bottom, 0px));
+body.has-bottom-tabs #zenbotWidget,
+body.has-app-tabs #zenbotWidget {
+    bottom: calc(16px + 3.25rem + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 #zenbotBackdrop {

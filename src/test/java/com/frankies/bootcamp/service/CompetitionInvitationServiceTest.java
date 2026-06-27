@@ -90,6 +90,17 @@ class CompetitionInvitationServiceTest {
         assertEquals("expired", resolved.getStatus());
     }
 
+    @Test
+    void removePendingInvitationDeletesIt() throws Exception {
+        FakeRepository repository = new FakeRepository();
+        CompetitionInvitationView invitation = repository.createStoredInvitation(7L, "athlete@example.com", "usr-1");
+        CompetitionInvitationService service = new CompetitionInvitationService(repository, new RecordingEmailService());
+
+        service.removePendingInvitation(invitation.getId());
+
+        assertTrue(repository.invites.isEmpty());
+    }
+
     private static final class RecordingEmailService extends CompetitionInvitationEmailService {
         private final List<String> sentSubjects = new ArrayList<>();
         private final List<String> sentBodies = new ArrayList<>();
@@ -258,6 +269,11 @@ class CompetitionInvitationServiceTest {
                     invitation.getAcceptedAt(),
                     Instant.now()
             ));
+        }
+
+        @Override
+        public boolean deleteInvitation(long invitationId) {
+            return invites.remove(invitationId) != null;
         }
 
         @Override

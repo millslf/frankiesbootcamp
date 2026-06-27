@@ -75,6 +75,7 @@ public class CompetitionInvitationResponseServlet extends jakarta.servlet.http.H
             }
             resp.sendRedirect(req.getContextPath() + "/app/invitations?error=" + java.net.URLEncoder.encode(result.message(), java.nio.charset.StandardCharsets.UTF_8));
         } catch (SQLException | NumberFormatException | CredentialStoreException | NoSuchAlgorithmException e) {
+            log.error("Unable to process invitation response", e);
             throw new IOException("Unable to process invitation response", e);
         }
     }

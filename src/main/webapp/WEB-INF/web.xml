@@ -18,6 +18,14 @@
         <location>/error.jsp</location>
     </error-page>
 
+    <session-config>
+        <session-timeout>43200</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+            <max-age>2592000</max-age>
+        </cookie-config>
+    </session-config>
+
     <filter>
         <filter-name>Utf8Filter</filter-name>
         <filter-class>com.frankies.bootcamp.filter.Utf8Filter</filter-class>
