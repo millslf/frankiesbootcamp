@@ -4,6 +4,7 @@ import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.CompetitionInsights;
 import com.frankies.bootcamp.model.PerformanceResponse;
 import com.frankies.bootcamp.model.WeeklyPerformance;
+import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.ArrayList;
@@ -16,6 +17,8 @@ import java.util.Objects;
 
 @ApplicationScoped
 public class CompetitionInsightsService {
+    @Inject
+    private DBService dbService;
 
     public CompetitionInsights buildInsights(List<PerformanceResponse> performances, String selectedAthleteId) {
         return buildInsights(performances, selectedAthleteId, false);
@@ -119,8 +122,11 @@ public class CompetitionInsightsService {
     private CompetitionInsights.AthleteProfileSummary profile(PerformanceResponse performance,
                                                               int latestInsightWeek,
                                                               int overallRank) {
+        Map<Integer, WeeklyPerformance> allWeeks = weeklyPerformances(performance);
         Map<Integer, WeeklyPerformance> weeks = weeklyPerformancesThrough(performance, latestInsightWeek);
         Map<String, Double> sports = sportTotals(weeks);
+        int currentWeek = latestWeek(allWeeks);
+        WeeklyPerformance currentWeekPerformance = currentWeek == 0 ? null : allWeeks.get(currentWeek);
 
         int activeWeeks = (int) weeks.values().stream()
                 .filter(week -> week.getTotalDistance() > 0.0 || week.getWeekScore() > 0.0 || week.isSick())
@@ -136,13 +142,16 @@ public class CompetitionInsightsService {
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("None yet");
+        double totalScoreToDate = allWeeks.values().stream().mapToDouble(WeeklyPerformance::getWeekScore).sum();
 
         return new CompetitionInsights.AthleteProfileSummary(
                 athleteId(performance),
                 athleteName(performance),
+                profileMedium(performance),
                 overallRank,
                 "",
-                weeks.values().stream().mapToDouble(WeeklyPerformance::getWeekScore).sum(),
+                totalScoreToDate,
+                currentWeekPerformance == null ? 0.0 : currentWeekPerformance.getTotalPercentOfGoal(),
                 activeWeeks,
                 sickWeeks,
                 goalCrushWeeks,
@@ -245,6 +254,13 @@ public class CompetitionInsightsService {
                 .orElse(0);
     }
 
+    private int latestWeek(Map<Integer, WeeklyPerformance> weeks) {
+        return weeks.keySet().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+    }
+
     private double weekScore(PerformanceResponse performance, int weekNumber) {
         WeeklyPerformance week = weeklyPerformances(performance).get(weekNumber);
         return week == null ? 0.0 : value(week.getWeekScore());
@@ -286,6 +302,33 @@ public class CompetitionInsightsService {
         String name = ((athlete.getFirstname() == null ? "" : athlete.getFirstname()) + " "
                 + (athlete.getLastname() == null ? "" : athlete.getLastname())).trim();
         return name.isBlank() ? "Athlete" : name;
+    }
+
+    private String profileMedium(PerformanceResponse performance) {
+        BootcampAthlete athlete = performance.getAthlete();
+        String storedProfileMedium = storedProfileMedium(athlete);
+        if (storedProfileMedium != null) {
+            return storedProfileMedium;
+        }
+        if (athlete != null && athlete.getProfileMedium() != null && !athlete.getProfileMedium().isBlank()) {
+            return athlete.getProfileMedium();
+        }
+        return null;
+    }
+
+    private String storedProfileMedium(BootcampAthlete athlete) {
+        if (athlete == null || athlete.getId() == null || athlete.getId().isBlank() || dbService == null) {
+            return null;
+        }
+        try {
+            BootcampAthlete storedAthlete = dbService.findAthleteByStravaID(athlete.getId());
+            if (storedAthlete != null && storedAthlete.getProfileMedium() != null && !storedAthlete.getProfileMedium().isBlank()) {
+                return storedAthlete.getProfileMedium();
+            }
+        } catch (Exception ignored) {
+            // fall through to no avatar
+        }
+        return null;
     }
 
     private double value(Double value) {

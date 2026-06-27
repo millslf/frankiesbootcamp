@@ -1,14 +1,18 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="com.frankies.bootcamp.model.CompetitionInvitationView" %>
 <%@ page import="com.frankies.bootcamp.model.CompetitionSetupView" %>
 <%@ page import="com.frankies.bootcamp.model.CompetitionSummaryView" %>
 <%@ page import="java.time.Instant" %>
 <%@ page import="java.time.ZoneId" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="java.util.TreeSet" %>
 <%
     CompetitionSetupView setupView = (CompetitionSetupView) request.getAttribute("competitionSetupView");
+    List<CompetitionInvitationView> pendingInvitations = (List<CompetitionInvitationView>) request.getAttribute("pendingCompetitionInvitations");
     String pageContextPath = request.getContextPath();
     String error = (String) request.getAttribute("competitionSetupError");
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
+    TreeSet<String> availableTimezones = new TreeSet<>(ZoneId.getAvailableZoneIds());
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -49,7 +53,12 @@
 
                                 <div class="mb-3">
                                     <label class="form-label" for="timezone">Timezone</label>
-                                    <input class="form-control" id="timezone" name="timezone" value="Australia/Sydney" required>
+                                    <select class="form-select" id="timezone" name="timezone" required>
+                                        <% for (String timezone : availableTimezones) { %>
+                                        <option value="<%= timezone %>"><%= timezone %></option>
+                                        <% } %>
+                                    </select>
+                                    <div class="form-text">Your device timezone will be selected automatically.</div>
                                 </div>
 
                                 <div class="mb-3">
@@ -68,7 +77,7 @@
                                            value="<%= setupView == null || setupView.getSuggestedStartingGoal() == null ? "20" : setupView.getSuggestedStartingGoal() %>">
                                 </div>
 
-                                <button class="btn btn-primary" type="submit">Create competition</button>
+                                <button class="btn btn-primary" type="submit">Create competition and continue to invites</button>
                             </form>
                         </div>
                     </div>
@@ -77,40 +86,47 @@
                 <div class="col-lg-6">
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-body p-4">
-                            <h2 class="h5 mb-3">Join an existing competition</h2>
-                            <form method="post" action="<%=pageContextPath%>/app/competition-setup">
-                                <input type="hidden" name="action" value="join">
-
-                                <div class="mb-3">
-                                    <label class="form-label" for="competitionId">Available competitions</label>
-                                    <select class="form-select" id="competitionId" name="competitionId" required>
-                                        <option value="">Select a competition</option>
-                                        <% if (setupView != null) {
-                                            for (CompetitionSummaryView competition : setupView.getActiveCompetitions()) {
-                                                String startLabel = Instant.ofEpochSecond(competition.getStartTimestamp())
-                                                        .atZone(ZoneId.of(competition.getTimezone()))
-                                                        .format(formatter);
-                                        %>
-                                        <option value="<%= competition.getId() %>"><%= competition.getName() %> - starts <%= startLabel %></option>
-                                        <%  }
-                                           } %>
-                                    </select>
+                            <h2 class="h5 mb-3">Join with an invite</h2>
+                            <% if (pendingInvitations == null || pendingInvitations.isEmpty()) { %>
+                            <div class="alert alert-info mb-0">No pending invitations right now.</div>
+                            <% } else { %>
+                            <div class="list-group">
+                                <% for (CompetitionInvitationView invitation : pendingInvitations) { %>
+                                <div class="list-group-item">
+                                    <div class="fw-semibold"><%= invitation.getCompetitionName() %></div>
+                                    <div class="text-muted small">
+                                        <% if (invitation.getInvitedUserId() != null && !invitation.getInvitedUserId().isBlank()) { %>
+                                        This invite is linked to your account.
+                                        <% } else { %>
+                                        Use the invite from your email to join this competition.
+                                        <% } %>
+                                    </div>
+                                    <div class="d-grid d-sm-flex gap-2 mt-3">
+                                        <a class="btn btn-primary" href="<%=pageContextPath%>/invite?token=<%= invitation.getToken() %>">Use invite</a>
+                                    </div>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label" for="joinStartingGoal">Starting goal</label>
-                                    <input class="form-control" id="joinStartingGoal" name="joinStartingGoal" type="number" min="0" step="0.1"
-                                           value="<%= setupView == null || setupView.getSuggestedStartingGoal() == null ? "20" : setupView.getSuggestedStartingGoal() %>">
-                                </div>
-
-                                <button class="btn btn-outline-primary" type="submit">Join competition</button>
-                            </form>
+                                <% } %>
+                            </div>
+                            <% } %>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
 </div>
+<script>
+    (function () {
+        const timezoneSelect = document.getElementById('timezone');
+        if (!timezoneSelect || !window.Intl || !Intl.DateTimeFormat) {
+            return;
+        }
+        const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (detectedTimezone) {
+            timezoneSelect.value = detectedTimezone;
+        }
+    })();
+</script>
 </body>
 </html>

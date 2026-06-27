@@ -278,6 +278,10 @@ public class StravaAuthResponse implements Serializable {
     bootcampAthlete.setExpiresAt(this.expires_at);
     bootcampAthlete.setId(this.athlete.id);
     bootcampAthlete.setSex(this.athlete.getSex());
+    bootcampAthlete.setCity(this.athlete.getCity());
+    bootcampAthlete.setState(this.athlete.getState());
+    bootcampAthlete.setCountry(this.athlete.getCountry());
+    bootcampAthlete.setProfileMedium(this.athlete.getProfile_medium());
     return bootcampAthlete;
   }
 }

@@ -1,7 +1,6 @@
 package com.frankies.bootcamp.job;
 
 import com.frankies.bootcamp.service.ActivityProcessFacade;
-import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Asynchronous;
 import jakarta.ejb.Schedule;
 import jakarta.ejb.Singleton;
@@ -17,12 +16,6 @@ public class ActivityProcessJob {
 
     @Inject
     ActivityProcessFacade activityProcessFacade;
-
-    @PostConstruct
-    public void onStartup() {
-        // kick off immediately without blocking startup
-        runNowAsync();
-    }
 
     // Every day at 00:01 local server time
     @Schedule(hour = "0", minute = "1", second = "0",

@@ -38,6 +38,7 @@ public class Auth0CallbackServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         HttpSession session = req.getSession(true);
+        String pendingInvitationToken = (String) session.getAttribute(AuthSessionService.PENDING_INVITATION_TOKEN_SESSION_KEY);
         String expectedState = (String) session.getAttribute("auth0State");
         String state = req.getParameter("state");
         String code = req.getParameter("code");
@@ -60,8 +61,16 @@ public class Auth0CallbackServlet extends HttpServlet {
             BootcampAthlete athlete = authService.loadAthleteForUser(user);
             req.changeSessionId();
             authSessionService.storeAuthenticatedUser(req, user, athlete);
-            resp.sendRedirect(req.getContextPath() + "/app/");
+            if (pendingInvitationToken != null && !pendingInvitationToken.isBlank()) {
+                authSessionService.setPendingInvitationToken(req, pendingInvitationToken);
+                log.debugf("Auth0 callback preserved pending invitation token for user=%s token=%s", user.getEmail(), pendingInvitationToken);
+                resp.sendRedirect(req.getContextPath() + "/invite?token=" + pendingInvitationToken);
+            } else {
+                log.debugf("Auth0 callback no pending invitation token for user=%s", user.getEmail());
+                resp.sendRedirect(req.getContextPath() + "/app/");
+            }
         } catch (IllegalArgumentException | SQLException e) {
+            log.error("Auth0 callback failed", e);
             authSessionService.clear(req);
             resp.sendRedirect(req.getContextPath() + "/");
         }

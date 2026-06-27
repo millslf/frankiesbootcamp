@@ -20,7 +20,6 @@ import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,52 +38,70 @@ public class InsightsServlet extends BootcampServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.setContentType("text/html");
         BootcampAthlete loggedInAthlete = (BootcampAthlete) request.getAttribute("athlete");
         Long selectedCompetitionId = (Long) request.getAttribute("selectedCompetitionId");
-        if (loggedInAthlete == null || selectedCompetitionId == null) {
+        if (loggedInAthlete == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+
+        String fragment = trimToEmpty(request.getParameter("fragment"));
+        if ("profile".equals(fragment)) {
+            renderProfileFragment(request, response, loggedInAthlete, selectedCompetitionId);
+            return;
+        }
+
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+        out.println("<div class='container'>");
+        out.println("<h2 class='history-heading'><i class='bi bi-lightbulb-fill'></i> Competition Insights</h2>");
+        if (selectedCompetitionId == null) {
+            out.println("<div class='alert alert-info'>Select a competition to view insights.</div>");
+            out.println("</div>");
             return;
         }
 
         List<PerformanceResponse> performances = activityProcessFacade.getPerformanceListForCompetition(selectedCompetitionId);
         boolean excludeLatestWeek = selectedCompetitionIsActive(request, selectedCompetitionId);
         CompetitionInsights insights = competitionInsightsService.buildInsights(performances, loggedInAthlete.getId(), excludeLatestWeek);
-        Map<String, AthleteProfileBlurb> profileBlurbs = profileBlurbs(insights);
 
-        PrintWriter out = response.getWriter();
-        out.println("<div class='container'>");
-        out.println("<h2 class='history-heading'><i class='bi bi-lightbulb-fill'></i> Competition Insights</h2>");
         out.println("<p class='history-subheading'>Trends, standings, and athlete highlights. Distances stay private. Active competitions use completed weeks only.</p>");
-        String profileSummaryAction = request.getContextPath() + "/app/AthleteProfileSummary";
-        String profileSummaryGenerateUrl = request.getContextPath() + "/app/AthleteProfileSummary";
-        renderProfile(out, insights, profileBlurbs, loggedInAthlete.getId(), profileSummaryAction, profileSummaryGenerateUrl);
         renderRankTrend(out, insights);
         renderWeeklyHistory(out, insights);
         renderSportStandings(out, insights);
-        renderProfileModal(out, insights, profileBlurbs, loggedInAthlete.getId(), profileSummaryAction, profileSummaryGenerateUrl);
         out.println("</div>");
     }
 
-    private void renderProfile(PrintWriter out, CompetitionInsights insights, Map<String, AthleteProfileBlurb> profileBlurbs, String loggedInAthleteId, String profileSummaryAction, String profileSummaryGenerateUrl) {
-        CompetitionInsights.AthleteProfileSummary profile = insights.selectedAthleteProfile();
-        if (profile == null) {
-            out.println("<div class='alert alert-info'>No insights are available yet.</div>");
+    private void renderProfileFragment(HttpServletRequest request, HttpServletResponse response, BootcampAthlete loggedInAthlete, Long selectedCompetitionId) throws IOException {
+        String athleteId = trimToEmpty(request.getParameter("athleteId"));
+        if (athleteId.isBlank()) {
+            athleteId = loggedInAthlete.getId();
+        }
+        if (athleteId == null || athleteId.isBlank()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Athlete is required.");
             return;
         }
 
-        out.println("<section class='card mb-4'><div class='card-body'>");
-        out.println("<h3 class='h5'>" + escape(profile.athleteName()) + " profile</h3>");
-        renderProfileContent(out, profile, profileBlurbs.get(profile.athleteId()), loggedInAthleteId, profileSummaryAction, profileSummaryGenerateUrl);
-        out.println("<div class='mt-3'><label for='athleteProfileSelect' class='form-label fw-bold'>View another athlete</label>");
-        out.println("<select id='athleteProfileSelect' class='form-select' style='max-width: 24rem;'>");
-        out.println("<option value=''>Choose an athlete...</option>");
-        for (CompetitionInsights.AthleteProfileSummary athleteProfile : insights.athleteProfiles()) {
-            out.println("<option value='" + escapeAttribute(athleteProfile.athleteId()) + "' data-athlete-profile-name='" + escapeAttribute(athleteProfile.athleteName()) + "'>"
-                    + escape(athleteProfile.athleteName()) + "</option>");
+        List<PerformanceResponse> performances = activityProcessFacade.getPerformanceListForCompetition(selectedCompetitionId);
+        boolean excludeLatestWeek = selectedCompetitionIsActive(request, selectedCompetitionId);
+        CompetitionInsights insights = competitionInsightsService.buildInsights(performances, athleteId, excludeLatestWeek);
+        CompetitionInsights.AthleteProfileSummary profile = insights.selectedAthleteProfile();
+        if (profile == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
         }
-        out.println("</select></div>");
-        out.println("</div></section>");
+
+        response.setContentType("text/html; charset=UTF-8");
+        PrintWriter out = response.getWriter();
+        AthleteProfileBlurb verifiedBlurb = null;
+        try {
+            verifiedBlurb = dbService.getVerifiedAthleteProfileBlurb(profile.athleteId());
+        } catch (SQLException e) {
+            log.warn("Could not load verified athlete profile blurb for " + profile.athleteId(), e);
+        }
+        String profileSummaryAction = request.getContextPath() + "/app/AthleteProfileSummary";
+        String profileSummaryGenerateUrl = request.getContextPath() + "/app/AthleteProfileSummary";
+        renderProfileContent(out, profile, verifiedBlurb, loggedInAthlete.getId(), profileSummaryAction, profileSummaryGenerateUrl);
     }
 
     private void renderRankTrend(PrintWriter out, CompetitionInsights insights) {
@@ -160,17 +177,92 @@ public class InsightsServlet extends BootcampServlet {
     private void renderWeeklyHistory(PrintWriter out, CompetitionInsights insights) {
         out.println("<section class='mb-4'>");
         out.println("<h3 class='h5'>Week-by-week leaderboard winners</h3>");
-        out.println("<div class='table-responsive'><table class='table table-sm table-striped align-middle'>");
-        out.println("<thead><tr><th>Week</th><th>Leader</th><th>Points</th><th>Top three</th></tr></thead><tbody>");
-        for (CompetitionInsights.WeeklyLeaderboard leaderboard : insights.weeklyLeaderboards()) {
-            if (leaderboard.entries().isEmpty()) {
-                continue;
-            }
-            CompetitionInsights.RankedAthleteMetric leader = leaderboard.entries().get(0);
-            out.println("<tr><td>Week " + leaderboard.weekNumber() + "</td><td>" + escape(leader.athleteName())
-                    + "</td><td>" + format(leader.sortValue()) + "</td><td>" + topThree(leaderboard) + "</td></tr>");
+        List<CompetitionInsights.WeeklyLeaderboard> leaderboards = insights.weeklyLeaderboards();
+        List<CompetitionInsights.WeeklyLeaderboard> visibleLeaderboards = leaderboards.stream()
+                .filter(leaderboard -> !leaderboard.entries().isEmpty())
+                .toList();
+        if (visibleLeaderboards.isEmpty()) {
+            out.println("<div class='alert alert-info'>No weekly history is available yet.</div>");
+            out.println("</section>");
+            return;
         }
-        out.println("</tbody></table></div></section>");
+
+        out.println("<div class='card shadow-sm border-0'>");
+        out.println("<div class='card-body'>");
+        out.println("<div class='d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3'>");
+        out.println("<div class='btn-group' role='group' aria-label='Week navigation'>");
+        out.println("<button type='button' class='btn btn-outline-secondary' id='weekHistoryPrevBtn' aria-label='Previous week'><i class='bi bi-chevron-left'></i></button>");
+        out.println("<button type='button' class='btn btn-outline-secondary' id='weekHistoryNextBtn' aria-label='Next week'><i class='bi bi-chevron-right'></i></button>");
+        out.println("</div>");
+        out.println("<div class='flex-grow-1' style='min-width: 14rem; max-width: 24rem;'>");
+        out.println("<label class='form-label mb-1' for='weekHistoryWeekSelect'>Choose a week</label>");
+        out.println("<select class='form-select' id='weekHistoryWeekSelect'>");
+        for (int i = 0; i < visibleLeaderboards.size(); i++) {
+            CompetitionInsights.WeeklyLeaderboard leaderboard = visibleLeaderboards.get(i);
+            out.println("<option value='" + i + "'>Week " + leaderboard.weekNumber() + "</option>");
+        }
+        out.println("</select>");
+        out.println("</div>");
+        out.println("</div>");
+
+        out.println("<div class='border rounded p-3 bg-light' aria-live='polite'>");
+        out.println("<div class='d-flex justify-content-between align-items-start gap-3 flex-wrap mb-2'>");
+        out.println("<div>");
+        out.println("<div class='text-muted small'>Selected week</div>");
+        out.println("<div class='h4 mb-0' id='weekHistoryLabel'></div>");
+        out.println("</div>");
+        out.println("<div class='text-end'>");
+        out.println("<div class='text-muted small'>Leader</div>");
+        out.println("<div class='fw-semibold' id='weekHistoryLeader'></div>");
+        out.println("</div>");
+        out.println("</div>");
+        out.println("<div class='row g-3'>");
+        out.println("<div class='col-md-4'><div class='card h-100'><div class='card-body'><div class='text-muted small'>Points</div><div class='h5 mb-0' id='weekHistoryPoints'></div></div></div></div>");
+        out.println("<div class='col-md-8'><div class='card h-100'><div class='card-body'><div class='text-muted small'>Top three</div><div class='fw-semibold' id='weekHistoryTopThree'></div></div></div></div>");
+        out.println("</div>");
+        out.println("</div>");
+        out.println("</div>");
+        out.println("</div></section>");
+
+        out.println("<script>");
+        out.println("(function () {");
+        out.println("const weeks = [");
+        for (int i = 0; i < visibleLeaderboards.size(); i++) {
+            CompetitionInsights.WeeklyLeaderboard leaderboard = visibleLeaderboards.get(i);
+            CompetitionInsights.RankedAthleteMetric leader = leaderboard.entries().get(0);
+            out.println("{weekNumber:" + leaderboard.weekNumber()
+                    + ", leader:" + jsString(leader.athleteName())
+                    + ", points:" + jsString(format(leader.sortValue()))
+                    + ", topThree:" + jsString(topThree(leaderboard))
+                    + "}" + (i < visibleLeaderboards.size() - 1 ? "," : ""));
+        }
+        out.println("];");
+        out.println("const select = document.getElementById('weekHistoryWeekSelect');");
+        out.println("const prev = document.getElementById('weekHistoryPrevBtn');");
+        out.println("const next = document.getElementById('weekHistoryNextBtn');");
+        out.println("const label = document.getElementById('weekHistoryLabel');");
+        out.println("const leader = document.getElementById('weekHistoryLeader');");
+        out.println("const points = document.getElementById('weekHistoryPoints');");
+        out.println("const topThree = document.getElementById('weekHistoryTopThree');");
+        out.println("if (!select || !prev || !next || !label || !leader || !points || !topThree || !weeks.length) { return; }");
+        out.println("let index = 0;");
+        out.println("function renderWeek(nextIndex) {");
+        out.println("index = Math.max(0, Math.min(weeks.length - 1, nextIndex));");
+        out.println("const week = weeks[index];");
+        out.println("select.value = String(index);");
+        out.println("label.textContent = 'Week ' + week.weekNumber;");
+        out.println("leader.textContent = week.leader;");
+        out.println("points.textContent = week.points;");
+        out.println("topThree.textContent = week.topThree;");
+        out.println("prev.disabled = index === 0;");
+        out.println("next.disabled = index === weeks.length - 1;");
+        out.println("}");
+        out.println("select.addEventListener('change', function () { renderWeek(parseInt(select.value, 10)); });");
+        out.println("prev.addEventListener('click', function () { renderWeek(index - 1); });");
+        out.println("next.addEventListener('click', function () { renderWeek(index + 1); });");
+        out.println("renderWeek(0);");
+        out.println("})();");
+        out.println("</script>");
     }
 
     private void renderSportStandings(PrintWriter out, CompetitionInsights insights) {
@@ -189,99 +281,21 @@ public class InsightsServlet extends BootcampServlet {
         out.println("</div></section>");
     }
 
-    private void renderProfileModal(PrintWriter out, CompetitionInsights insights, Map<String, AthleteProfileBlurb> profileBlurbs, String loggedInAthleteId, String profileSummaryAction, String profileSummaryGenerateUrl) {
-        out.println("<div class='modal fade' id='athleteProfileModal' tabindex='-1' aria-labelledby='athleteProfileModalTitle' aria-hidden='true'>");
-        out.println("<div class='modal-dialog modal-lg modal-dialog-scrollable'><div class='modal-content'>");
-        out.println("<div class='modal-header'><h5 class='modal-title' id='athleteProfileModalTitle'>Athlete profile</h5>");
-        out.println("<button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Close'></button></div>");
-        out.println("<div class='modal-body'>");
-        for (CompetitionInsights.AthleteProfileSummary profile : insights.athleteProfiles()) {
-            out.println("<div class='athlete-profile-modal-body d-none' data-athlete-profile-body='" + escapeAttribute(profile.athleteId()) + "'>");
-            renderProfileContent(out, profile, profileBlurbs.get(profile.athleteId()), loggedInAthleteId, profileSummaryAction, profileSummaryGenerateUrl);
-            out.println("</div>");
-        }
-        out.println("</div></div></div></div>");
-        out.println("<script>");
-        out.println("(function(){");
-        out.println("var modalElement=document.getElementById('athleteProfileModal');");
-        out.println("if(!modalElement || modalElement.dataset.bound==='true') return;");
-        out.println("if(modalElement.parentElement!==document.body){document.body.appendChild(modalElement);}");
-        out.println("modalElement.dataset.bound='true';");
-        out.println("document.addEventListener('click',function(event){");
-        out.println("var trigger=event.target.closest('[data-athlete-profile-id]');");
-        out.println("if(!trigger) return;");
-        out.println("event.preventDefault();");
-        out.println("var athleteId=trigger.getAttribute('data-athlete-profile-id');");
-        out.println("var athleteName=trigger.getAttribute('data-athlete-profile-name') || 'Athlete profile';");
-        out.println("showAthleteProfile(athleteId, athleteName);");
-        out.println("});");
-        out.println("document.addEventListener('change',function(event){");
-        out.println("if(event.target.id!=='athleteProfileSelect' || !event.target.value) return;");
-        out.println("var option=event.target.options[event.target.selectedIndex];");
-        out.println("showAthleteProfile(event.target.value, option.getAttribute('data-athlete-profile-name') || option.textContent);");
-        out.println("event.target.value='';");
-        out.println("});");
-        out.println("function showAthleteProfile(athleteId, athleteName){");
-        out.println("modalElement.querySelectorAll('.athlete-profile-modal-body').forEach(function(body){body.classList.add('d-none');});");
-        out.println("var body=null;");
-        out.println("modalElement.querySelectorAll('.athlete-profile-modal-body').forEach(function(candidate){if(candidate.getAttribute('data-athlete-profile-body')===athleteId){body=candidate;}});");
-        out.println("if(!body) return;");
-        out.println("body.classList.remove('d-none');");
-        out.println("bindProfileForms(body);");
-        out.println("loadGeneratedBlurbs(body);");
-        out.println("var title=document.getElementById('athleteProfileModalTitle');");
-        out.println("if(title) title.textContent=athleteName + ' profile';");
-        out.println("bootstrap.Modal.getOrCreateInstance(modalElement).show();");
-        out.println("}");
-        out.println("function loadGeneratedBlurbs(root){");
-        out.println("(root || document).querySelectorAll('.ai-profile-blurb[data-ai-blurb-athlete-id]').forEach(function(card){");
-        out.println("if(card.dataset.aiLoaded==='true' || card.closest('.athlete-profile-modal-body.d-none')) return;");
-        out.println("card.dataset.aiLoaded='true';");
-        out.println("var url=card.getAttribute('data-ai-blurb-url');");
-        out.println("var textTarget=card.querySelector('[data-ai-blurb-text]');");
-        out.println("var textarea=card.querySelector('textarea[name=\"summaryText\"]');");
-        out.println("var submit=card.querySelector('button[type=\"submit\"]');");
-        out.println("var request=new XMLHttpRequest();");
-        out.println("request.open('GET', url, true);");
-        out.println("request.onreadystatechange=function(){");
-        out.println("if(request.readyState!==4) return;");
-        out.println("var text='Could not generate a profile summary right now. Very mysterious, probably cardio-related.';");
-        out.println("if(request.status>=200 && request.status<300){try{text=JSON.parse(request.responseText).text || text;}catch(e){}}");
-        out.println("if(textTarget) textTarget.textContent=text;");
-        out.println("if(textarea){textarea.value=text;textarea.disabled=false;}");
-        out.println("if(textarea){var form=textarea.closest('form[data-profile-form]');if(form){form.dataset.initial='';updateProfileButton(form);}}");
-        out.println("if(submit && !textarea) submit.disabled=false;");
-        out.println("};");
-        out.println("request.send();");
-        out.println("});");
-        out.println("}");
-        out.println("function bindProfileForms(root){");
-        out.println("(root || document).querySelectorAll('form[data-profile-form]').forEach(function(form){");
-        out.println("if(form.dataset.bound==='true') return;");
-        out.println("form.dataset.bound='true';");
-        out.println("var textarea=form.querySelector('textarea[name=\"summaryText\"]');");
-        out.println("if(textarea && form.dataset.initial===undefined){form.dataset.initial=textarea.value;}");
-        out.println("if(textarea){textarea.addEventListener('input',function(){updateProfileButton(form);});}");
-        out.println("updateProfileButton(form);");
-        out.println("});");
-        out.println("}");
-        out.println("function updateProfileButton(form){");
-        out.println("var textarea=form.querySelector('textarea[name=\"summaryText\"]');");
-        out.println("var submit=form.querySelector('button[type=\"submit\"]');");
-        out.println("if(!textarea || !submit) return;");
-        out.println("submit.disabled=textarea.disabled || textarea.value===(form.dataset.initial || '');");
-        out.println("}");
-        out.println("bindProfileForms(document);");
-        out.println("loadGeneratedBlurbs(document);");
-        out.println("})();");
-        out.println("</script>");
-    }
-
     private void renderProfileContent(PrintWriter out, CompetitionInsights.AthleteProfileSummary profile, AthleteProfileBlurb blurb, String loggedInAthleteId, String profileSummaryAction, String profileSummaryGenerateUrl) {
+        out.println("<div class='d-flex align-items-center gap-3 mb-3'>");
+        if (profile.profileMedium() != null && !profile.profileMedium().isBlank()) {
+            out.println("<img src='" + escapeAttribute(profile.profileMedium()) + "' alt='' class='rounded-circle border' style='width:56px;height:56px;object-fit:cover;' onerror=\"this.style.display='none';this.nextElementSibling.classList.remove('d-none');\">");
+            out.println("<span class='rounded-circle border d-none d-inline-flex align-items-center justify-content-center' style='width:56px;height:56px;'><i class='bi bi-person'></i></span>");
+        } else {
+            out.println("<span class='rounded-circle border d-inline-flex align-items-center justify-content-center' style='width:56px;height:56px;'><i class='bi bi-person'></i></span>");
+        }
+        out.println("<div><div class='fw-semibold'>" + escape(profile.athleteName()) + "</div><div class='text-muted small'>Strava athlete</div></div>");
+        out.println("</div>");
         renderProfileBlurb(out, profile, blurb, loggedInAthleteId, profileSummaryAction, profileSummaryGenerateUrl);
         out.println("<div class='row g-3'>");
         metric(out, "Overall rank", "#" + profile.overallRank());
-        metric(out, "Total points", format(profile.totalScore()));
+        metric(out, "Points to current week", format(profile.totalScore()));
+        metric(out, "Current week progress", format(profile.currentWeekPercentOfGoal() * 100) + "%");
         metric(out, "Active weeks", String.valueOf(profile.activeWeeks()));
         metric(out, "Goal-crusher weeks", String.valueOf(profile.goalCrushWeeks()));
         metric(out, "Sick weeks", String.valueOf(profile.sickWeeks()));
@@ -334,22 +348,6 @@ public class InsightsServlet extends BootcampServlet {
         out.println("</div>");
         out.println("<p class='mb-0' data-ai-blurb-text>Generating performance summary...</p>");
         out.println("</div></div>");
-    }
-
-    private Map<String, AthleteProfileBlurb> profileBlurbs(CompetitionInsights insights) {
-        Map<String, AthleteProfileBlurb> blurbs = new LinkedHashMap<>();
-        for (CompetitionInsights.AthleteProfileSummary profile : insights.athleteProfiles()) {
-            AthleteProfileBlurb verified = null;
-            try {
-                verified = dbService.getVerifiedAthleteProfileBlurb(profile.athleteId());
-            } catch (SQLException e) {
-                log.warn("Could not load verified athlete profile blurb for " + profile.athleteId(), e);
-            }
-            if (verified != null) {
-                blurbs.put(profile.athleteId(), verified);
-            }
-        }
-        return blurbs;
     }
 
     private void metric(PrintWriter out, String label, String value) {
@@ -428,5 +426,18 @@ public class InsightsServlet extends BootcampServlet {
 
     private String escapeAttribute(String value) {
         return escape(value).replace("'", "&#39;");
+    }
+
+    private String jsString(String value) {
+        String safe = value == null ? "" : value;
+        return "'" + safe
+                .replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n") + "'";
+    }
+
+    private String trimToEmpty(String value) {
+        return value == null ? "" : value.trim();
     }
 }

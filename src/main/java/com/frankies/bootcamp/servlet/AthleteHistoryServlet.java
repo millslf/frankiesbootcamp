@@ -3,6 +3,7 @@ package com.frankies.bootcamp.servlet;
 import com.frankies.bootcamp.model.WeeklyPerformance;
 import com.frankies.bootcamp.model.CompetitionSummaryView;
 import com.frankies.bootcamp.service.ActivityProcessFacade;
+import com.frankies.bootcamp.service.AuthSessionService;
 import com.frankies.bootcamp.utils.DateTimeUtils;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
@@ -37,6 +38,8 @@ public class AthleteHistoryServlet extends BootcampServlet {
     @Inject
     private ActivityProcessFacade activityProcessFacade;
     @Inject
+    private AuthSessionService authSessionService;
+    @Inject
     private AiMessageService aiMessageService;
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -56,6 +59,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
         }
         CompetitionSummaryView selectedCompetition = findSelectedCompetition(request, selectedCompetitionId);
         boolean selectedCompetitionIsCurrent = selectedCompetitionId == null || isCurrentCompetition(request, selectedCompetitionId);
+        boolean hideMotivationalMessage = authSessionService.isHistoryMotivationalMessageHidden(request);
         if (history.isEmpty() || selectedActiveCompetitionHistoryIsStale(history, selectedCompetition, selectedCompetitionIsCurrent)) {
             try {
                 if (selectedCompetitionId == null) {
@@ -77,9 +81,6 @@ public class AthleteHistoryServlet extends BootcampServlet {
         int latestHistoryWeek = history.keySet().stream().mapToInt(Integer::intValue).max().orElse(numberOfWeeksSinceStart);
         int displayWeekCount = selectedCompetitionId == null ? numberOfWeeksSinceStart : latestHistoryWeek;
 
-        out.println("<html><head>");
-        out.println("</head><body>");
-
         out.println("<div class='container'>");
 
         out.println("<h2 class='history-heading'>");
@@ -93,9 +94,12 @@ public class AthleteHistoryServlet extends BootcampServlet {
         if (history.isEmpty()) {
             out.println("<div class='alert alert-info'>We are getting things ready for your Strava account. Your history should appear shortly.</div>");
             out.println("</div>");
-            out.println("</body></html>");
             return;
         }
+
+        List<Integer> weekNumbers = history.keySet().stream()
+                .sorted()
+                .toList();
 
         WeeklyPerformance latest = history.get(displayWeekCount);
         if (latest != null) {
@@ -130,23 +134,18 @@ public class AthleteHistoryServlet extends BootcampServlet {
             String favouriteSports = com.frankies.bootcamp.sport.SportsUtils.getFavouriteSports(sports, 2);
             String suggestedSport = com.frankies.bootcamp.sport.SportsUtils.getSuggestedSport(sports.keySet());
 
-            String aiMsg = selectedCompetitionIsCurrent
-                    ? aiMessageService.getMotivationalMessage(
-                            athleteName, distance, goal, hitGoal, leaderboardRank, favouriteSports, suggestedSport
-                    )
-                    : aiMessageService.getCompetitionRecapMessage(
-                            athleteName,
-                            selectedCompetition == null ? null : selectedCompetition.getName(),
-                            displayWeekCount,
-                            totalDistance(history),
-                            totalScore(history),
-                            leaderboardRank,
-                            favouriteSports
-                    );
-            out.println("<div class='alert alert-info alert-dismissible fade show history-subheading' style='margin-bottom:1em;' role='alert'>");
-            out.println(aiMsg);
-            out.println("<button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Dismiss ZenBot message'></button>");
-            out.println("</div>");
+            if (selectedCompetitionIsCurrent && !hideMotivationalMessage) {
+                String aiMsg = aiMessageService.getMotivationalMessage(
+                        athleteName, distance, goal, hitGoal, leaderboardRank, favouriteSports, suggestedSport
+                );
+                out.println("<div class='alert alert-info history-subheading d-flex justify-content-between align-items-start gap-3' style='margin-bottom:1em;' role='alert'>");
+                out.println("<div>" + aiMsg + "</div>");
+                out.println("<form method='post' action='" + request.getContextPath() + "/app/AthleteHistory' class='m-0'>");
+                out.println("<input type='hidden' name='action' value='hideMotivationalMessage'>");
+                out.println("<button type='submit' class='btn-close' aria-label='Dismiss ZenBot message'></button>");
+                out.println("</form>");
+                out.println("</div>");
+            }
         }
         out.println("<div class='table-responsive mt-4'>");
         out.println("<table class='table table-bordered table-striped align-middle'>");
@@ -222,8 +221,38 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("</tbody>");
         out.println("</table>");
         out.println("</div>");
+
+        out.println("<script>");
+        out.println("(function () {");
+        out.println("const cards = Array.from(document.querySelectorAll('[data-history-week-index]'));");
+        out.println("const select = document.getElementById('historyWeekSelect');");
+        out.println("const prev = document.getElementById('historyWeekPrevBtn');");
+        out.println("const next = document.getElementById('historyWeekNextBtn');");
+        out.println("if (!cards.length || !select || !prev || !next) { return; }");
+        out.println("let currentIndex = 0;");
+        out.println("function showWeek(index) {");
+        out.println("  currentIndex = Math.max(0, Math.min(cards.length - 1, index));");
+        out.println("  cards.forEach(function (card, cardIndex) { card.classList.toggle('d-none', cardIndex !== currentIndex); });");
+        out.println("  select.value = String(currentIndex);");
+        out.println("  prev.disabled = currentIndex === 0;");
+        out.println("  next.disabled = currentIndex === cards.length - 1;");
+        out.println("}");
+        out.println("select.addEventListener('change', function () { showWeek(parseInt(select.value, 10)); });");
+        out.println("prev.addEventListener('click', function () { showWeek(currentIndex - 1); });");
+        out.println("next.addEventListener('click', function () { showWeek(currentIndex + 1); });");
+        out.println("showWeek(cards.length - 1);");
+        out.println("})();");
+        out.println("</script>");
         out.println("</div>");
-        out.println("</body></html>");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String action = request.getParameter("action");
+        if ("hideMotivationalMessage".equals(action)) {
+            authSessionService.hideHistoryMotivationalMessage(request);
+        }
+        response.sendRedirect(request.getContextPath() + "/app/");
     }
 
     private static boolean isCurrentCompetition(HttpServletRequest request, Long selectedCompetitionId) {
@@ -336,5 +365,23 @@ public class AthleteHistoryServlet extends BootcampServlet {
         }
         html.append("</details>");
         return html.toString();
+    }
+
+    private static void mobileMetric(PrintWriter out, String label, String value) {
+        out.println("<div class='col'>");
+        out.println("<div class='history-mobile-metric card h-100 border-0 bg-light-subtle shadow-sm'>");
+        out.println("<div class='card-body p-2'>");
+        out.println("<div class='text-muted small text-uppercase fw-semibold mb-1'>" + label + "</div>");
+        out.println("<div class='fw-semibold lh-sm'>" + value + "</div>");
+        out.println("</div>");
+        out.println("</div>");
+        out.println("</div>");
+    }
+
+    private static String prettyWeekLabel(String weekLabel) {
+        if (weekLabel == null) {
+            return "";
+        }
+        return weekLabel.replaceAll("([A-Za-z]+)(\\d+)", "$1 $2");
     }
 }

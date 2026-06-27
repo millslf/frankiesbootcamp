@@ -2,13 +2,17 @@ package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.model.BootcampAthlete;
 import com.frankies.bootcamp.model.AuthenticatedUser;
+import com.frankies.bootcamp.model.CompetitionSummaryView;
 import com.frankies.bootcamp.model.OnboardingState;
 import com.frankies.bootcamp.model.OnboardingStatus;
+import com.frankies.bootcamp.model.CompetitionInvitationView;
 import com.frankies.bootcamp.service.AuthService;
 import com.frankies.bootcamp.service.OnboardingStateService;
 import com.frankies.bootcamp.service.StravaService;
 import com.frankies.bootcamp.service.AuthSessionService;
 import com.frankies.bootcamp.service.DBService;
+import com.frankies.bootcamp.service.CompetitionAccessService;
+import com.frankies.bootcamp.service.CompetitionInvitationService;
 import jakarta.inject.Inject;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
@@ -17,8 +21,12 @@ import org.jboss.logging.Logger;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class BootcampServlet extends HttpServlet {
+    private static final String SITE_HIT_LOGGED_SESSION_KEY = "siteHitLogged";
+
     @Inject
     private AuthSessionService authSessionService;
     @Inject
@@ -29,6 +37,10 @@ public class BootcampServlet extends HttpServlet {
     private OnboardingStateService onboardingStateService;
     @Inject
     private StravaService stravaService;
+    @Inject
+    private CompetitionInvitationService competitionInvitationService;
+    @Inject
+    private CompetitionAccessService competitionAccessService;
 
     private static final Logger log = Logger.getLogger(BootcampServlet.class);
 
@@ -47,44 +59,73 @@ public class BootcampServlet extends HttpServlet {
 
         try {
             athlete = authService.loadAthleteForUser(authenticatedUser);
+            req.setAttribute("competitionSetupAllowed", competitionAccessService.canAccessCompetitionSetup(authenticatedUser));
+            session.setAttribute("competitionSetupAllowed", competitionAccessService.canAccessCompetitionSetup(authenticatedUser));
+            if (session.getAttribute(SITE_HIT_LOGGED_SESSION_KEY) == null) {
+                log.info("Site hit by " + authenticatedUser.getEmail());
+                session.setAttribute(SITE_HIT_LOGGED_SESSION_KEY, Boolean.TRUE);
+            }
             syncSelectedCompetition(req, athlete);
             OnboardingStatus onboardingStatus = onboardingStateService.resolve(authenticatedUser, athlete);
             applyOnboardingAttributes(req, session, authenticatedUser, athlete, onboardingStatus);
+            applyInvitationAttributes(req, authenticatedUser, athlete);
+
+            if (isCompetitionManagementPath(req.getContextPath(), req.getRequestURI())) {
+                if (athlete != null) {
+                    log.debug("Competition management page bypassed onboarding gate for athlete: " + authenticatedUser.getEmail());
+                }
+                req.setAttribute("athlete", athlete);
+                req.setAttribute("athleteName", session.getAttribute("athleteName"));
+                req.setAttribute("athleteEmail", session.getAttribute("athleteEmail"));
+                super.service(req, resp);
+                return;
+            }
 
             if (onboardingStatus.getState() == OnboardingState.STRAVA_PENDING) {
-                log.info("Strava link required: " + authenticatedUser.getEmail());
+                log.debug("Strava link required: " + authenticatedUser.getEmail());
                 forwardToStravaOnboarding(req, resp, authenticatedUser, onboardingStatus);
                 return;
             }
 
             if (onboardingStatus.getState() == OnboardingState.COMPETITION_PENDING) {
-                log.info("Competition onboarding required: " + authenticatedUser.getEmail());
+                log.debug("Competition onboarding required: " + authenticatedUser.getEmail());
                 req.getRequestDispatcher("/app/competition-onboarding.jsp").forward(req, resp);
                 return;
             }
 
             if (onboardingStatus.getState() == OnboardingState.COMPETITION_STARTS_SOON) {
-                log.info("Competition starts soon for athlete: " + authenticatedUser.getEmail());
+                log.debug("Competition starts soon for athlete: " + authenticatedUser.getEmail());
                 req.getRequestDispatcher("/app/competition-starts-soon.jsp").forward(req, resp);
                 return;
             }
 
             if (onboardingStatus.getState() == OnboardingState.COMPETITION_SELECTION_REQUIRED
                     && authSessionService.getSelectedCompetitionId(req) == null) {
-                log.info("Competition selection required for athlete: " + authenticatedUser.getEmail());
+                log.debug("Competition selection required for athlete: " + authenticatedUser.getEmail());
                 req.getRequestDispatcher("/app/competition-selection.jsp").forward(req, resp);
                 return;
             }
 
             if (onboardingStatus.getState() == OnboardingState.COMPETITION_HISTORY_ONLY
                     && authSessionService.getSelectedCompetitionId(req) == null) {
-                log.info("Only past competitions available for athlete: " + authenticatedUser.getEmail());
+                log.debug("Only past competitions available for athlete: " + authenticatedUser.getEmail());
                 req.getRequestDispatcher("/app/competition-history-only.jsp").forward(req, resp);
                 return;
             }
 
+            String pendingInviteToken = authSessionService.getPendingInvitationToken(req);
+            if (pendingInviteToken != null && !isInvitationPath(req)) {
+                CompetitionInvitationView invitation = competitionInvitationService.resolveInvitationToken(pendingInviteToken);
+                if (invitation != null && invitation.isPending()) {
+                    req.setAttribute("pendingInvitation", invitation);
+                    req.getRequestDispatcher("/app/invitations").forward(req, resp);
+                    return;
+                }
+                authSessionService.clearPendingInvitationToken(req);
+            }
+
             if (athlete != null) {
-                log.info("Athlete authorised: " + buildDisplayName(athlete, authenticatedUser.getEmail()));
+                log.debug("Athlete authorised: " + buildDisplayName(athlete, authenticatedUser.getEmail()));
             }
         } catch (SQLException e) {
             log.error("Error resolving onboarding state", e);
@@ -143,7 +184,7 @@ public class BootcampServlet extends HttpServlet {
                                            HttpSession session,
                                            AuthenticatedUser authenticatedUser,
                                            BootcampAthlete athlete,
-                                           OnboardingStatus onboardingStatus) {
+                                           OnboardingStatus onboardingStatus) throws SQLException {
         req.setAttribute("onboardingStatus", onboardingStatus);
         req.setAttribute("onboardingState", onboardingStatus.getState());
 
@@ -157,7 +198,45 @@ public class BootcampServlet extends HttpServlet {
         }
         req.setAttribute("activeCompetitions", onboardingStatus.getActiveCompetitions());
         req.setAttribute("pastCompetitions", onboardingStatus.getPastCompetitions());
+        req.setAttribute("activeCompetitionAdminIds", loadAdminCompetitionIds(athlete, onboardingStatus));
         req.setAttribute("selectedCompetitionId", selectedCompetitionId);
+        session.setAttribute("activeCompetitions", onboardingStatus.getActiveCompetitions());
+        session.setAttribute("pastCompetitions", onboardingStatus.getPastCompetitions());
+        session.setAttribute("activeCompetitionAdminIds", loadAdminCompetitionIds(athlete, onboardingStatus));
+        session.setAttribute("selectedCompetitionId", selectedCompetitionId);
+    }
+
+    private Set<Long> loadAdminCompetitionIds(BootcampAthlete athlete, OnboardingStatus onboardingStatus) throws SQLException {
+        Set<Long> adminCompetitionIds = new HashSet<>();
+        if (athlete == null || athlete.getId() == null || athlete.getId().isBlank() || onboardingStatus == null) {
+            return adminCompetitionIds;
+        }
+        for (CompetitionSummaryView competition : onboardingStatus.getActiveCompetitions()) {
+            if (competitionInvitationService.isAdmin(competition.getId(), athlete.getId())) {
+                adminCompetitionIds.add(competition.getId());
+            }
+        }
+        return adminCompetitionIds;
+    }
+
+    private void applyInvitationAttributes(HttpServletRequest req, AuthenticatedUser authenticatedUser, BootcampAthlete athlete) {
+        try {
+            req.setAttribute("pendingCompetitionInvitations", competitionInvitationService.listPendingForUser(authenticatedUser, athlete));
+            Long selectedCompetitionId = authSessionService.getSelectedCompetitionId(req);
+            if (selectedCompetitionId != null && athlete != null && athlete.getId() != null && !athlete.getId().isBlank()) {
+                req.setAttribute("selectedCompetitionAdmin", competitionInvitationService.isAdmin(selectedCompetitionId, athlete.getId()));
+            } else {
+                req.setAttribute("selectedCompetitionAdmin", Boolean.FALSE);
+            }
+        } catch (SQLException e) {
+            log.error("Unable to load competition invitation attributes", e);
+            throw new RuntimeException("Unable to load competition invitations", e);
+        }
+    }
+
+    private boolean isInvitationPath(HttpServletRequest req) {
+        String path = req.getRequestURI().substring(req.getContextPath().length());
+        return "/app/invitations".equals(path) || "/app/invitations/respond".equals(path) || "/app/competition-invitations".equals(path);
     }
 
     static Long defaultSelectedCompetitionId(Long storedCompetitionId, OnboardingStatus onboardingStatus) {
@@ -168,6 +247,11 @@ public class BootcampServlet extends HttpServlet {
             return onboardingStatus.getActiveCompetitions().get(0).getId();
         }
         return null;
+    }
+
+    static boolean isCompetitionManagementPath(String contextPath, String requestUri) {
+        String path = requestUri.substring(contextPath.length());
+        return "/app/competitions".equals(path);
     }
 
     private void syncSelectedCompetition(HttpServletRequest req, BootcampAthlete athlete) {
@@ -182,6 +266,7 @@ public class BootcampServlet extends HttpServlet {
             }
             req.setAttribute("selectedCompetitionId", selectedCompetitionId);
         } catch (SQLException e) {
+            log.errorf(e, "Unable to validate selected competition athleteId=%s competitionId=%s", athlete.getId(), selectedCompetitionId);
             throw new RuntimeException("Unable to validate selected competition", e);
         }
     }
