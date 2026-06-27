@@ -92,7 +92,7 @@ class AuthSessionServiceTest {
 
         servlet.handleGet(request, response);
 
-        assertEquals("/bootcamp/auth/external/login?prompt=login", response.redirectedTo);
+        assertEquals("/bootcamp/auth/external/login", response.redirectedTo);
     }
 
     @Test
@@ -104,7 +104,7 @@ class AuthSessionServiceTest {
 
         servlet.handleGet(request, response);
 
-        assertEquals("/bootcamp/auth/external/login?prompt=login&error=external+failure", response.redirectedTo);
+        assertEquals("/bootcamp/auth/external/login?error=external+failure", response.redirectedTo);
     }
 
     @Test
@@ -115,7 +115,7 @@ class AuthSessionServiceTest {
 
         servlet.handleGet(request, response);
 
-        assertEquals("/bootcamp/auth/external/login?prompt=login", response.redirectedTo);
+        assertEquals("/bootcamp/auth/external/login", response.redirectedTo);
     }
 
     private static final class TestableLoginServlet extends LoginServlet {

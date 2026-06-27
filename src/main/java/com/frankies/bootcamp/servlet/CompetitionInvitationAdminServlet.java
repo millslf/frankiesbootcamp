@@ -15,6 +15,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jboss.logging.Logger;
 import org.wildfly.security.credential.store.CredentialStoreException;
 
 import java.io.IOException;
@@ -24,6 +25,8 @@ import java.util.List;
 
 @WebServlet(name = "competitionInvitationAdmin", value = "/app/competition-invitations")
 public class CompetitionInvitationAdminServlet extends BootcampServlet {
+    private static final Logger log = Logger.getLogger(CompetitionInvitationAdminServlet.class);
+
     @Inject
     private CompetitionInvitationService competitionInvitationService;
     @Inject
@@ -46,14 +49,20 @@ public class CompetitionInvitationAdminServlet extends BootcampServlet {
             BootcampAthlete athlete = requireAdminAthlete(req, competitionId);
             String query = req.getParameter("q");
             CompetitionInvitationPageView view = competitionInvitationService.loadAdminPage(competitionId, query);
+            String status = req.getParameter("status");
+            if ("removed".equals(status)) {
+                req.setAttribute("invitationAdminFeedback", "Removed pending invitation.");
+            }
             req.setAttribute("adminAthlete", athlete);
             req.setAttribute("invitationAdminView", view);
             req.getRequestDispatcher("/app/competition-invitations.jsp").forward(req, resp);
         } catch (IllegalStateException e) {
             resp.sendRedirect(req.getContextPath() + "/app/");
         } catch (ServletException e) {
+            log.error("Unable to render competition invitations", e);
             throw new IOException("Unable to render competition invitations", e);
         } catch (SQLException e) {
+            log.error("Unable to load competition invitations", e);
             throw new IOException("Unable to load competition invitations", e);
         }
     }
@@ -105,6 +114,11 @@ public class CompetitionInvitationAdminServlet extends BootcampServlet {
                 feedback = created.invitedUserId() != null
                         ? "Created invitation for selected user."
                         : "Created invitation for " + EmailDisplayUtil.maskEmail(created.invitedEmail());
+            } else if ("revokeInvite".equals(action)) {
+                long invitationId = Long.parseLong(req.getParameter("invitationId"));
+                competitionInvitationService.removePendingInvitation(invitationId);
+                resp.sendRedirect(req.getContextPath() + "/app/competition-invitations?competitionId=" + competitionId + "&status=removed");
+                return;
             } else {
                 throw new IllegalArgumentException("Unsupported invite action.");
             }
@@ -127,11 +141,14 @@ public class CompetitionInvitationAdminServlet extends BootcampServlet {
                 req.setAttribute("invitationAdminError", e.getMessage());
                 req.getRequestDispatcher("/app/competition-invitations.jsp").forward(req, resp);
             } catch (SQLException | ServletException ex) {
+                log.error("Unable to render competition invitations after validation error", ex);
                 throw new IOException("Unable to render competition invitations after validation error", ex);
             }
         } catch (ServletException e) {
+            log.error("Unable to render competition invitations", e);
             throw new IOException("Unable to render competition invitations", e);
         } catch (SQLException e) {
+            log.error("Unable to load competition invitations", e);
             throw new IOException("Unable to load competition invitations", e);
         }
     }

@@ -1352,7 +1352,14 @@ public class DBService {
         try (
                 Connection connection = ds.getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.token = ? LIMIT 1"
+                        "SELECT ci.*, c.name AS competition_name, " +
+                                "a.firstname AS invited_firstname, a.lastname AS invited_lastname, " +
+                                "u.display_name AS invited_display_name " +
+                                "FROM competition_invitation ci " +
+                                "JOIN competitions c ON c.id = ci.competition_id " +
+                                "LEFT JOIN app_users u ON u.id = ci.invited_user_id " +
+                                "LEFT JOIN athletes a ON a.user_id = u.id " +
+                                "WHERE ci.token = ? LIMIT 1"
                 )
         ) {
             statement.setString(1, token);
@@ -1369,7 +1376,14 @@ public class DBService {
         try (
                 Connection connection = ds.getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.competition_id = ? AND ci.token = ? LIMIT 1"
+                        "SELECT ci.*, c.name AS competition_name, " +
+                                "a.firstname AS invited_firstname, a.lastname AS invited_lastname, " +
+                                "u.display_name AS invited_display_name " +
+                                "FROM competition_invitation ci " +
+                                "JOIN competitions c ON c.id = ci.competition_id " +
+                                "LEFT JOIN app_users u ON u.id = ci.invited_user_id " +
+                                "LEFT JOIN athletes a ON a.user_id = u.id " +
+                                "WHERE ci.competition_id = ? AND ci.token = ? LIMIT 1"
                 )
         ) {
             statement.setLong(1, competitionId);
@@ -1387,7 +1401,14 @@ public class DBService {
         try (
                 Connection connection = ds.getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT ci.*, c.name AS competition_name FROM competition_invitation ci JOIN competitions c ON c.id = ci.competition_id WHERE ci.id = ? LIMIT 1"
+                        "SELECT ci.*, c.name AS competition_name, " +
+                                "a.firstname AS invited_firstname, a.lastname AS invited_lastname, " +
+                                "u.display_name AS invited_display_name " +
+                                "FROM competition_invitation ci " +
+                                "JOIN competitions c ON c.id = ci.competition_id " +
+                                "LEFT JOIN app_users u ON u.id = ci.invited_user_id " +
+                                "LEFT JOIN athletes a ON a.user_id = u.id " +
+                                "WHERE ci.id = ? LIMIT 1"
                 )
         ) {
             statement.setLong(1, invitationId);
@@ -1555,6 +1576,18 @@ public class DBService {
         ) {
             statement.setLong(1, invitationId);
             statement.executeUpdate();
+        }
+    }
+
+    public boolean deleteCompetitionInvitation(long invitationId) throws SQLException {
+        try (
+                Connection connection = ds.getConnection();
+                PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM competition_invitation WHERE id = ? AND status = 'pending'"
+                )
+        ) {
+            statement.setLong(1, invitationId);
+            return statement.executeUpdate() > 0;
         }
     }
 

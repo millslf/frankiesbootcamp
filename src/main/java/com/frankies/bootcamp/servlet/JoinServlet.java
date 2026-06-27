@@ -11,6 +11,6 @@ import java.io.IOException;
 public class JoinServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.sendRedirect(req.getContextPath() + "/auth/external/login?prompt=login");
+        resp.sendRedirect(req.getContextPath() + "/auth/external/login");
     }
 }

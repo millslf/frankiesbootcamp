@@ -242,14 +242,24 @@
                     <div class="list-group">
                         <% for (CompetitionInvitationView invitation : view.getPendingInvitations()) { %>
                         <div class="list-group-item">
-                            <div class="fw-semibold">
-                                <% if (invitation.getInvitedUserId() != null && !invitation.getInvitedUserId().isBlank()) { %>
-                                <%= escapeHtml(formatInvitedName(invitation)) %>
-                                <% } else { %>
-                                <%= escapeHtml(invitation.getInvitedEmail()) %>
-                                <% } %>
+                            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                <div>
+                                    <div class="fw-semibold">
+                                        <% if (invitation.getInvitedUserId() != null && !invitation.getInvitedUserId().isBlank()) { %>
+                                        <%= escapeHtml(formatInvitedName(invitation)) %>
+                                        <% } else { %>
+                                        <%= escapeHtml(invitation.getInvitedEmail()) %>
+                                        <% } %>
+                                    </div>
+                                    <div class="text-muted small">Status: <%= escapeHtml(invitation.getStatus()) %></div>
+                                </div>
+                                <form method="post" action="<%=pageContextPath%>/app/competition-invitations" onsubmit="return confirm('Remove this pending invitation?');">
+                                    <input type="hidden" name="action" value="revokeInvite">
+                                    <input type="hidden" name="competitionId" value="<%= view.getCompetitionId() %>">
+                                    <input type="hidden" name="invitationId" value="<%= invitation.getId() %>">
+                                    <button class="btn btn-outline-danger btn-sm" type="submit">Remove</button>
+                                </form>
                             </div>
-                            <div class="text-muted small">Status: <%= escapeHtml(invitation.getStatus()) %></div>
                         </div>
                         <% } %>
                     </div>

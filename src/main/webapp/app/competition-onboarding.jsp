@@ -26,6 +26,8 @@
     </a>
 </header>
 
+<%@ include file="/WEB-INF/jspf/app-tabs.jspf" %>
+
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
