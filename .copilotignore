@@ -1,0 +1,21 @@
+# Build outputs
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE / repo metadata
+.git/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Node / frontend generated files, if any
+node_modules/
+dist/
+build/
+out/

@@ -118,6 +118,47 @@ public class StravaService {
         return null;
     }
 
+    public BootcampAthlete backfillAthleteProfileIfMissing(BootcampAthlete athlete) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
+        if (athlete == null || !isProfileBackfillRequired(athlete) || athlete.getAccessToken() == null || athlete.getAccessToken().isBlank()) {
+            return athlete;
+        }
+
+        BootcampAthlete refreshedAthlete = refreshToken(athlete);
+        StravaAuthResponse.Athlete stravaAthlete = fetchCurrentAthleteProfile(refreshedAthlete.getAccessToken());
+        if (stravaAthlete == null) {
+            return refreshedAthlete;
+        }
+
+        boolean changed = applyProfileDetails(refreshedAthlete, stravaAthlete);
+        if (changed) {
+            db.saveAthlete(refreshedAthlete);
+        }
+        return refreshedAthlete;
+    }
+
+    public StravaAuthResponse.Athlete fetchCurrentAthleteProfile(String bearer) throws IOException {
+        OkHttpClient client = new OkHttpClient().newBuilder().build();
+        Request request = new Request.Builder()
+                .url("https://www.strava.com/api/v3/athlete")
+                .method("GET", null)
+                .addHeader("Authorization", "Bearer " + bearer)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            String body = response.body() == null ? "" : response.body().string();
+            if (response.isSuccessful()) {
+                try {
+                    return new Gson().fromJson(body, StravaAuthResponse.Athlete.class);
+                } catch (RuntimeException e) {
+                    throw new IOException("Unable to parse Strava athlete profile", e);
+                }
+            }
+
+            log.warn("StravaService: failed to fetch athlete profile. Code: {} Body: {}", response.code(), body);
+            throw new IOException("Strava athlete profile fetch failed, HTTP " + response.code());
+        }
+    }
+
     public BootcampAthlete refreshToken(BootcampAthlete athlete) throws CredentialStoreException, NoSuchAlgorithmException, IOException, SQLException {
         Instant expiry = Instant.ofEpochSecond(athlete.getExpiresAt());
         if (Instant.now().isAfter(expiry.minusSeconds(60))) {
@@ -230,6 +271,34 @@ public class StravaService {
             log.error("StravaService: unexpected error fetching activity " + activityId, e);
             throw new IOException(e);
         }
+    }
+
+    private boolean isProfileBackfillRequired(BootcampAthlete athlete) {
+        return isBlank(athlete.getCity())
+                || isBlank(athlete.getState())
+                || isBlank(athlete.getCountry())
+                || isBlank(athlete.getProfileMedium());
+    }
+
+    private boolean applyProfileDetails(BootcampAthlete target, StravaAuthResponse.Athlete source) {
+        boolean changed = false;
+        changed |= setIfBlank(target.getCity(), source.getCity(), target::setCity);
+        changed |= setIfBlank(target.getState(), source.getState(), target::setState);
+        changed |= setIfBlank(target.getCountry(), source.getCountry(), target::setCountry);
+        changed |= setIfBlank(target.getProfileMedium(), source.getProfile_medium(), target::setProfileMedium);
+        return changed;
+    }
+
+    private boolean setIfBlank(String existing, String incoming, java.util.function.Consumer<String> setter) {
+        if (!isBlank(existing) || isBlank(incoming)) {
+            return false;
+        }
+        setter.accept(incoming.trim());
+        return true;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
 

@@ -46,9 +46,11 @@ public record CompetitionInsights(
     public record AthleteProfileSummary(
             String athleteId,
             String athleteName,
+            String profileMedium,
             int overallRank,
             String totalDistanceDisplay,
             double totalScore,
+            double currentWeekPercentOfGoal,
             int activeWeeks,
             int sickWeeks,
             int goalCrushWeeks,

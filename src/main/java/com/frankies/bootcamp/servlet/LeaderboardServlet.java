@@ -32,9 +32,9 @@ public class LeaderboardServlet extends BootcampServlet {
                 ? activityProcessFacade.getSortedSummariesForCompetition(selectedCompetitionId)
                 : activityProcessFacade.getSortedSummaries(loggedInAthlete == null ? null : loggedInAthlete.getId());
         Map<String, String> athleteIdsByName = athleteIdsByName(selectedCompetitionId);
+        Map<String, Double> yearlyScoreSummary = sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary);
+        Map<String, Double> weeklyProgressSummary = sortedSummaries.get(BootcampConstants.currentWeekPercentageOfGoalSummary);
 
-        out.println("<html><head>");
-        out.println("</head><body>");
         out.println("<div class='container'>");
         out.println("<h2 class='history-heading'>");
         out.println("<i class='bi bi-trophy-fill'></i> Frankie's Bootcamp Leaderboard");
@@ -42,6 +42,7 @@ public class LeaderboardServlet extends BootcampServlet {
         out.println("<p class='history-subheading'>");
         out.println("🔥 Tracking top performers and weekly goal crushers across the challenge.");
         out.println("</p>");
+        int rank;
 
 // Accordion Buttons
         out.println("<button id='btnScore' class='accordion-button btn btn-primary active'>");
@@ -61,14 +62,18 @@ public class LeaderboardServlet extends BootcampServlet {
         out.println("<p class='history-subheading'>");
         out.println("🏅 Cumulative scores for athletes conquering the full challenge.");
         out.println("</p>");
+        if (yearlyScoreSummary == null || yearlyScoreSummary.isEmpty()) {
+            out.println("<div class='alert alert-info'>No leaderboard scores are available yet.</div>");
+            out.println("</div>");
+        } else {
         out.println("<table>");
         out.println("<thead><tr>");
         out.println("<th><i class='bi bi-person-fill'></i> Athlete</th>");
         out.println("<th><i class='bi bi-star-fill'></i> Score</th>");
         out.println("</tr></thead>");
         out.println("<tbody>");
-        int rank = 1;
-        for (Map.Entry<String, Double> entry : sortedSummaries.get(BootcampConstants.currentYearlyScoreSummary).entrySet()) {
+        rank = 1;
+        for (Map.Entry<String, Double> entry : yearlyScoreSummary.entrySet()) {
             out.println("<tr><td>" + athleteProfileLink(entry.getKey(), athleteIdsByName));
             if (rank == 1) {
                 out.println(" <i class='bi bi-trophy trophy gold' title='Gold Trophy'></i>");
@@ -83,12 +88,17 @@ public class LeaderboardServlet extends BootcampServlet {
         }
         out.println("</tbody></table>");
         out.println("</div>");
+        }
 
 // This Week Percentage Of Goal Table
         out.println("<div id='progressContent' class='accordion-content'>");
         out.println("<p class='history-subheading'>");
         out.println("📈 Who’s pushing hardest this week and smashing their personal targets.");
         out.println("</p>");
+        if (weeklyProgressSummary == null || weeklyProgressSummary.isEmpty()) {
+            out.println("<div class='alert alert-info'>No weekly progress leaderboard is available yet.</div>");
+            out.println("</div>");
+        } else {
         out.println("<table>");
         out.println("<thead><tr>");
         out.println("<th><i class='bi bi-person-fill'></i> Athlete</th>");
@@ -96,7 +106,7 @@ public class LeaderboardServlet extends BootcampServlet {
         out.println("</tr></thead>");
         out.println("<tbody>");
         rank = 1;
-        for (Map.Entry<String, Double> entry : sortedSummaries.get(BootcampConstants.currentWeekPercentageOfGoalSummary).entrySet()) {
+        for (Map.Entry<String, Double> entry : weeklyProgressSummary.entrySet()) {
             out.println("<tr><td>" + athleteProfileLink(entry.getKey(), athleteIdsByName));
             if (rank == 1) {
                 out.println(" <i class='bi bi-trophy trophy gold' title='Gold Trophy'></i>");
@@ -111,6 +121,7 @@ public class LeaderboardServlet extends BootcampServlet {
         }
         out.println("</tbody></table>");
         out.println("</div>");
+        }
 
         out.println("<script>");
         out.println("const buttons = document.querySelectorAll('.accordion-button');");
@@ -138,7 +149,7 @@ public class LeaderboardServlet extends BootcampServlet {
         out.println("});");
         out.println("</script>");
 
-        out.println("</div></body></html>");
+        out.println("</div>");
     }
 
     private Map<String, String> athleteIdsByName(Long selectedCompetitionId) {

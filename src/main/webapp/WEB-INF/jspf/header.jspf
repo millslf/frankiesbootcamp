@@ -1,18 +1,109 @@
+<%@ page import="com.frankies.bootcamp.model.AuthenticatedUser" %>
+<%@ page import="com.frankies.bootcamp.model.BootcampAthlete" %>
 <%@ page import="com.frankies.bootcamp.model.CompetitionSummaryView" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.Set" %>
 <%
     String ctx = request.getContextPath();
     boolean inApp = request.getRequestURI().startsWith(ctx + "/app");
     String brandHref = inApp ? ctx + "/app/" : ctx + "/";
-    Object selectedCompetitionIdAttr = request.getAttribute("selectedCompetitionId");
-    Long selectedCompetitionId = selectedCompetitionIdAttr instanceof Long ? (Long) selectedCompetitionIdAttr : null;
-    Object activeCompetitionsAttr = request.getAttribute("activeCompetitions");
-    List<CompetitionSummaryView> activeCompetitions = activeCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) activeCompetitionsAttr : List.of();
-    Object pastCompetitionsAttr = request.getAttribute("pastCompetitions");
-    List<CompetitionSummaryView> pastCompetitions = pastCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) pastCompetitionsAttr : List.of();
-    int activeMenuCount = Math.min(activeCompetitions.size(), 5);
-    int recentMenuCount = Math.min(pastCompetitions.size(), 3);
+    Object headerSelectedCompetitionIdAttr = request.getAttribute("selectedCompetitionId");
+    if (headerSelectedCompetitionIdAttr == null) {
+        headerSelectedCompetitionIdAttr = session.getAttribute("selectedCompetitionId");
+    }
+    Long headerSelectedCompetitionId = headerSelectedCompetitionIdAttr instanceof Long ? (Long) headerSelectedCompetitionIdAttr : null;
+    Object headerActiveCompetitionsAttr = request.getAttribute("activeCompetitions");
+    if (headerActiveCompetitionsAttr == null) {
+        headerActiveCompetitionsAttr = session.getAttribute("activeCompetitions");
+    }
+    List<CompetitionSummaryView> headerActiveCompetitions = headerActiveCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) headerActiveCompetitionsAttr : List.of();
+    Object headerPastCompetitionsAttr = request.getAttribute("pastCompetitions");
+    if (headerPastCompetitionsAttr == null) {
+        headerPastCompetitionsAttr = session.getAttribute("pastCompetitions");
+    }
+    List<CompetitionSummaryView> headerPastCompetitions = headerPastCompetitionsAttr instanceof List<?> ? (List<CompetitionSummaryView>) headerPastCompetitionsAttr : List.of();
+    Object headerPendingCompetitionInvitationsAttr = request.getAttribute("pendingCompetitionInvitations");
+    List<?> headerPendingCompetitionInvitations = headerPendingCompetitionInvitationsAttr instanceof List<?> ? (List<?>) headerPendingCompetitionInvitationsAttr : List.of();
+    Object headerSelectedCompetitionAdminAttr = request.getAttribute("selectedCompetitionAdmin");
+    if (headerSelectedCompetitionAdminAttr == null) {
+        headerSelectedCompetitionAdminAttr = session.getAttribute("selectedCompetitionAdmin");
+    }
+    boolean headerSelectedCompetitionAdmin = headerSelectedCompetitionAdminAttr instanceof Boolean && (Boolean) headerSelectedCompetitionAdminAttr;
+    Object headerCompetitionSetupAllowedAttr = request.getAttribute("competitionSetupAllowed");
+    if (headerCompetitionSetupAllowedAttr == null) {
+        headerCompetitionSetupAllowedAttr = session.getAttribute("competitionSetupAllowed");
+    }
+    boolean headerCompetitionSetupAllowed = headerCompetitionSetupAllowedAttr instanceof Boolean && (Boolean) headerCompetitionSetupAllowedAttr;
+    Set<Long> headerActiveCompetitionIds = headerActiveCompetitions.stream().map(CompetitionSummaryView::getId).collect(java.util.stream.Collectors.toSet());
+    Object headerAuthUserAttr = request.getAttribute("authUser");
+    if (!(headerAuthUserAttr instanceof AuthenticatedUser)) {
+        headerAuthUserAttr = session.getAttribute("authUser");
+    }
+    AuthenticatedUser headerAuthUser = headerAuthUserAttr instanceof AuthenticatedUser ? (AuthenticatedUser) headerAuthUserAttr : null;
+    Object headerAthleteAttr = request.getAttribute("athlete");
+    if (!(headerAthleteAttr instanceof BootcampAthlete)) {
+        headerAthleteAttr = session.getAttribute("athlete");
+    }
+    BootcampAthlete headerAthlete = headerAthleteAttr instanceof BootcampAthlete ? (BootcampAthlete) headerAthleteAttr : null;
+    String headerProfileName = headerAthlete != null && headerAthlete.getFirstname() != null && !headerAthlete.getFirstname().isBlank()
+            ? (headerAthlete.getFirstname() + (headerAthlete.getLastname() == null || headerAthlete.getLastname().isBlank() ? "" : " " + headerAthlete.getLastname())).trim()
+            : headerAuthUser != null && headerAuthUser.getDisplayName() != null && !headerAuthUser.getDisplayName().isBlank()
+            ? headerAuthUser.getDisplayName()
+            : "Profile";
+    String headerProfileAthleteId = headerAthlete != null ? headerAthlete.getId() : "";
+    String headerProfileMedium = headerAthlete != null ? headerAthlete.getProfileMedium() : "";
+    boolean headerHasProfile = headerAthlete != null && headerAthlete.getId() != null && !headerAthlete.getId().isBlank();
 %>
+<style>
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: rgba(255, 255, 255, 0.18);
+    }
+
+    .user-avatar-placeholder {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.18);
+    }
+
+    .profile-menu-toggle {
+        min-height: 40px;
+    }
+
+    .profile-menu-label {
+        display: inline-block;
+    }
+
+    .profile-menu-toggle .user-avatar,
+    .profile-menu-toggle .user-avatar-placeholder {
+        width: 30px;
+        height: 30px;
+    }
+
+    .profile-menu-toggle .user-avatar-placeholder {
+        font-size: 0.85rem;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .profile-menu:hover .dropdown-menu {
+            display: block;
+            margin-top: 0;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .profile-menu-label {
+            display: none;
+        }
+    }
+</style>
 
 <header class="d-flex align-items-center justify-content-between text-white px-3 py-2 shadow-sm"
         style="min-height:56px; position: sticky; top: 0; z-index: 1030; background-color: #0d6efd;">
@@ -41,63 +132,78 @@
                         Signed in as <strong id="signedInName"></strong>
                     </div>
                     <div class="btn-group-vertical w-100">
-
-                        <a id="homeBtn" class="btn btn-outline-secondary mb-2 oc-dismiss-nav"
-                           href="<%=ctx%>/">
-                            <i class="bi bi-house-door me-1"></i> Home
-                        </a>
-
                         <a id="loginBtn" class="btn btn-outline-secondary mb-2"
                            href="<%=ctx%>/login">
                             <i class="bi bi-box-arrow-in-right me-1"></i> Login
                         </a>
 
-                        <a id="logoutBtn" class="btn btn-outline-secondary mb-2 d-none"
-                           href="<%=ctx%>/logout">
-                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        <div class="text-uppercase small text-muted mt-3 mb-2">Competition</div>
+                        <% if (headerAuthUser != null && !headerActiveCompetitions.isEmpty()) { %>
+                        <div class="dropdown mb-2">
+                            <button class="btn btn-outline-primary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-flag me-1"></i> Current competitions (<%= headerActiveCompetitions.size() %>)
+                            </button>
+                            <ul class="dropdown-menu w-100" style="max-height: 18rem; overflow-y: auto;">
+                                <% for (CompetitionSummaryView competition : headerActiveCompetitions) { %>
+                                <li>
+                                    <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == competition.getId() ? "active" : "" %>"
+                                       href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
+                                        <%= competition.getName() %>
+                                    </a>
+                                </li>
+                                <% } %>
+                            </ul>
+                        </div>
+                        <% } %>
+                        <% if (headerAuthUser != null && !headerPastCompetitions.isEmpty()) { %>
+                        <div class="dropdown mb-2">
+                            <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-clock-history me-1"></i> Past competitions (<%= headerPastCompetitions.size() %>)
+                            </button>
+                            <ul class="dropdown-menu w-100" style="max-height: 14rem; overflow-y: auto;">
+                                <% for (CompetitionSummaryView competition : headerPastCompetitions) { %>
+                                <li>
+                                    <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == competition.getId() ? "active" : "" %>"
+                                       href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
+                                        <%= competition.getName() %>
+                                    </a>
+                                </li>
+                                <% } %>
+                            </ul>
+                        </div>
+                        <% } %>
+                        <% if (headerAuthUser != null && Boolean.TRUE.equals(headerCompetitionSetupAllowed)) { %>
+                        <a class="btn btn-outline-primary mb-2" href="<%=ctx%>/app/competitions">
+                            <i class="bi bi-list-check me-1"></i> Manage competitions
                         </a>
-
-                        <a id="switchUserBtn" class="btn btn-outline-secondary mb-2 d-none"
-                           href="<%=ctx%>/switch-user">
-                            <i class="bi bi-arrow-repeat me-1"></i> Switch user
+                        <a class="btn btn-outline-secondary mb-2" href="<%=ctx%>/app/competition-setup">
+                            <i class="bi bi-plus-circle me-1"></i> Create or join competition
                         </a>
-
+                        <% } %>
+                        <% if (headerAuthUser != null && !headerPendingCompetitionInvitations.isEmpty()) { %>
+                        <a class="btn btn-warning mb-2" href="<%=ctx%>/app/invitations">
+                            <i class="bi bi-envelope-paper me-1"></i> Invitations (<%= headerPendingCompetitionInvitations.size() %>)
+                        </a>
+                        <% } %>
+                        <% if (headerAuthUser != null) { %>
+                        <a class="btn btn-outline-dark mb-2" href="<%=ctx%>/app/AthleteSummary">
+                            <i class="bi bi-list-ol me-1"></i> Summary
+                        </a>
+                        <% } %>
+                        <div class="text-uppercase small text-muted mt-3 mb-2">Site</div>
+                        <a id="homeBtn" class="btn btn-outline-secondary mb-2 oc-dismiss-nav"
+                           href="<%=ctx%>/">
+                            <i class="bi bi-house-door me-1"></i> Home
+                        </a>
                         <a class="btn btn-outline-dark mb-2" href="<%=ctx%>/scoring">
                             <i class="bi bi-star me-1"></i> Scoring
                         </a>
-
                         <a class="btn btn-outline-dark mb-2" href="<%=ctx%>/terms.jsp">
                             <i class="bi bi-exclamation-triangle me-1"></i> Terms of Service
                         </a>
-
                         <a class="btn btn-outline-dark mb-2" href="<%=ctx%>/privacy.jsp">
                             <i class="bi bi-shield-lock me-1"></i> Privacy Policy
                         </a>
-
-                        <% if (inApp && (!activeCompetitions.isEmpty() || !pastCompetitions.isEmpty())) { %>
-                        <% if (!activeCompetitions.isEmpty()) { %>
-                        <div class="mt-3 mb-2 text-muted small">Current competitions</div>
-                        <% for (int i = 0; i < activeMenuCount; i++) {
-                            CompetitionSummaryView competition = activeCompetitions.get(i);
-                        %>
-                        <a class="btn <%= selectedCompetitionId != null && selectedCompetitionId == competition.getId() ? "btn-primary" : "btn-outline-primary" %> mb-2"
-                           href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
-                            <i class="bi bi-flag me-1"></i> <%= competition.getName() %>
-                        </a>
-                        <% } %>
-                        <% } %>
-                        <% if (!pastCompetitions.isEmpty()) { %>
-                        <div class="mt-3 mb-2 text-muted small">Recently finished</div>
-                        <% for (int i = 0; i < recentMenuCount; i++) {
-                            CompetitionSummaryView competition = pastCompetitions.get(i);
-                        %>
-                        <a class="btn <%= selectedCompetitionId != null && selectedCompetitionId == competition.getId() ? "btn-primary" : "btn-outline-secondary" %> mb-2"
-                           href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
-                            <i class="bi bi-clock-history me-1"></i> <%= competition.getName() %>
-                        </a>
-                        <% } %>
-                        <% } %>
-                        <% } %>
 
                         <button id="linkStravaBtn" class="btn btn-outline-primary d-none" onclick="linkStravaPopup()">
                             <i class="bi bi-link-45deg me-1"></i> Link Strava
@@ -115,12 +221,52 @@
             <span class="brand-text">Frankies Bootcamp!</span>
         </a>
     </h1>
-    <!-- Signed-in user chip -->
-    <span id="userChip" class="user-chip d-none ms-2">
-        <i class="bi bi-person-circle me-1" aria-hidden="true"></i>
-        <span id="userName"></span>
-    </span>
+    <div class="dropdown ms-auto <%= headerHasProfile ? "" : "d-none" %> profile-menu">
+        <button id="profileMenuButton" class="btn btn-sm btn-outline-light dropdown-toggle d-inline-flex align-items-center gap-2 profile-menu-toggle"
+                type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span id="profileMenuAvatarWrap" class="d-inline-flex align-items-center justify-content-center" aria-hidden="true">
+                <img id="profileMenuAvatarImg" class="user-avatar <%= headerProfileMedium == null || headerProfileMedium.isBlank() ? "d-none" : "" %>" src="<%=headerProfileMedium == null ? "" : headerProfileMedium%>" alt="">
+                <span id="profileMenuAvatarPlaceholder" class="user-avatar-placeholder <%= headerProfileMedium != null && !headerProfileMedium.isBlank() ? "d-none" : "" %>"><i class="bi bi-person"></i></span>
+            </span>
+            <span id="profileMenuName" class="profile-menu-label text-truncate" style="max-width: 12rem;"><%= headerProfileName %></span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="profileMenuButton">
+            <li><h6 class="dropdown-header">Logged in as <span id="profileMenuNameInMenu"><%= headerProfileName %></span></h6></li>
+            <li>
+                <button id="profileMenuViewProfileBtn" class="dropdown-item <%= headerHasProfile ? "" : "d-none" %>" type="button">
+                    <i class="bi bi-person-badge me-2"></i>View profile
+                </button>
+            </li>
+            <li>
+                <a id="profileMenuSwitchUserBtn" class="dropdown-item d-none" href="<%=ctx%>/switch-user">
+                    <i class="bi bi-arrow-repeat me-2"></i>Switch user
+                </a>
+            </li>
+            <li>
+                <a id="profileMenuLogoutBtn" class="dropdown-item d-none" href="<%=ctx%>/logout">
+                    <i class="bi bi-box-arrow-right me-2"></i>Logout
+                </a>
+            </li>
+        </ul>
+    </div>
 </header>
+
+<div class="modal fade" id="athleteProfileModal" tabindex="-1" aria-labelledby="athleteProfileModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="athleteProfileModalTitle">Athlete profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="athleteProfileModalBody">
+                <div class="d-flex align-items-center gap-2 text-muted">
+                    <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                    <span>Loading profile...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- 🔧 tiny safety net if any theme overrides the color -->
 <style>
@@ -137,7 +283,15 @@
 <script>
     (function () {
         const ctx = '<%=ctx%>';
-        const state = { authed: false, name: '', email: '', stravaLinked: false };
+        const inApp = <%= inApp ? "true" : "false" %>;
+        const state = {
+            authed: <%= headerHasProfile ? "true" : "false" %>,
+            name: '<%= headerProfileName.replace("\\", "\\\\").replace("'", "\\'") %>',
+            email: '',
+            stravaLinked: false,
+            profileMedium: '<%= headerProfileMedium == null ? "" : headerProfileMedium.replace("\\", "\\\\").replace("'", "\\'") %>',
+            athleteId: '<%= headerProfileAthleteId == null ? "" : headerProfileAthleteId.replace("\\", "\\\\").replace("'", "\\'") %>'
+        };
 
         async function fetchAuth() {
             try {
@@ -145,7 +299,8 @@
                 const r = await fetch(ctx + '/app/whoami.jsp?ts=' + Date.now(), {
                     credentials: 'include',
                     cache: 'no-store',
-                    redirect: 'manual'
+                    redirect: 'manual',
+                    loadingOverlay: false
                 });
 
                 // if auth bounced us to any login endpoint, treat as logged-out without re-triggering auth
@@ -158,6 +313,7 @@
                         state.name = d.name || '';
                         state.email = d.email || '';
                         state.stravaLinked = d.stravaLinked === true;
+                        state.profileMedium = d.profileMedium || '';
                     } else {
                         setLoggedOut();
                     }
@@ -170,48 +326,200 @@
             render();
         }
 
-        function setLoggedOut() { state.authed = false; state.name = ''; state.email = ''; state.stravaLinked = false; }
+        function setLoggedOut() { state.authed = false; state.name = ''; state.email = ''; state.stravaLinked = false; state.profileMedium = ''; state.athleteId = ''; }
 
         function render() {
             const group = document.querySelector('#offcanvasMenu .btn-group-vertical');
             const homeBtn       = document.getElementById('homeBtn');
             const loginBtn      = document.getElementById('loginBtn');
-            const logoutBtn     = document.getElementById('logoutBtn');
-            const switchUserBtn = document.getElementById('switchUserBtn');
-            const linkBtn   = document.getElementById('linkStravaBtn');   // <--
+            const logoutBtn     = document.getElementById('profileMenuLogoutBtn');
+            const switchUserBtn = document.getElementById('profileMenuSwitchUserBtn');
+            const viewProfileBtn = document.getElementById('profileMenuViewProfileBtn');
+            const profileMenu = document.querySelector('.profile-menu');
+            const profileMenuName = document.getElementById('profileMenuName');
+            const profileMenuNameInMenu = document.getElementById('profileMenuNameInMenu');
+            const profileMenuAvatarImg = document.getElementById('profileMenuAvatarImg');
+            const profileMenuAvatarPlaceholder = document.getElementById('profileMenuAvatarPlaceholder');
+            const profileMenuButton = document.getElementById('profileMenuButton');
+            const linkBtn   = document.getElementById('linkStravaBtn');
             const signedInAs    = document.getElementById('signedInAs');
             const signedInName  = document.getElementById('signedInName');
 
             if (state.authed) {
+                profileMenu && profileMenu.classList.remove('d-none');
                 if (signedInAs) {
                     signedInAs.classList.remove('d-none');
                     signedInName && (signedInName.textContent = state.name || state.email || 'You');
                 }
+                if (profileMenuName) {
+                    profileMenuName.textContent = state.name || state.email || 'Profile';
+                }
+                if (profileMenuNameInMenu) {
+                    profileMenuNameInMenu.textContent = state.name || state.email || 'You';
+                }
+                if (profileMenuAvatarImg && profileMenuAvatarPlaceholder) {
+                    if (state.profileMedium) {
+                        profileMenuAvatarImg.src = state.profileMedium;
+                        profileMenuAvatarImg.classList.remove('d-none');
+                        profileMenuAvatarPlaceholder.classList.add('d-none');
+                    } else {
+                        profileMenuAvatarImg.classList.add('d-none');
+                        profileMenuAvatarPlaceholder.classList.remove('d-none');
+                    }
+                }
                 if (loginBtn) {
-                    loginBtn.innerHTML = '<i class="bi bi-speedometer2 me-1"></i> Go to dashboard';
-                    loginBtn.href = ctx + '/app/';
-                    if (group && group.firstElementChild !== loginBtn) {
-                        group.insertBefore(loginBtn, group.firstElementChild);
+                    if (inApp) {
+                        loginBtn.classList.add('d-none');
+                    } else {
+                        loginBtn.classList.remove('d-none');
+                        loginBtn.innerHTML = '<i class="bi bi-speedometer2 me-1"></i> Go to dashboard';
+                        loginBtn.href = ctx + '/app/';
                     }
                 }
                 logoutBtn && logoutBtn.classList.remove('d-none');
                 switchUserBtn && switchUserBtn.classList.remove('d-none');
+                if (viewProfileBtn) {
+                    viewProfileBtn.classList.toggle('d-none', !state.athleteId);
+                }
+                if (viewProfileBtn) {
+                    viewProfileBtn.onclick = function () {
+                        if (state.athleteId) {
+                            openAthleteProfileModal(state.athleteId, state.name || state.email || 'Profile');
+                        }
+                    };
+                }
                 if (linkBtn) {
                     linkBtn.classList.toggle('d-none', state.stravaLinked);
                 }
             } else {
                 if (signedInAs) signedInAs.classList.add('d-none');
+                profileMenu && profileMenu.classList.add('d-none');
                 if (loginBtn) {
-                    loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
-                    loginBtn.href = ctx + '/login';
+                    loginBtn.classList.remove('d-none');
+                    if (inApp) {
+                        loginBtn.innerHTML = '<i class="bi bi-speedometer2 me-1"></i> Go to dashboard';
+                        loginBtn.href = ctx + '/app/';
+                    } else {
+                        loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i> Login';
+                        loginBtn.href = ctx + '/login';
+                    }
                     if (group && homeBtn && homeBtn.nextElementSibling !== loginBtn) {
                         group.insertBefore(loginBtn, homeBtn.nextElementSibling);
                     }
                 }
                 logoutBtn && logoutBtn.classList.add('d-none');
                 switchUserBtn && switchUserBtn.classList.add('d-none');
+                viewProfileBtn && viewProfileBtn.classList.add('d-none');
                 linkBtn && linkBtn.classList.add('d-none');
             }
+        }
+
+        function openAthleteProfileModal(athleteId, athleteName) {
+            if (!athleteId) {
+                return;
+            }
+            const modalElement = document.getElementById('athleteProfileModal');
+            const modalTitle = document.getElementById('athleteProfileModalTitle');
+            const modalBody = document.getElementById('athleteProfileModalBody');
+            if (!modalElement || !modalTitle || !modalBody) {
+                return;
+            }
+            modalTitle.textContent = (athleteName || 'Athlete') + ' profile';
+            modalBody.innerHTML = '<div class="d-flex align-items-center gap-2 text-muted"><div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div><span>Loading profile...</span></div>';
+            bootstrap.Modal.getOrCreateInstance(modalElement).show();
+
+            fetch(ctx + '/app/Insights?fragment=profile&athleteId=' + encodeURIComponent(athleteId) + '&ts=' + Date.now(), {
+                credentials: 'include',
+                cache: 'no-store'
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Profile fragment failed');
+                    }
+                    return response.text();
+                })
+                .then(function (html) {
+                    modalBody.innerHTML = html;
+                    bindProfileForms(modalBody);
+                    loadGeneratedBlurbs(modalBody);
+                })
+                .catch(function () {
+                    modalBody.innerHTML = '<div class="alert alert-danger mb-0">Could not load that profile right now.</div>';
+                });
+        }
+
+        function bindProfileForms(root) {
+            (root || document).querySelectorAll('form[data-profile-form]').forEach(function (form) {
+                if (form.dataset.bound === 'true') {
+                    return;
+                }
+                form.dataset.bound = 'true';
+                var textarea = form.querySelector('textarea[name="summaryText"]');
+                if (textarea && form.dataset.initial === undefined) {
+                    form.dataset.initial = textarea.value;
+                }
+                if (textarea) {
+                    textarea.addEventListener('input', function () {
+                        updateProfileButton(form);
+                    });
+                }
+                updateProfileButton(form);
+            });
+        }
+
+        function updateProfileButton(form) {
+            var textarea = form.querySelector('textarea[name="summaryText"]');
+            var submit = form.querySelector('button[type="submit"]');
+            if (!textarea || !submit) {
+                return;
+            }
+            submit.disabled = textarea.disabled || textarea.value === (form.dataset.initial || '');
+        }
+
+        function loadGeneratedBlurbs(root) {
+            (root || document).querySelectorAll('.ai-profile-blurb[data-ai-blurb-athlete-id]').forEach(function (card) {
+                if (card.dataset.aiLoaded === 'true') {
+                    return;
+                }
+                if (card.closest('.athlete-profile-modal-body.d-none')) {
+                    return;
+                }
+                card.dataset.aiLoaded = 'true';
+                var url = card.getAttribute('data-ai-blurb-url');
+                var textTarget = card.querySelector('[data-ai-blurb-text]');
+                var textarea = card.querySelector('textarea[name="summaryText"]');
+                var submit = card.querySelector('button[type="submit"]');
+                var request = new XMLHttpRequest();
+                request.open('GET', url, true);
+                request.onreadystatechange = function () {
+                    if (request.readyState !== 4) {
+                        return;
+                    }
+                    var text = 'Could not generate a profile summary right now.';
+                    if (request.status >= 200 && request.status < 300) {
+                        try {
+                            text = JSON.parse(request.responseText).text || text;
+                        } catch (e) {
+                        }
+                    }
+                    if (textTarget) {
+                        textTarget.textContent = text;
+                    }
+                    if (textarea) {
+                        textarea.value = text;
+                        textarea.disabled = false;
+                        var form = textarea.closest('form[data-profile-form]');
+                        if (form) {
+                            form.dataset.initial = '';
+                            updateProfileButton(form);
+                        }
+                    }
+                    if (submit && !textarea) {
+                        submit.disabled = false;
+                    }
+                };
+                request.send();
+            });
         }
 
         // Run on page load…
@@ -219,6 +527,15 @@
         // …and every time the drawer opens (fixes the “open-before-fetch” case)
         const oc = document.getElementById('offcanvasMenu');
         if (oc) oc.addEventListener('show.bs.offcanvas', fetchAuth);
+        document.addEventListener('click', function (event) {
+            var trigger = event.target.closest('[data-athlete-profile-id]');
+            if (!trigger) {
+                return;
+            }
+            event.preventDefault();
+            openAthleteProfileModal(trigger.getAttribute('data-athlete-profile-id'), trigger.getAttribute('data-athlete-profile-name') || 'Athlete');
+        });
+        window.openAthleteProfileModal = openAthleteProfileModal;
 
     })();
 

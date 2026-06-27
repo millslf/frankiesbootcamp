@@ -51,28 +51,29 @@
         function show(message) {
             clearTimeout(showTimer);
             clearTimeout(slowTimer);
-            showTimer = setTimeout(function () {
-                const overlay = ensureOverlay();
-                if (!overlay) return;
-                const messageEl = document.getElementById('appLoadingMessage');
-                if (messageEl) messageEl.textContent = message || 'Loading...';
-                overlay.classList.remove('is-slow');
-                overlay.classList.add('is-visible');
-                slowTimer = setTimeout(function () {
-                    const slowMessageEl = document.getElementById('appLoadingMessage');
-                    if (slowMessageEl) {
-                        slowMessageEl.textContent = 'This rebuild can take a few minutes. You can keep browsing and come back shortly.';
-                    }
-                    overlay.classList.add('is-slow');
-                }, 8000);
-            }, 120);
+            const overlay = ensureOverlay();
+            if (!overlay) return;
+            const messageEl = document.getElementById('appLoadingMessage');
+            if (messageEl) messageEl.textContent = message || 'Loading...';
+            overlay.classList.remove('is-slow');
+            overlay.classList.add('is-visible');
+            slowTimer = setTimeout(function () {
+                const slowMessageEl = document.getElementById('appLoadingMessage');
+                if (slowMessageEl) {
+                    slowMessageEl.textContent = 'This rebuild can take a few minutes. You can keep browsing and come back shortly.';
+                }
+                overlay.classList.add('is-slow');
+            }, 8000);
         }
 
         function hide() {
             clearTimeout(showTimer);
             clearTimeout(slowTimer);
+            pendingRequests = 0;
             const overlay = document.getElementById('appLoadingOverlay');
-            if (overlay) overlay.classList.remove('is-visible', 'is-slow');
+            if (overlay) {
+                overlay.classList.remove('is-visible', 'is-slow');
+            }
         }
 
         window.bootcampLoading = { show: show, hide: hide };
@@ -80,9 +81,14 @@
         if (window.fetch) {
             const originalFetch = window.fetch.bind(window);
             window.fetch = function () {
+                const args = arguments;
+                const options = args[1] || {};
+                if (options && options.loadingOverlay === false) {
+                    return originalFetch.apply(window, args);
+                }
                 pendingRequests++;
                 show('Loading...');
-                return originalFetch.apply(window, arguments).finally(function () {
+                return originalFetch.apply(window, args).finally(function () {
                     pendingRequests = Math.max(0, pendingRequests - 1);
                     if (pendingRequests === 0) hide();
                 });
@@ -102,14 +108,28 @@
             }
             if (url.origin !== window.location.origin || url.protocol !== window.location.protocol) return;
 
+            event.preventDefault();
             show(link.href.includes('/app/select-competition') ? 'Switching competition...' : 'Loading...');
+            window.setTimeout(function () {
+                window.location.href = link.href;
+            }, link.href.includes('/app/select-competition') ? 120 : 80);
         }, true);
 
         document.addEventListener('submit', function (event) {
             if (event.defaultPrevented) return;
             const form = event.target;
-            if (form && typeof form.checkValidity === 'function' && !form.checkValidity()) return;
-            show('Saving...');
-        }, true);
+            if (!form || !form.dataset || form.dataset.loadingSubmit !== 'true') return;
+            if (typeof form.checkValidity === 'function' && !form.checkValidity()) return;
+
+            event.preventDefault();
+            show(form.dataset.loadingMessage || 'Saving...');
+            window.requestAnimationFrame(function () {
+                form.submit();
+            });
+        });
+
+        window.addEventListener('pageshow', function () {
+            hide();
+        });
     })();
 </script>

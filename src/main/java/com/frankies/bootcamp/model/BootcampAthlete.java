@@ -25,6 +25,14 @@ public class BootcampAthlete {
 
     private String sex;
 
+    private String city;
+
+    private String state;
+
+    private String country;
+
+    private String profileMedium;
+
     private Double goal;
 
     private String[] sickWeeks;
@@ -115,6 +123,38 @@ public class BootcampAthlete {
 
     public void setSex(String sex) {
         this.sex = sex;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public String getProfileMedium() {
+        return profileMedium;
+    }
+
+    public void setProfileMedium(String profileMedium) {
+        this.profileMedium = profileMedium;
     }
 
     public Double getGoal() {

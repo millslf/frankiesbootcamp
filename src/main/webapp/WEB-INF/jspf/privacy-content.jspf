@@ -65,7 +65,7 @@
             <p>We may update this policy as the program evolves. We&rsquo;ll post the new date above and, when material, provide a heads-up.</p>
 
             <p class="section-title">11. Contact</p>
-            <p>Questions or deletion requests? Email <a href="mailto:frankiesbootcamp@gmail.com">frankiesbootcamp@gmail.com</a>.</p>
+            <p>Questions or deletion requests? Email <a href="mailto:support@mail.frankiesbootamp.com">support@mail.frankiesbootamp.com</a>.</p>
 
             <p class="mt-4">See also our <a href="<%=request.getContextPath()%>/terms">Terms of Service</a>.</p>
         </div>
