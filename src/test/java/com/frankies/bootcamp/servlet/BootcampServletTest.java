@@ -18,7 +18,7 @@ class BootcampServletTest {
         CompetitionSummaryView active = competition(6L, "Current");
         OnboardingStatus status = status(List.of(active), List.of(competition(7L, "Past")));
 
-        Long selectedCompetitionId = BootcampServlet.defaultSelectedCompetitionId(null, status);
+        Long selectedCompetitionId = BootcampServlet.defaultSelectedCompetitionId(null, null, status);
 
         assertEquals(6L, selectedCompetitionId);
     }
@@ -28,7 +28,7 @@ class BootcampServletTest {
         CompetitionSummaryView active = competition(6L, "Current");
         OnboardingStatus status = status(List.of(active), List.of(competition(7L, "Past")));
 
-        Long selectedCompetitionId = BootcampServlet.defaultSelectedCompetitionId(7L, status);
+        Long selectedCompetitionId = BootcampServlet.defaultSelectedCompetitionId(7L, null, status);
 
         assertEquals(7L, selectedCompetitionId);
     }
@@ -37,9 +37,20 @@ class BootcampServletTest {
     void defaultSelectedCompetitionDoesNotPickBetweenMultipleActiveCompetitions() {
         OnboardingStatus status = status(List.of(competition(6L, "Current"), competition(8L, "Second Current")), List.of());
 
-        Long selectedCompetitionId = BootcampServlet.defaultSelectedCompetitionId(null, status);
+        Long selectedCompetitionId = BootcampServlet.defaultSelectedCompetitionId(null, null, status);
 
         assertNull(selectedCompetitionId);
+    }
+
+    @Test
+    void defaultSelectedCompetitionPrefersLastViewedCompetition() {
+        CompetitionSummaryView current = competition(6L, "Current");
+        CompetitionSummaryView past = competition(7L, "Past");
+        OnboardingStatus status = status(List.of(current), List.of(past));
+
+        Long selectedCompetitionId = BootcampServlet.defaultSelectedCompetitionId(null, 7L, status);
+
+        assertEquals(7L, selectedCompetitionId);
     }
 
     @Test

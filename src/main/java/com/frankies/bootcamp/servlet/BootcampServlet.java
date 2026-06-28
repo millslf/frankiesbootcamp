@@ -192,7 +192,8 @@ public class BootcampServlet extends HttpServlet {
         session.setAttribute("athleteEmail", authenticatedUser.getEmail());
         session.setAttribute("athleteName", authenticatedUser.getDisplayName());
         Long storedCompetitionId = authSessionService.getSelectedCompetitionId(req);
-        Long selectedCompetitionId = defaultSelectedCompetitionId(storedCompetitionId, onboardingStatus);
+        Long lastViewedCompetitionId = authSessionService.getLastViewedCompetitionId(req);
+        Long selectedCompetitionId = defaultSelectedCompetitionId(storedCompetitionId, lastViewedCompetitionId, onboardingStatus);
         if (storedCompetitionId == null && selectedCompetitionId != null) {
             authSessionService.setSelectedCompetitionId(req, selectedCompetitionId);
         }
@@ -239,12 +240,37 @@ public class BootcampServlet extends HttpServlet {
         return "/app/invitations".equals(path) || "/app/invitations/respond".equals(path) || "/app/competition-invitations".equals(path);
     }
 
-    static Long defaultSelectedCompetitionId(Long storedCompetitionId, OnboardingStatus onboardingStatus) {
+    static Long defaultSelectedCompetitionId(Long storedCompetitionId,
+                                             Long lastViewedCompetitionId,
+                                             OnboardingStatus onboardingStatus) {
         if (storedCompetitionId != null || onboardingStatus == null) {
             return storedCompetitionId;
         }
+        if (lastViewedCompetitionId != null) {
+            CompetitionSummaryView lastViewedCompetition = findCompetitionById(onboardingStatus, lastViewedCompetitionId);
+            if (lastViewedCompetition != null) {
+                return lastViewedCompetition.getId();
+            }
+        }
         if (onboardingStatus.getActiveCompetitions().size() == 1) {
             return onboardingStatus.getActiveCompetitions().get(0).getId();
+        }
+        return null;
+    }
+
+    private static CompetitionSummaryView findCompetitionById(OnboardingStatus onboardingStatus, Long competitionId) {
+        if (onboardingStatus == null || competitionId == null) {
+            return null;
+        }
+        for (CompetitionSummaryView competition : onboardingStatus.getActiveCompetitions()) {
+            if (competition.getId() == competitionId) {
+                return competition;
+            }
+        }
+        for (CompetitionSummaryView competition : onboardingStatus.getPastCompetitions()) {
+            if (competition.getId() == competitionId) {
+                return competition;
+            }
         }
         return null;
     }
