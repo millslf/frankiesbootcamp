@@ -31,28 +31,24 @@
             <jsp:include page="/app/Insights"/>
         </div>
         <div id="Tab5Content" class="tab-content">
-            <div class="container py-3">
-                <div class="row justify-content-center">
-                    <div class="col-lg-8">
-                        <div class="card shadow-sm border-0">
-                            <div class="card-body p-4">
-                                <h1 class="h4 mb-3">Help</h1>
-                                <p class="text-muted mb-4">Tap a section to open it in a clean modal.</p>
-                                <div class="d-grid gap-2">
-                                    <button class="btn btn-outline-primary btn-lg" type="button" data-bs-toggle="modal" data-bs-target="#helpScoringModal">
-                                        Scoring
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-lg" type="button" data-bs-toggle="modal" data-bs-target="#helpTermsModal">
-                                        Terms of Service
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-lg" type="button" data-bs-toggle="modal" data-bs-target="#helpPrivacyModal">
-                                        Privacy Policy
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-lg" type="button" data-bs-toggle="modal" data-bs-target="#helpContactModal">
-                                        Contact us
-                                    </button>
-                                </div>
-                            </div>
+            <div class="page-wrap">
+                <div class="page-card">
+                    <div class="page-body page-typography">
+                        <h2 class="history-heading mb-3"><i class="bi bi-info-circle"></i> Help</h2>
+                        <p class="history-subheading mb-4">Tap a section below to view the details.</p>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary btn-lg" type="button" data-bs-toggle="modal" data-bs-target="#helpScoringModal">
+                                Scoring
+                            </button>
+                            <button class="btn btn-outline-primary btn-lg" type="button" data-bs-toggle="modal" data-bs-target="#helpTermsModal">
+                                Terms of Service
+                            </button>
+                            <button class="btn btn-outline-primary btn-lg" type="button" data-bs-toggle="modal" data-bs-target="#helpPrivacyModal">
+                                Privacy Policy
+                            </button>
+                            <button class="btn btn-outline-primary btn-lg" type="button" data-bs-toggle="modal" data-bs-target="#helpContactModal">
+                                Contact us
+                            </button>
                         </div>
                     </div>
                 </div>

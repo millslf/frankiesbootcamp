@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpSession;
 public class AuthSessionService {
     public static final String AUTH_USER_SESSION_KEY = "authUser";
     public static final String SELECTED_COMPETITION_ID_SESSION_KEY = "selectedCompetitionId";
+    public static final String LAST_VIEWED_COMPETITION_ID_SESSION_KEY = "lastViewedCompetitionId";
     public static final String PENDING_INVITATION_TOKEN_SESSION_KEY = "pendingCompetitionInvitationToken";
     public static final String HISTORY_MOTIVATIONAL_MESSAGE_HIDDEN_SESSION_KEY = "historyMotivationalMessageHidden";
     private static final int DEFAULT_SESSION_TIMEOUT_SECONDS = 60 * 60 * 24 * 30;
@@ -64,10 +65,26 @@ public class AuthSessionService {
             return;
         }
         session.setAttribute(SELECTED_COMPETITION_ID_SESSION_KEY, competitionId);
+        session.setAttribute(LAST_VIEWED_COMPETITION_ID_SESSION_KEY, competitionId);
     }
 
     public boolean hasSelectedCompetition(HttpServletRequest request) {
         return getSelectedCompetitionId(request) != null;
+    }
+
+    public Long getLastViewedCompetitionId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        Object lastViewedCompetitionId = session.getAttribute(LAST_VIEWED_COMPETITION_ID_SESSION_KEY);
+        if (lastViewedCompetitionId instanceof Long competitionId) {
+            return competitionId;
+        }
+        if (lastViewedCompetitionId instanceof String competitionIdText && !competitionIdText.isBlank()) {
+            return Long.parseLong(competitionIdText);
+        }
+        return null;
     }
 
     public String getPendingInvitationToken(HttpServletRequest request) {

@@ -140,9 +140,13 @@
             <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasMenu"
                  aria-labelledby="offcanvasMenuLabel">
                 <div class="offcanvas-header">
-                    <h5 class="offcanvas-title d-flex align-items-center gap-2" id="offcanvasMenuLabel">
-                        <i class="bi bi-trophy-fill"></i>
-                        <span>My Bootcamp</span>
+                    <h5 class="offcanvas-title mb-0" id="offcanvasMenuLabel">
+                        <img
+                            class="offcanvas-brand-image"
+                            src="<%=ctx%>/images/FB colour header transparent BG.png"
+                            alt="Frankies Bootcamp"
+                            style="max-height: 28px; max-width: 220px;"
+                        >
                     </h5>
                     <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"
                             aria-label="Close"></button>
@@ -238,8 +242,12 @@
     <!-- 🔧 make brand link visible on blue -->
     <h1 class="brand mb-0">
         <a href="<%=brandHref%>" class="brand-link text-white text-decoration-none d-flex align-items-center">
-            <span class="brand-emoji me-2" aria-hidden="true">&#x1F3CB;&#xFE0F;</span>
-            <span class="brand-text">Frankies Bootcamp!</span>
+            <img
+                class="brand-image"
+                src="<%=ctx%>/images/FB white header transparent BG.png"
+                alt="Frankies Bootcamp"
+                style="max-height: 34px; max-width: 220px;"
+            >
         </a>
     </h1>
     <div class="dropdown ms-auto <%= headerHasProfile ? "" : "d-none" %> profile-menu">
@@ -300,6 +308,14 @@
     header .brand-link:hover {
         color: #fff !important;
         text-decoration: none;
+    }
+
+    header .brand-image {
+        display: block;
+        max-height: 40px;
+        max-width: min(72vw, 420px);
+        width: auto;
+        height: auto;
     }
 </style>
 

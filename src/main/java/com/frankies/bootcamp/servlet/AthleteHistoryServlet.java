@@ -100,6 +100,10 @@ public class AthleteHistoryServlet extends BootcampServlet {
         List<Integer> weekNumbers = history.keySet().stream()
                 .sorted()
                 .toList();
+        int mobileSelectedIndex = weekNumbers.indexOf(displayWeekCount);
+        if (mobileSelectedIndex < 0) {
+            mobileSelectedIndex = weekNumbers.size() - 1;
+        }
 
         WeeklyPerformance latest = history.get(displayWeekCount);
         if (latest != null) {
@@ -147,6 +151,8 @@ public class AthleteHistoryServlet extends BootcampServlet {
                 out.println("</div>");
             }
         }
+
+        out.println("<div class='d-none d-md-block'>");
         out.println("<div class='table-responsive mt-4'>");
         out.println("<table class='table table-bordered table-striped align-middle'>");
         out.println("<thead class='table-dark'>");
@@ -173,24 +179,22 @@ public class AthleteHistoryServlet extends BootcampServlet {
             }
             out.println("<tr>");
             String weekText = weekHistory.getWeek();
-            if(weekHistory.isSick()){
+            if (weekHistory.isSick()) {
                 weekText += " <i class='bi bi-heart-pulse-fill' title='Sick Note'></i>";
             }
             if (selectedCompetitionIsCurrent && i == displayWeekCount) {
-                out.println("<td>" + weekText +
-                        "</br><i>(Week in progress)" + "</td>");
+                out.println("<td>" + weekText + "</br><i>(Week in progress)" + "</td>");
             } else {
                 out.println("<td>" + weekText + "</td>");
             }
             out.println("<td>" + df.format(weekHistory.getTotalDistance()) + " km </td>");
             out.println("<td>" + df.format(weekHistory.getWeekGoal()) + "km</td>");
             out.println("<td>" + df.format(weekHistory.getTotalPercentOfGoal() * 100) + "%</td>");
-            out.println("<td>" + df.format(weekHistory.getWeekGoal()-weekHistory.getTotalDistance()>0?weekHistory.getWeekGoal()-weekHistory.getTotalDistance():0) + "km</td>");
-            if(weekHistory.isSick()){
+            out.println("<td>" + df.format(weekHistory.getWeekGoal() - weekHistory.getTotalDistance() > 0 ? weekHistory.getWeekGoal() - weekHistory.getTotalDistance() : 0) + "km</td>");
+            if (weekHistory.isSick()) {
                 out.println("<td> <i class='bi bi-heart-pulse-fill' title='Sick Note'></i></td>");
                 out.println("<td> <i class='bi bi-heart-pulse-fill' title='Sick Note'></i></td>");
-            }
-            else{
+            } else {
                 out.println("<td>" + df.format(weekHistory.getWeekProgressionBonus()) + "</td>");
                 out.println("<td>" + df.format(weekHistory.getWeekGoalAchievementScore()) + "</td>");
             }
@@ -201,13 +205,13 @@ public class AthleteHistoryServlet extends BootcampServlet {
                 if (weekHistory.getSportsOriginalDistance().containsKey(key)) {
                     out.println(" (" + df.format(weekHistory.getSportsOriginalDistance().get(key)) + "km)</br>");
                 } else if (weekHistory.getSportsOriginalDuration().containsKey(key)) {
-                    out.println(" (" + DateTimeUtils.convertMinutesToTimeFormat(weekHistory.getSportsOriginalDuration().get(key)*60) + ")</br>");
+                    out.println(" (" + DateTimeUtils.convertMinutesToTimeFormat(weekHistory.getSportsOriginalDuration().get(key) * 60) + ")</br>");
                 }
             }
             out.println("</td>");
             if (selectedCompetitionId != null && selectedCompetitionIsCurrent) {
                 out.println("<td>");
-                out.println("<form method='post' action='" + request.getContextPath() + "/app/sick-week' class='sick-week-form'>");
+                out.println("<form method='post' action='" + request.getContextPath() + "/app/sick-week' class='sick-week-form' data-loading-submit='true' data-loading-message='Saving sick week...'>");
                 out.println("<input type='hidden' name='week' value='" + i + "'>");
                 out.println("<input type='hidden' name='sick' value='" + (!weekHistory.isSick()) + "'>");
                 out.println("<button type='submit' class='btn btn-sm " + (weekHistory.isSick() ? "btn-outline-secondary" : "btn-outline-danger") + "'>");
@@ -221,26 +225,136 @@ public class AthleteHistoryServlet extends BootcampServlet {
         out.println("</tbody>");
         out.println("</table>");
         out.println("</div>");
+        out.println("</div>");
+
+        out.println("<div class='d-md-none mt-4 history-mobile-week-view'>");
+        for (int cardIndex = 0; cardIndex < weekNumbers.size(); cardIndex++) {
+            Integer weekNumber = weekNumbers.get(cardIndex);
+            WeeklyPerformance weekHistory = history.get(weekNumber);
+            if (weekHistory == null) {
+                continue;
+            }
+            boolean selectedCard = cardIndex == mobileSelectedIndex;
+            boolean selectedWeek = weekNumber == displayWeekCount;
+            String statusText = weekHistory.isSick()
+                    ? "Sick week"
+                    : (selectedCompetitionIsCurrent && selectedWeek ? "Week in progress" : "Week complete");
+            String statusClass = weekHistory.isSick()
+                    ? "text-bg-danger"
+                    : (selectedCompetitionIsCurrent && selectedWeek ? "text-bg-primary" : "text-bg-secondary");
+            double percentComplete = weekHistory.getTotalPercentOfGoal() == null ? 0.0 : weekHistory.getTotalPercentOfGoal() * 100.0;
+            double progressWidth = Math.max(0.0, Math.min(100.0, percentComplete));
+            boolean overGoal = percentComplete > 100.0;
+            String overGoalLabel = overGoal ? "+" + df.format(percentComplete - 100.0) + "% over" : null;
+            out.println("<div class='card shadow-sm border-primary history-mobile-week-card" + (selectedCard ? "" : " d-none") + "' data-history-week-index='" + cardIndex + "'>");
+            out.println("<div class='card-body p-3 p-sm-4'>");
+            out.println("<div class='d-flex justify-content-between align-items-start gap-3 mb-3'>");
+            out.println("<div class='flex-grow-1'>");
+            out.println("<div class='text-primary text-uppercase fw-semibold small mb-1'>Selected week</div>");
+            out.println("<h3 class='h4 mb-1'>" + weekHistory.getWeek() + "</h3>");
+            out.println("<span class='badge rounded-pill " + statusClass + "'>" + statusText + "</span>");
+            out.println("</div>");
+            out.println("<div class='d-flex align-items-center gap-1 flex-shrink-0 history-mobile-nav-group' aria-label='Week navigation'>");
+            out.println("<button type='button' class='btn btn-outline-primary btn-sm history-mobile-icon-btn' data-history-nav='first' aria-label='Go to oldest week'><i class='bi bi-chevron-double-left' aria-hidden='true'></i></button>");
+            out.println("<button type='button' class='btn btn-outline-primary btn-sm history-mobile-icon-btn' data-history-nav='previous' aria-label='Go to previous week'><i class='bi bi-chevron-left' aria-hidden='true'></i></button>");
+            out.println("<button type='button' class='btn btn-outline-primary btn-sm history-mobile-icon-btn' data-history-nav='next' aria-label='Go to next week'><i class='bi bi-chevron-right' aria-hidden='true'></i></button>");
+            out.println("<button type='button' class='btn btn-outline-primary btn-sm history-mobile-icon-btn' data-history-nav='last' aria-label='Go to latest week'><i class='bi bi-chevron-double-right' aria-hidden='true'></i></button>");
+            out.println("</div>");
+            out.println("</div>");
+
+            out.println("<div class='mb-3'>");
+            out.println("<div class='d-flex justify-content-between align-items-center small fw-semibold text-muted mb-1'>");
+            out.println("<span>Goal progress</span>");
+            out.println("<span>" + df.format(percentComplete) + "%</span>");
+            out.println("</div>");
+            out.println("<div class='history-mobile-progress-shell'>");
+            out.println("<div class='progress history-mobile-progress' role='progressbar' aria-valuenow='" + df.format(percentComplete) + "' aria-valuemin='0' aria-valuemax='100'>");
+            out.println("<div class='progress-bar " + (overGoal ? "bg-success progress-bar-striped" : "bg-primary") + "' style='width:" + progressWidth + "%'></div>");
+            out.println("</div>");
+            if (overGoal) {
+                out.println("<span class='badge rounded-pill bg-warning text-dark history-mobile-overgoal-badge'>" + overGoalLabel + "</span>");
+            }
+            out.println("</div>");
+            out.println("<div class='small text-muted mt-1'>" + df.format(weekHistory.getTotalDistance()) + " km of " + df.format(weekHistory.getWeekGoal()) + " km</div>");
+            out.println("</div>");
+
+            out.println("<div class='list-group list-group-flush history-mobile-details mb-3'>");
+            mobileMetric(out, "Distance completed", df.format(weekHistory.getTotalDistance()) + " km");
+            mobileMetric(out, "Goal", df.format(weekHistory.getWeekGoal()) + " km");
+            mobileMetric(out, "% of goal", df.format(percentComplete) + "%");
+            mobileMetric(out, "Distance left", df.format(weekHistory.getWeekGoal() - weekHistory.getTotalDistance() > 0 ? weekHistory.getWeekGoal() - weekHistory.getTotalDistance() : 0) + " km");
+            mobileMetric(out, "Progression points scored", weekHistory.isSick() ? "Sick note" : df.format(weekHistory.getWeekProgressionBonus()));
+            mobileMetric(out, "Goal points scored", weekHistory.isSick() ? "Sick note" : df.format(weekHistory.getWeekGoalAchievementScore()));
+            mobileMetric(out, "Total points scored", df.format(weekHistory.getWeekScore()));
+            out.println("</div>");
+
+            out.println("<div class='history-mobile-activities'>");
+            out.println("<div class='fw-semibold text-primary mb-2'>Activities</div>");
+            if (weekHistory.getSports().isEmpty()) {
+                out.println("<div class='text-muted small'>No activities recorded.</div>");
+            } else {
+                out.println("<ul class='list-group list-group-flush mb-0'>");
+                for (String key : weekHistory.getSports().keySet()) {
+                    StringBuilder activity = new StringBuilder();
+                    activity.append(key)
+                            .append(" (x")
+                            .append(weekHistory.getSportsCount().getOrDefault(key, 0))
+                            .append(") ")
+                            .append(df.format(weekHistory.getSports().get(key)))
+                            .append(" km");
+                    if (weekHistory.getSportsOriginalDistance().containsKey(key)) {
+                        activity.append(" <span class='text-muted'>(")
+                                .append(df.format(weekHistory.getSportsOriginalDistance().get(key)))
+                                .append(" km)</span>");
+                    } else if (weekHistory.getSportsOriginalDuration().containsKey(key)) {
+                        activity.append(" <span class='text-muted'>(")
+                                .append(DateTimeUtils.convertMinutesToTimeFormat(weekHistory.getSportsOriginalDuration().get(key) * 60))
+                                .append(")</span>");
+                    }
+                    out.println("<li class='list-group-item px-0 py-2 history-mobile-activity-item'>" + activity + "</li>");
+                }
+                out.println("</ul>");
+            }
+            out.println("</div>");
+
+            if (selectedCompetitionId != null && selectedCompetitionIsCurrent) {
+                out.println("<form method='post' action='" + request.getContextPath() + "/app/sick-week' class='history-mobile-sick-form mt-3 m-0' data-loading-submit='true' data-loading-message='Saving sick week...'>");
+                out.println("<input type='hidden' name='week' value='" + weekNumber + "'>");
+                out.println("<input type='hidden' name='sick' value='" + (!weekHistory.isSick()) + "'>");
+                out.println("<button type='submit' class='btn " + (weekHistory.isSick() ? "btn-outline-secondary" : "btn-outline-danger") + " w-100'>");
+                out.println(weekHistory.isSick() ? "Clear sick" : "Mark sick");
+                out.println("</button>");
+                out.println("</form>");
+            }
+            out.println("</div>");
+            out.println("</div>");
+        }
+        out.println("</div>");
 
         out.println("<script>");
         out.println("(function () {");
         out.println("const cards = Array.from(document.querySelectorAll('[data-history-week-index]'));");
-        out.println("const select = document.getElementById('historyWeekSelect');");
-        out.println("const prev = document.getElementById('historyWeekPrevBtn');");
-        out.println("const next = document.getElementById('historyWeekNextBtn');");
-        out.println("if (!cards.length || !select || !prev || !next) { return; }");
-        out.println("let currentIndex = 0;");
+        out.println("const navButtons = Array.from(document.querySelectorAll('[data-history-nav]'));");
+        out.println("if (!cards.length || !navButtons.length) { return; }");
+        out.println("let currentIndex = " + mobileSelectedIndex + ";");
         out.println("function showWeek(index) {");
         out.println("  currentIndex = Math.max(0, Math.min(cards.length - 1, index));");
         out.println("  cards.forEach(function (card, cardIndex) { card.classList.toggle('d-none', cardIndex !== currentIndex); });");
-        out.println("  select.value = String(currentIndex);");
-        out.println("  prev.disabled = currentIndex === 0;");
-        out.println("  next.disabled = currentIndex === cards.length - 1;");
+        out.println("  navButtons.forEach(function (button) {");
+        out.println("    var action = button.getAttribute('data-history-nav');");
+        out.println("    button.disabled = (currentIndex === 0 && (action === 'first' || action === 'previous')) || (currentIndex === cards.length - 1 && (action === 'next' || action === 'last'));");
+        out.println("  });");
         out.println("}");
-        out.println("select.addEventListener('change', function () { showWeek(parseInt(select.value, 10)); });");
-        out.println("prev.addEventListener('click', function () { showWeek(currentIndex - 1); });");
-        out.println("next.addEventListener('click', function () { showWeek(currentIndex + 1); });");
-        out.println("showWeek(cards.length - 1);");
+        out.println("navButtons.forEach(function (button) {");
+        out.println("  button.addEventListener('click', function () {");
+        out.println("    var action = button.getAttribute('data-history-nav');");
+        out.println("    if (action === 'first') { showWeek(0); return; }");
+        out.println("    if (action === 'previous') { showWeek(currentIndex - 1); return; }");
+        out.println("    if (action === 'next') { showWeek(currentIndex + 1); return; }");
+        out.println("    if (action === 'last') { showWeek(cards.length - 1); }");
+        out.println("  });");
+        out.println("});");
+        out.println("showWeek(currentIndex);");
         out.println("})();");
         out.println("</script>");
         out.println("</div>");
@@ -368,12 +482,10 @@ public class AthleteHistoryServlet extends BootcampServlet {
     }
 
     private static void mobileMetric(PrintWriter out, String label, String value) {
-        out.println("<div class='col'>");
-        out.println("<div class='history-mobile-metric card h-100 border-0 bg-light-subtle shadow-sm'>");
-        out.println("<div class='card-body p-2'>");
-        out.println("<div class='text-muted small text-uppercase fw-semibold mb-1'>" + label + "</div>");
-        out.println("<div class='fw-semibold lh-sm'>" + value + "</div>");
-        out.println("</div>");
+        out.println("<div class='list-group-item px-0 py-2 history-mobile-metric'>");
+        out.println("<div class='d-flex justify-content-between align-items-start gap-3'>");
+        out.println("<div class='text-muted small text-uppercase fw-semibold history-mobile-label'>" + label + "</div>");
+        out.println("<div class='fw-semibold text-end history-mobile-value'>" + value + "</div>");
         out.println("</div>");
         out.println("</div>");
     }

@@ -30,6 +30,13 @@
 <%@ include file="/WEB-INF/jspf/header.jspf" %>
 
 <main class="container my-4">
+    <div class="landing-brand-wrap text-center mb-4">
+        <img class="landing-brand-image"
+             src="<%=request.getContextPath()%>/images/FB colour header transparent BG.png"
+             alt="Frankies Bootcamp"
+             style="max-width: 320px; max-height: 72px;">
+    </div>
+
     <!-- Tabs (only one “Info” tab for now) -->
     <ul class="nav nav-tabs">
         <li class="nav-item">

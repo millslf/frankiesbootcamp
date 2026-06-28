@@ -9,6 +9,10 @@
 %>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="icon" type="image/png" href="<%=cssCtx%>/icon.png">
+<link rel="shortcut icon" type="image/png" href="<%=cssCtx%>/icon.png">
+<link rel="icon" type="image/png" href="<%=cssCtx%>/images/FB%20Colour%20Logo%20only%20transparent.png">
+<link rel="shortcut icon" type="image/png" href="<%=cssCtx%>/images/FB%20Colour%20Logo%20only%20transparent.png">
 <link rel="stylesheet" href="<%=cssCtx%>/styles/main.css?v=<%=cssVersion%>">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
 <script>
