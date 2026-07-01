@@ -42,6 +42,14 @@ public class ActivityProcessFacade {
         inMemoryActivityProcessService.prepareSummary();
     }
 
+    public void prepareAllCompetitionSummaries() throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        if (getMode() == ActivityProcessingMode.PERSISTENT) {
+            persistentActivityProcessService.prepareAllCompetitionSummaries();
+            return;
+        }
+        inMemoryActivityProcessService.prepareSummary();
+    }
+
     public void prepareAthleteSummary(BootcampAthlete athlete) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         if (getMode() == ActivityProcessingMode.PERSISTENT) {
             persistentActivityProcessService.prepareAthleteSummary(athlete);

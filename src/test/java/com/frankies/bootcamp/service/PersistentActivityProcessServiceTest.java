@@ -64,6 +64,15 @@ class PersistentActivityProcessServiceTest {
     }
 
     @Test
+    void prepareAllCompetitionSummariesDelegatesToSummaryRefresh() throws Exception {
+        RecordingPersistentActivityProcessService service = new RecordingPersistentActivityProcessService();
+
+        service.prepareAllCompetitionSummaries();
+
+        assertEquals(1, service.prepareSummaryCalls);
+    }
+
+    @Test
     void rebuildForCompetitionUsesCompetitionGoalAndPeriod() throws Exception {
         BootcampAthlete athlete = createAthlete("athlete-comp", "Frankie", "Bootcamp", 20.0);
         long start = BootcampConstants.START_TIMESTAMP;
@@ -501,6 +510,19 @@ class PersistentActivityProcessServiceTest {
                 throw new IllegalStateException("Unable to rebuild persistent athlete state after webhook create", e);
             }
             return true;
+        }
+    }
+
+    private static final class RecordingPersistentActivityProcessService extends PersistentActivityProcessService {
+        private int prepareSummaryCalls;
+
+        private RecordingPersistentActivityProcessService() {
+            super(null, null);
+        }
+
+        @Override
+        public void prepareSummary() {
+            prepareSummaryCalls++;
         }
     }
 

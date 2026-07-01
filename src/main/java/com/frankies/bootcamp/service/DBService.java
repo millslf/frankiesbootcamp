@@ -2246,38 +2246,37 @@ public class DBService {
     }
 
     private Map<Integer, Long> insertWeeklyRows(Connection connection,
-                                                long competitionAthleteId,
-                                                List<PersistentActivityProcessService.PersistentWeeklyRow> weeklyRows) throws SQLException {
+                                                        long competitionAthleteId,
+                                                        List<PersistentActivityProcessService.PersistentWeeklyRow> weeklyRows) throws SQLException {
         Map<Integer, Long> ids = new HashMap<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO competition_weekly_stats (competition_athlete_id, week_number, week_start_date, week_end_date, week_goal, total_distance, total_percent_of_goal, distance_left, week_goal_achievement_score, week_progression_bonus, week_score, average_weekly_score, is_sick, activities_summary_text) " +
+                        "INSERT INTO competition_weekly_stats (competition_athlete_id, week_number, week_start_date, week_end_date, week_goal, total_distance, total_percent_of_goal, distance_left, week_goal_achievement_score, week_progression_bonus, week_score, average_weekly_score, is_sick, activities_summary_text) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                Statement.RETURN_GENERATED_KEYS
+                        Statement.RETURN_GENERATED_KEYS
         )) {
             for (PersistentActivityProcessService.PersistentWeeklyRow row : weeklyRows) {
-                statement.setLong(1, competitionAthleteId);
-                statement.setInt(2, row.weekNumber());
-                statement.setDate(3, Date.valueOf(row.weekStartDate()));
-                statement.setDate(4, Date.valueOf(row.weekEndDate()));
-                statement.setDouble(5, row.weekGoal());
-                statement.setDouble(6, row.totalDistance());
-                statement.setDouble(7, row.totalPercentOfGoal());
-                statement.setDouble(8, row.distanceLeft());
-                statement.setDouble(9, row.weekGoalAchievementScore());
-                statement.setDouble(10, row.weekProgressionBonus());
-                statement.setDouble(11, row.weekScore());
-                statement.setDouble(12, row.averageWeeklyScore());
-                statement.setBoolean(13, row.isSick());
-                statement.setString(14, row.activitiesSummaryText());
-                statement.addBatch();
-            }
-            statement.executeBatch();
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                int index = 0;
-                while (keys.next() && index < weeklyRows.size()) {
-                    ids.put(weeklyRows.get(index).weekNumber(), keys.getLong(1));
-                    index++;
-                }
+                        statement.setLong(1, competitionAthleteId);
+                        statement.setInt(2, row.weekNumber());
+                        statement.setDate(3, Date.valueOf(row.weekStartDate()));
+                        statement.setDate(4, Date.valueOf(row.weekEndDate()));
+                        statement.setDouble(5, row.weekGoal());
+                        statement.setDouble(6, row.totalDistance());
+                        statement.setDouble(7, row.totalPercentOfGoal());
+                        statement.setDouble(8, row.distanceLeft());
+                        statement.setDouble(9, row.weekGoalAchievementScore());
+                        statement.setDouble(10, row.weekProgressionBonus());
+                        statement.setDouble(11, row.weekScore());
+                        statement.setDouble(12, row.averageWeeklyScore());
+                        statement.setBoolean(13, row.isSick());
+                        statement.setString(14, row.activitiesSummaryText());
+                        statement.executeUpdate();
+                        try (ResultSet keys = statement.getGeneratedKeys()) {
+                            if (keys.next()) {
+                                ids.put(row.weekNumber(), keys.getLong(1));
+                            } else {
+                                throw new SQLException("Unable to insert competition_weekly_stats row for week " + row.weekNumber());
+                            }
+                        }
             }
         }
         return ids;

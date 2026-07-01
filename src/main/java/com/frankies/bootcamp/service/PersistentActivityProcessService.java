@@ -68,6 +68,10 @@ public class PersistentActivityProcessService {
         regenerateSummaryMaps();
     }
 
+    public void prepareAllCompetitionSummaries() throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
+        prepareSummary();
+    }
+
     public void prepareAthleteSummary(BootcampAthlete athlete) throws SQLException, CredentialStoreException, NoSuchAlgorithmException, IOException {
         if (athlete == null || athlete.getId() == null || athlete.getId().isBlank() || athlete.getId().startsWith("local-")) {
             return;
