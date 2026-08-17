@@ -12,6 +12,27 @@ New way of working
 
 ## Current state
 
+### Competition selection / past competition switching
+
+- We spent this session stabilising `/app` for a user who has no active competitions but does have past competitions and one upcoming competition.
+- The selection flow now works end-to-end:
+  - choosing a competition from the off-canvas menu updates the session-selected competition
+  - the selected competition survives the `/app` redirect
+  - the no-active-user case no longer loops through starts-soon routing
+- The current open issue is the **history include** for the selected past competition:
+  - board and honour roll render
+  - history is still inconsistent for the no-active user
+  - the current null/blank behaviour needs one more pass in `AthleteHistoryServlet` / dashboard include wiring
+- Main files touched in this slice:
+  - `src\main\java\com\frankies\bootcamp\servlet\BootcampServlet.java`
+  - `src\main\java\com\frankies\bootcamp\servlet\SelectCompetitionServlet.java`
+  - `src\main\java\com\frankies\bootcamp\servlet\AthleteHistoryServlet.java`
+  - `src\main\java\com\frankies\bootcamp\servlet\AthleteSummaryServlet.java`
+  - `src\main\webapp\app\index.jsp`
+  - `src\main\webapp\app\competition-starts-soon.jsp`
+  - `src\main\webapp\WEB-INF\jspf\header.jspf`
+
+
 The latest completed work finished the competition invitation flow and the related profile/avatar hardening on `security-hardening-invites-avatar`. The repo now supports DB-backed competition invitations, invite links that survive signup/login/onboarding, dashboard invite CTAs, bulk invites, and stored-avatar-first profile rendering.
 
 ### Current local branch after competition invites and profile hardening

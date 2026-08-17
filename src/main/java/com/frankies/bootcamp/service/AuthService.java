@@ -83,15 +83,18 @@ public class AuthService {
             return null;
         }
         BootcampAthlete athlete = db.findAthleteByUserId(user.getUserId());
-        if (athlete == null && user.getAthleteId() != null) {
-            athlete = db.findAthleteByStravaID(user.getAthleteId());
-            if (athlete != null) {
-                db.linkAthleteToUser(athlete.getId(), user.getUserId());
-                athlete.setUserId(user.getUserId());
+        if (athlete == null && user.getAthleteId() != null && !user.getAthleteId().isBlank()) {
+            BootcampAthlete linkedAthlete = db.findAthleteByStravaID(user.getAthleteId());
+            if (linkedAthlete != null) {
+                db.linkAthleteToUser(linkedAthlete.getId(), user.getUserId());
+                athlete = db.findAthleteByUserId(user.getUserId());
             }
         }
-        if (athlete != null && (athlete.getEmail() == null || athlete.getEmail().isBlank())) {
-            athlete.setEmail(user.getEmail());
+        if (athlete != null) {
+            athlete.setUserId(user.getUserId());
+            if (athlete.getEmail() == null || athlete.getEmail().isBlank()) {
+                athlete.setEmail(user.getEmail());
+            }
         }
         if (athlete != null && stravaService != null) {
             try {

@@ -11,6 +11,7 @@
     List<CompetitionInvitationView> pendingInvitations = (List<CompetitionInvitationView>) request.getAttribute("pendingCompetitionInvitations");
     String pageContextPath = request.getContextPath();
     String error = (String) request.getAttribute("competitionSetupError");
+    String generatedName = (String) request.getAttribute("competitionSetupGeneratedName");
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
     TreeSet<String> availableTimezones = new TreeSet<>(ZoneId.getAvailableZoneIds());
 %>
@@ -32,6 +33,20 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .submit-state {
+            display: none;
+        }
+
+        .is-submitting .submit-label {
+            display: none;
+        }
+
+        .is-submitting .submit-state {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
     </style>
 </head>
@@ -55,13 +70,13 @@
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-body p-4">
                             <h2 class="h5 mb-3">Create a competition</h2>
-                            <form method="post" action="<%=pageContextPath%>/app/competition-setup">
+                            <form method="post" action="<%=pageContextPath%>/app/competition-setup" data-competition-create-form>
                                 <input type="hidden" name="action" value="create">
 
                                 <div class="mb-3">
                                     <label class="form-label" for="competitionName">Competition name</label>
                                     <input class="form-control" id="competitionName" name="competitionName" required maxlength="255"
-                                           value="Frankies Bootcamp - <%= setupView == null ? "New Competition" : setupView.getAthleteDisplayName() %>">
+                                           value="<%= generatedName == null || generatedName.isBlank() ? "Bright Sprint" : generatedName %>">
                                 </div>
 
                                 <div class="mb-3">
@@ -91,7 +106,13 @@
                                            value="<%= setupView == null || setupView.getSuggestedStartingGoal() == null ? "20" : setupView.getSuggestedStartingGoal() %>">
                                 </div>
 
-                                <button class="btn btn-primary" type="submit">Create competition and continue to invites</button>
+                                <button class="btn btn-primary" type="submit" data-competition-create-button>
+                                    <span class="submit-label">Create competition and continue to invites</span>
+                                    <span class="submit-state" aria-hidden="true">
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        Creating competition...
+                                    </span>
+                                </button>
                             </form>
                         </div>
                     </div>
@@ -132,6 +153,19 @@
 </div>
 <script>
     (function () {
+        const createForm = document.querySelector('[data-competition-create-form]');
+        const createButton = document.querySelector('[data-competition-create-button]');
+        if (createForm && createButton) {
+            createForm.addEventListener('submit', function () {
+                if (createButton.disabled) {
+                    return;
+                }
+                createButton.disabled = true;
+                createForm.classList.add('is-submitting');
+                createButton.setAttribute('aria-busy', 'true');
+            });
+        }
+
         const timezoneSelect = document.getElementById('timezone');
         const timezoneFilter = document.getElementById('timezoneFilter');
         if (!timezoneSelect || !timezoneFilter || !window.Intl || !Intl.DateTimeFormat) {

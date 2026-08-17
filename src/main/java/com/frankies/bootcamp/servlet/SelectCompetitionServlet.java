@@ -2,6 +2,7 @@ package com.frankies.bootcamp.servlet;
 
 import com.frankies.bootcamp.model.AuthenticatedUser;
 import com.frankies.bootcamp.model.BootcampAthlete;
+import com.frankies.bootcamp.model.CompetitionSummaryView;
 import com.frankies.bootcamp.service.AuthSessionService;
 import com.frankies.bootcamp.service.AuthService;
 import com.frankies.bootcamp.service.ActivityProcessFacade;
@@ -53,22 +54,42 @@ public class SelectCompetitionServlet extends HttpServlet {
                 AuthenticatedUser user = authSessionService.getAuthenticatedUser(req);
                 BootcampAthlete athlete = user == null ? null : authService.loadAthleteForUser(user);
                 long parsedCompetitionId = Long.parseLong(competitionId);
-                if (athlete != null && athlete.getId() != null && dbService.athleteBelongsToCompetition(athlete.getId(), parsedCompetitionId)) {
-                    prepareSnapshotIfNeeded(athlete, parsedCompetitionId);
-                    authSessionService.setSelectedCompetitionId(req, parsedCompetitionId);
-                } else {
-                    authSessionService.setSelectedCompetitionId(req, null);
-                }
-            } catch (SQLException e) {
-                log.error("Unable to select competition " + competitionId, e);
-                throw new IOException("Unable to select competition", e);
-            }
-        }
+                boolean selectableCompetition = athlete != null
+                        && athlete.getId() != null
+                        && (dbService.athleteBelongsToCompetition(athlete.getId(), parsedCompetitionId)
+                        || isVisibleCompetition(athlete.getId(), parsedCompetitionId));
+                            if (selectableCompetition) {
+                                prepareSnapshotIfNeeded(athlete, parsedCompetitionId);
+                                authSessionService.setSelectedCompetitionId(req, parsedCompetitionId);
+                                log.infof("Selected competition %s for athlete=%s user=%s selectable=%s", parsedCompetitionId, athlete.getId(), user == null ? null : user.getUserId(), true);
+                            } else {
+                                authSessionService.setSelectedCompetitionId(req, null);
+                                log.infof("Rejected competition %s for athlete=%s user=%s selectable=%s", parsedCompetitionId, athlete == null ? null : athlete.getId(), user == null ? null : user.getUserId(), false);
+                            }
+                        } catch (SQLException e) {
+                            log.error("Unable to select competition " + competitionId, e);
+                            throw new IOException("Unable to select competition", e);
+                        }
+                    }
         if (returnTo != null && !returnTo.isBlank()) {
             resp.sendRedirect(req.getContextPath() + returnTo);
             return;
         }
         resp.sendRedirect(req.getContextPath() + "/app");
+    }
+
+    private boolean isVisibleCompetition(String athleteId, long competitionId) throws SQLException {
+        for (CompetitionSummaryView competition : dbService.listCurrentActiveCompetitions(athleteId)) {
+            if (competition.getId() == competitionId) {
+                return true;
+            }
+        }
+        for (CompetitionSummaryView competition : dbService.listPastCompetitions(athleteId)) {
+            if (competition.getId() == competitionId) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void prepareSnapshotIfNeeded(BootcampAthlete athlete, long competitionId) throws SQLException {

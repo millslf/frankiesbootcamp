@@ -30,6 +30,7 @@ public class CompetitionSetupService {
 
     private CompetitionRepository competitionRepository;
     private AthleteRefresh athleteRefresh;
+    private AiMessageService aiMessageService;
 
     @FunctionalInterface
     interface AthleteRefresh {
@@ -55,6 +56,7 @@ public class CompetitionSetupService {
             }
         };
         this.athleteRefresh = activityProcessFacade::prepareAthleteSummary;
+        this.aiMessageService = new AiMessageService();
     }
 
     protected CompetitionSetupService() {
@@ -72,6 +74,10 @@ public class CompetitionSetupService {
                 athlete.getGoal(),
                 competitionRepository.listJoinableCompetitions(athlete.getId())
         );
+    }
+
+    public String generateCompetitionName() {
+        return aiMessageService == null ? "Bright Sprint" : aiMessageService.generateCompetitionName();
     }
 
     public long createCompetitionAndJoin(BootcampAthlete athlete,

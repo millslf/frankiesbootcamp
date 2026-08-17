@@ -158,7 +158,7 @@
                     </div>
                     <div class="btn-group-vertical w-100">
                         <a id="loginBtn" class="btn btn-outline-secondary mb-2"
-                           href="<%=ctx%>/login">
+                           href="<%=ctx%>/login?prompt=select_account">
                             <i class="bi bi-box-arrow-in-right me-1"></i> Login
                         </a>
 
@@ -169,11 +169,11 @@
                                 <i class="bi bi-flag me-1"></i> Current competitions (<%= headerActiveCompetitions.size() %>)
                             </button>
                             <ul class="dropdown-menu competition-dropdown-menu" style="max-height: 18rem; overflow-y: auto;">
-                                <% for (CompetitionSummaryView competition : headerActiveCompetitions) { %>
+                                <% for (CompetitionSummaryView headerActiveCompetition : headerActiveCompetitions) { %>
                                 <li>
-                                    <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == competition.getId() ? "active" : "" %>"
-                                       href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
-                                        <%= competition.getName() %>
+                                    <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == headerActiveCompetition.getId() ? "active" : "" %>"
+                                       href="<%=ctx%>/app/select-competition?competitionId=<%= headerActiveCompetition.getId() %>&returnTo=/app/">
+                                        <%= headerActiveCompetition.getName() %>
                                     </a>
                                 </li>
                                 <% } %>
@@ -186,11 +186,11 @@
                                 <i class="bi bi-clock-history me-1"></i> Past competitions (<%= headerPastCompetitions.size() %>)
                             </button>
                             <ul class="dropdown-menu competition-dropdown-menu" style="max-height: 14rem; overflow-y: auto;">
-                                <% for (CompetitionSummaryView competition : headerPastCompetitions) { %>
+                                <% for (CompetitionSummaryView headerPastCompetition : headerPastCompetitions) { %>
                                 <li>
-                                    <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == competition.getId() ? "active" : "" %>"
-                                       href="<%=ctx%>/app/select-competition?competitionId=<%= competition.getId() %>&returnTo=/app/">
-                                        <%= competition.getName() %>
+                                    <a class="dropdown-item <%= headerSelectedCompetitionId != null && headerSelectedCompetitionId == headerPastCompetition.getId() ? "active" : "" %>"
+                                       href="<%=ctx%>/app/select-competition?competitionId=<%= headerPastCompetition.getId() %>&returnTo=/app/">
+                                        <%= headerPastCompetition.getName() %>
                                     </a>
                                 </li>
                                 <% } %>
@@ -279,8 +279,6 @@
         </ul>
     </div>
 </header>
-
-<%@ include file="/WEB-INF/jspf/app-tabs.jspf" %>
 
 <div class="modal fade" id="athleteProfileModal" tabindex="-1" aria-labelledby="athleteProfileModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">

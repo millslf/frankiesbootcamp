@@ -154,6 +154,11 @@ public class StravaService {
                 }
             }
 
+            if (response.code() == 403) {
+                log.info("StravaService: athlete profile unavailable (403); skipping backfill");
+                return null;
+            }
+
             log.warn("StravaService: failed to fetch athlete profile. Code: {} Body: {}", response.code(), body);
             throw new IOException("Strava athlete profile fetch failed, HTTP " + response.code());
         }

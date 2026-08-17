@@ -15,6 +15,7 @@
 </head>
 <body>
 <%@ include file="/WEB-INF/jspf/header.jspf" %>
+<%@ include file="/WEB-INF/jspf/app-tabs.jspf" %>
 
 <div class="main-content-wrapper">
     <div class="container-fluid">

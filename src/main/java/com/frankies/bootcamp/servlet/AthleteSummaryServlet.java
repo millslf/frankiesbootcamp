@@ -30,6 +30,7 @@ public class AthleteSummaryServlet extends BootcampServlet {
                 throw new IllegalStateException("ActivityProcessFacade was not available.");
             }
             Long selectedCompetitionId = resolveSelectedCompetitionId(request);
+            log.infof("AthleteSummary selectedCompetitionId=%s athlete=%s", selectedCompetitionId, loggedInAthlete.getId());
             String summaryContent = selectedCompetitionId != null
                     ? activityProcessFacade.getLoggedInAthleteSummaryForCompetition(selectedCompetitionId, loggedInAthlete.getId())
                     : activityProcessFacade.getLoggedInAthleteSummary(loggedInAthlete.getId());
@@ -51,6 +52,13 @@ public class AthleteSummaryServlet extends BootcampServlet {
             return competitionId;
         }
         if (selectedCompetitionId instanceof String competitionIdText && !competitionIdText.isBlank()) {
+            return Long.parseLong(competitionIdText);
+        }
+        Object sessionSelectedCompetitionId = request.getSession(false) == null ? null : request.getSession(false).getAttribute("selectedCompetitionId");
+        if (sessionSelectedCompetitionId instanceof Long competitionId) {
+            return competitionId;
+        }
+        if (sessionSelectedCompetitionId instanceof String competitionIdText && !competitionIdText.isBlank()) {
             return Long.parseLong(competitionIdText);
         }
         return null;
