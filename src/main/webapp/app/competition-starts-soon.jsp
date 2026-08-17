@@ -14,9 +14,9 @@
             ? "there"
             : onboardingUser.getDisplayName();
     String pageContextPath = request.getContextPath();
-    String competitionName = competition == null ? "your competition" : competition.getName();
+    String competitionName = competition == null || competition.getName() == null || competition.getName().isBlank() ? "your competition" : competition.getName();
     String startLabel = competition == null ? "soon" : Instant.ofEpochSecond(competition.getStartTimestamp())
-            .atZone(ZoneId.of(competition.getTimezone()))
+            .atZone(ZoneId.of(competition.getTimezone() == null || competition.getTimezone().isBlank() ? "Australia/Sydney" : competition.getTimezone()))
             .format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
 %>
 <!DOCTYPE html>
@@ -28,15 +28,7 @@
     <title>Competition starts soon</title>
 </head>
 <body class="bg-light">
-<header class="d-flex align-items-center justify-content-between text-white px-3 py-2 shadow-sm"
-        style="min-height:56px; background-color: #0d6efd;">
-    <a href="<%=pageContextPath%>/" class="text-white text-decoration-none d-flex align-items-center gap-2">
-        <span aria-hidden="true">&#x1F3CB;&#xFE0F;</span>
-        <span>Frankies Bootcamp!</span>
-    </a>
-</header>
-
-<%@ include file="/WEB-INF/jspf/app-tabs.jspf" %>
+<%@ include file="/WEB-INF/jspf/header.jspf" %>
 
 <div class="container py-5">
     <div class="row justify-content-center">
@@ -53,12 +45,11 @@
                         We will show your normal competition dashboard once the competition start date arrives.
                     </div>
 
+                    <% if (Boolean.TRUE.equals(competitionSetupAllowed)) { %>
                     <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mt-4">
-                        <a class="btn btn-outline-secondary btn-lg" href="<%=pageContextPath%>/logout">Sign out</a>
-                        <% if (Boolean.TRUE.equals(competitionSetupAllowed)) { %>
                         <a class="btn btn-primary btn-lg" href="<%=pageContextPath%>/app/competition-setup">View competitions</a>
-                        <% } %>
                     </div>
+                    <% } %>
                 </div>
             </div>
         </div>

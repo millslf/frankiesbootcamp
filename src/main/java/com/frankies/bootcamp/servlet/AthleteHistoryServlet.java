@@ -48,18 +48,25 @@ public class AthleteHistoryServlet extends BootcampServlet {
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
         com.frankies.bootcamp.model.BootcampAthlete loggedInAthlete = (com.frankies.bootcamp.model.BootcampAthlete) request.getAttribute("athlete");
+        if (loggedInAthlete == null || loggedInAthlete.getId() == null || loggedInAthlete.getId().isBlank()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "A linked athlete is required.");
+            return;
+        }
         String athleteName = loggedInAthlete.getFirstname();
         String authenticatedUserMail = (String) request.getAttribute("athleteEmail");
-        Long selectedCompetitionId = (Long) request.getAttribute("selectedCompetitionId");
+        Long selectedCompetitionId = resolveSelectedCompetitionId(request);
+        log.infof("AthleteHistory selectedCompetitionId=%s athlete=%s", selectedCompetitionId, loggedInAthlete == null ? null : loggedInAthlete.getId());
         history = selectedCompetitionId != null
                 ? activityProcessFacade.getAthleteHistoryForCompetition(selectedCompetitionId, loggedInAthlete.getId())
                 : activityProcessFacade.getAthleteHistory(loggedInAthlete.getId());
         if (history == null) {
             history = new HashMap<>();
         }
+
         CompetitionSummaryView selectedCompetition = findSelectedCompetition(request, selectedCompetitionId);
         boolean selectedCompetitionIsCurrent = selectedCompetitionId == null || isCurrentCompetition(request, selectedCompetitionId);
         boolean hideMotivationalMessage = authSessionService.isHistoryMotivationalMessageHidden(request);
+        log.infof("AthleteHistory selectedCompetition=%s historyWeeks=%d current=%s", selectedCompetition == null ? null : selectedCompetition.getName(), history.size(), selectedCompetitionIsCurrent);
         if (history.isEmpty() || selectedActiveCompetitionHistoryIsStale(history, selectedCompetition, selectedCompetitionIsCurrent)) {
             try {
                 if (selectedCompetitionId == null) {
@@ -92,7 +99,7 @@ public class AthleteHistoryServlet extends BootcampServlet {
         }
 
         if (history.isEmpty()) {
-            out.println("<div class='alert alert-info'>We are getting things ready for your Strava account. Your history should appear shortly.</div>");
+            out.println("<div class='alert alert-info'>No history is available for this competition yet.</div>");
             out.println("</div>");
             return;
         }
@@ -371,6 +378,24 @@ public class AthleteHistoryServlet extends BootcampServlet {
 
     private static boolean isCurrentCompetition(HttpServletRequest request, Long selectedCompetitionId) {
         return findCompetitionInAttribute(request, "activeCompetitions", selectedCompetitionId) != null;
+    }
+
+    private Long resolveSelectedCompetitionId(HttpServletRequest request) {
+        Object selectedCompetitionId = request.getAttribute("selectedCompetitionId");
+        if (selectedCompetitionId instanceof Long competitionId) {
+            return competitionId;
+        }
+        if (selectedCompetitionId instanceof String competitionIdText && !competitionIdText.isBlank()) {
+            return Long.parseLong(competitionIdText);
+        }
+        Object sessionSelectedCompetitionId = request.getSession(false) == null ? null : request.getSession(false).getAttribute("selectedCompetitionId");
+        if (sessionSelectedCompetitionId instanceof Long competitionId) {
+            return competitionId;
+        }
+        if (sessionSelectedCompetitionId instanceof String competitionIdText && !competitionIdText.isBlank()) {
+            return Long.parseLong(competitionIdText);
+        }
+        return null;
     }
 
     private static boolean isCompletedBeyondRebuildWindow(CompetitionSummaryView competition) {

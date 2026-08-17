@@ -12,6 +12,7 @@ import org.jboss.logging.Logger;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 @ApplicationScoped
 public class AiMessageService {
@@ -219,6 +220,31 @@ public class AiMessageService {
             return trimmedMessage.isBlank()
                     ? "Frankies Bootcamp is all sports, all effort, all welcome. Come join the fun."
                     : trimmedMessage;
+        }
+    }
+
+    public String generateCompetitionName() {
+        if (service == null) {
+            return randomCompetitionName();
+        }
+
+        ChatMessage systemMsg = new ChatMessage("system", "You generate short sports competition names.");
+        ChatMessage userMsg = new ChatMessage("user",
+                "Generate one cool competition name for a fitness challenge. " +
+                        "Return only 2 or 3 words. " +
+                        "Use upbeat, sporty language. " +
+                        "Do not include punctuation, quotes, numbering, or the words Frankies Bootcamp.");
+        ChatCompletionRequest req = ChatCompletionRequest.builder()
+                .model("gpt-4")
+                .messages(List.of(systemMsg, userMsg))
+                .maxTokens(20)
+                .temperature(1.0)
+                .build();
+        try {
+            return sanitizeCompetitionName(service.createChatCompletion(req).getChoices().get(0).getMessage().getContent());
+        } catch (Exception e) {
+            log.warn("Could not generate competition name", e);
+            return randomCompetitionName();
         }
     }
 
@@ -459,5 +485,32 @@ public class AiMessageService {
             return "No athlete stats are currently available.";
         }
         return statsContext.trim();
+    }
+
+    private String sanitizeCompetitionName(String value) {
+        String cleaned = value == null ? "" : value.replaceAll("[\\r\\n\\t]+", " ").trim();
+        cleaned = cleaned.replaceAll("[\"'`]+", "");
+        cleaned = cleaned.replaceAll("[^A-Za-z0-9 &-]", "");
+        String[] parts = cleaned.split("\\s+");
+        if (parts.length < 2) {
+            return randomCompetitionName();
+        }
+        if (parts.length > 3) {
+            return String.join(" ", parts[0], parts[1], parts[2]);
+        }
+        return cleaned;
+    }
+
+    private String randomCompetitionName() {
+        String[] adjectives = {"Wild", "Brave", "Swift", "Fresh", "Bold", "Bright", "Neon", "Rapid"};
+        String[] nouns = {"Stride", "Spark", "Sprint", "Pulse", "Crew", "Wave", "Run", "Charge"};
+        String[] extras = {"League", "Loop", "Squad", "Dash", "Trail", "Zone", "Crew", "Wave"};
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        String first = adjectives[random.nextInt(adjectives.length)];
+        String second = nouns[random.nextInt(nouns.length)];
+        if (random.nextBoolean()) {
+            return first + " " + second;
+        }
+        return first + " " + second + " " + extras[random.nextInt(extras.length)];
     }
 }

@@ -27,6 +27,19 @@ A "dev ready" top-of-board order was established to prioritize:
 9. multi-competition model and competition-specific rules
 10. replacement of the large in-memory summary model
 
+## Current follow-up from competition switching work
+
+- The session ended with competition switching mostly working for the no-active-user case.
+- The remaining problem is the history render path for a selected past competition:
+  - selection persists
+  - board/roll render
+  - history still needs a clean read path for the selected past competition
+- The next pass should be framed as a render/debug ticket, not a selection ticket.
+- Good ticket shape:
+  - verify `selectedCompetitionId` reaches `AthleteHistoryServlet`
+  - confirm the selected past competition exists in the request/session list used by history
+  - make history render for selected past competitions without disturbing active/upcoming onboarding states
+
 ## Since this handoff was written
 
 - `FBC-40` is now considered done by the user.

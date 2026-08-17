@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.UUID;
 
 @WebServlet(name = "competitionSetup", value = "/app/competition-setup")
 public class CompetitionSetupServlet extends HttpServlet {
@@ -50,6 +51,7 @@ public class CompetitionSetupServlet extends HttpServlet {
                 return;
             }
             req.setAttribute("competitionSetupView", competitionSetupService.loadView(athlete));
+            req.setAttribute("competitionSetupGeneratedName", competitionSetupService.generateCompetitionName());
             applyInvitationAttributes(req, athlete);
             req.getRequestDispatcher("/app/competition-setup.jsp").forward(req, resp);
         } catch (IllegalStateException e) {
@@ -73,6 +75,11 @@ public class CompetitionSetupServlet extends HttpServlet {
             }
 
             if ("create".equals(action)) {
+                if (req.getSession().getAttribute("competitionSetupCreateInFlight") != null) {
+                    resp.sendRedirect(req.getContextPath() + "/app/competition-setup");
+                    return;
+                }
+                req.getSession().setAttribute("competitionSetupCreateInFlight", UUID.randomUUID().toString());
                 long competitionId = competitionSetupService.createCompetitionAndJoin(
                         athlete,
                         req.getParameter("competitionName"),
@@ -82,6 +89,7 @@ public class CompetitionSetupServlet extends HttpServlet {
                         req.getParameter("startingGoal")
                 );
                 authSessionService.setSelectedCompetitionId(req, competitionId);
+                req.getSession().removeAttribute("competitionSetupCreateInFlight");
                 resp.sendRedirect(req.getContextPath() + "/app/competition-invitations?competitionId=" + competitionId);
                 return;
             } else if ("join".equals(action)) {
@@ -95,6 +103,7 @@ public class CompetitionSetupServlet extends HttpServlet {
             }
             resp.sendRedirect(req.getContextPath() + "/app");
         } catch (IllegalArgumentException e) {
+            req.getSession().removeAttribute("competitionSetupCreateInFlight");
             log.error("Competition setup validation failed", e);
             try {
                 reloadWithError(req, resp, e.getMessage());
@@ -103,12 +112,15 @@ public class CompetitionSetupServlet extends HttpServlet {
                 throw new ServletException("Unable to reload competition setup after validation error", sqlException);
             }
         } catch (IllegalStateException e) {
+            req.getSession().removeAttribute("competitionSetupCreateInFlight");
             log.error("Competition setup blocked", e);
             resp.sendRedirect(req.getContextPath() + "/app");
         } catch (SQLException e) {
+            req.getSession().removeAttribute("competitionSetupCreateInFlight");
             log.error("Unable to save competition setup", e);
             throw new ServletException("Unable to save competition setup", e);
         } catch (CredentialStoreException | NoSuchAlgorithmException e) {
+            req.getSession().removeAttribute("competitionSetupCreateInFlight");
             log.error("Unable to refresh athlete competition data after setup", e);
             throw new ServletException("Unable to refresh athlete competition data after setup", e);
         }
@@ -117,6 +129,7 @@ public class CompetitionSetupServlet extends HttpServlet {
     private void reloadWithError(HttpServletRequest req, HttpServletResponse resp, String error) throws ServletException, IOException, SQLException {
         BootcampAthlete athlete = requireLinkedAthlete(req);
         req.setAttribute("competitionSetupView", competitionSetupService.loadView(athlete));
+        req.setAttribute("competitionSetupGeneratedName", competitionSetupService.generateCompetitionName());
         applyInvitationAttributes(req, athlete);
         req.setAttribute("competitionSetupError", error);
         req.getRequestDispatcher("/app/competition-setup.jsp").forward(req, resp);

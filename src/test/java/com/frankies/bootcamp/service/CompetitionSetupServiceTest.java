@@ -91,6 +91,17 @@ class CompetitionSetupServiceTest {
         assertTrue(error.getMessage().contains("End date"));
     }
 
+    @Test
+    void createCompetitionAndJoinDoesNotTouchRepositoryTwice() throws Exception {
+        FakeCompetitionDbService dbService = new FakeCompetitionDbService();
+        CompetitionSetupService service = new CompetitionSetupService(dbService, athleteRefresh);
+
+        service.createCompetitionAndJoin(athlete("athlete-1", 18.0), "Winter Bootcamp", "Australia/Sydney", "2026-07-01", null, "25");
+
+        assertEquals(1, athleteRefresh.refreshCalls);
+        assertEquals(1, dbService.createCompetitionWithAdminCount);
+    }
+
     private static BootcampAthlete athlete(String athleteId, Double goal) {
         BootcampAthlete athlete = new BootcampAthlete();
         athlete.setId(athleteId);
@@ -113,6 +124,7 @@ class CompetitionSetupServiceTest {
         private long joinCompetitionId;
         private String joinAthleteId;
         private double joinGoal;
+        private int createCompetitionWithAdminCount;
 
         @Override
         public List<CompetitionSummaryView> listJoinableCompetitions(String athleteId) {
@@ -122,6 +134,7 @@ class CompetitionSetupServiceTest {
 
         @Override
         public long createCompetitionWithAdmin(String name, String timezone, long startTimestamp, Long endTimestamp, String athleteId, double startingGoal) {
+            this.createCompetitionWithAdminCount++;
             this.createdCompetitionName = name;
             this.createdCompetitionTimezone = timezone;
             this.createdCompetitionStartTimestamp = startTimestamp;
